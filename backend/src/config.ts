@@ -18,6 +18,8 @@ export const config = {
   currency: process.env.CURRENCY_SYMBOL ?? "₹",
   /** Prefix for human-readable order numbers. */
   orderPrefix: process.env.ORDER_PREFIX ?? "RE-",
+  /** Default country code (no +) for bare 10-digit phone numbers. */
+  phoneCountryCode: process.env.PHONE_COUNTRY_CODE ?? "91",
   /** Comma-separated list of allowed browser origins. */
   corsOrigins: csv(process.env.CORS_ORIGINS).length > 0 ? csv(process.env.CORS_ORIGINS) : ["http://localhost:3000", "http://localhost:3001"],
   /** General API rate limit. */

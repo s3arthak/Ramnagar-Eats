@@ -100,7 +100,14 @@ router.post(
       if (!parsed.success) throw badRequest(parsed.error.issues[0].message, "VALIDATION_ERROR");
       const { name, role } = parsed.data;
       const email = parsed.data.email;
-      const phone = parsed.data.phone?.trim() ? normalizePhone(parsed.data.phone) : undefined;
+      let phone: string | undefined;
+      if (parsed.data.phone?.trim()) {
+        try {
+          phone = normalizePhone(parsed.data.phone);
+        } catch (caught) {
+          throw badRequest(caught instanceof Error ? caught.message : "Enter a valid phone number", "VALIDATION_ERROR");
+        }
+      }
       if (!verifyRegistrationToken(parsed.data.regToken, email)) {
         throw badRequest("Your verification has expired. Request a new code and try again.", "REGISTRATION_TOKEN_INVALID");
       }

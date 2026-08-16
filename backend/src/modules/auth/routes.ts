@@ -43,7 +43,15 @@ router.patch(
     const update: Record<string, unknown> = {};
     if (parsed.data.name) update.name = parsed.data.name.trim();
     if (parsed.data.phone !== undefined) {
-      update.phone = parsed.data.phone.trim() ? normalizePhone(parsed.data.phone) : undefined;
+      if (parsed.data.phone.trim()) {
+        try {
+          update.phone = normalizePhone(parsed.data.phone);
+        } catch (caught) {
+          throw badRequest(caught instanceof Error ? caught.message : "Enter a valid phone number", "VALIDATION_ERROR");
+        }
+      } else {
+        update.phone = undefined;
+      }
       if (update.phone) {
         const taken = await User.findOne({ phone: update.phone, _id: { $ne: request.user!.id } });
         if (taken) throw conflict("That phone number is already in use", "PHONE_TAKEN");

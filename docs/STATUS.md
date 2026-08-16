@@ -73,7 +73,7 @@
 
 - Service center lat/lng/address/pincode + radius → **DB**, admin-editable, enforced server-side
 - Delivery fees (`BASE_DELIVERY_FEE`, `DELIVERY_FEE_FREE_ABOVE`) → **env**, exposed via `GET /api/v1/config`
-- Currency symbol (`CURRENCY_SYMBOL`), order prefix (`ORDER_PREFIX`), brand name (`BRAND_NAME`) → **env**, consumed by backend copy + both apps via `GET /api/v1/config`
+- Currency symbol (`CURRENCY_SYMBOL`), order prefix (`ORDER_PREFIX`), brand name (`BRAND_NAME`), default phone country code (`PHONE_COUNTRY_CODE`) → **env**, consumed by backend copy + both apps via `GET /api/v1/config`
 - OTP TTL / max attempts / resend cooldown → **env** (email copy derives the expiry text from the configured TTL)
 - Rate limits, CORS origins, JWT secret, ports → **env**
 - Coupons (admin CRUD), restaurants, menu, categories, offers, users, orders → **DB**
@@ -82,6 +82,6 @@
 ### Hardcoded (should become configurable → see BACKLOG)
 
 - Homepage hero copy + "30 min delivery" chip
-- Phone placeholder `+919876543210` (India-specific)
+- Phone placeholder text (bare 10-digit format now, country code config-driven)
 - Google Fonts (DM Sans) import
 - Frontend logo markup (deliberately a static brand design element; brand name itself is server-driven via `BRAND_NAME`/`/config` for all copy)

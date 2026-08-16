@@ -201,7 +201,7 @@ try {
   await customer.click(".auth-form-card .auth-submit");
   await waitFor(customer, '.auth-form-card input[placeholder="Priya Sharma"]', 10000, "registration details");
   await customer.fill('.auth-form-card input[placeholder="Priya Sharma"]', "Browser Walker");
-  await customer.fill('.auth-form-card input[placeholder="+919876543210"]', phone);
+  await customer.fill('.auth-form-card input[placeholder="9876543210"]', phone);
   await customer.click(".auth-form-card .auth-submit");
   await waitFor(customer, ".checkout-section", 15000, "checkout after register");
   ok("OTP registration returns to checkout", true);
@@ -393,7 +393,7 @@ try {
   // New Google users get an optional phone step — complete it to reach the profile.
   const phoneStep = await customer.locator(".oauth-phone-form").count();
   if (phoneStep > 0) {
-    await customer.fill('.oauth-phone-form input[placeholder="+919876543210"]', `+919${String(Date.now()).slice(-8)}`);
+    await customer.fill('.oauth-phone-form input[placeholder="9876543210"]', `+919${String(Date.now()).slice(-8)}`);
     await customer.click(".oauth-phone-form .auth-submit");
   }
   // Customers land on home after sign-in; navigate to the profile to confirm identity.

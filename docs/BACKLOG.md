@@ -36,7 +36,7 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 ## P3 — Dynamic configuration (stop hardcoding)
 
 15. **Homepage marketing copy** — hero headline/subcopy and the "30 min delivery" chip are hardcoded; expose as admin-editable content (simple CMS or config).
-16. **Phone placeholder / dialing defaults** — `+919876543210` is India-specific; derive from config or localization.
+16. **Phone dialing localization** — bare 10-digit numbers are now auto-normalized via `PHONE_COUNTRY_CODE` (default `91`), but there is no per-locale country-code selection for non-Indian numbers.
 17. **Google Fonts** — self-host DM Sans to remove the runtime dependency.
 
 ## P4 — Ops & tooling
@@ -60,3 +60,4 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 - **App brand name** — config-driven (`BRAND_NAME`); used in emails and exposed via `GET /api/v1/config`. The frontend logo stays a static design element.
 - **Default map position** — the location sheet now loads the service center from `/config` instead of a hardcoded `[19.076, 72.8777]`.
 - **Pincode format validation** — 6-digit Indian PIN enforced on the backend (addresses + service area) and in the location sheet UI.
+- **Phone number UX** — bare 10-digit numbers (e.g. `6006949465`) are now auto-normalized to E.164 (`+916006949465`) instead of failing with a generic "Something went wrong"; invalid numbers return a friendly 400. Applied to registration and profile updates.

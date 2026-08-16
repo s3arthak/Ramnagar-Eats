@@ -259,7 +259,7 @@ export function LoginPage() {
               Your email <strong>{email}</strong> is verified. Add your details to finish.
             </p>
             <Input label="Your name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Priya Sharma" autoComplete="name" required />
-            <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+919876543210" autoComplete="tel" inputMode="tel" />
+            <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9876543210" autoComplete="tel" inputMode="tel" />
             {error && (
               <p className="notice notice--error" role="alert">
                 {error}

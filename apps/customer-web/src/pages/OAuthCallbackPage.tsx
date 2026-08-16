@@ -90,7 +90,7 @@ export function OAuthCallbackPage() {
             Signed in with <strong>{user.email}</strong>. Add a phone number so restaurants can reach you (optional).
           </p>
           <form onSubmit={(event) => void savePhone(event)} className="oauth-phone-form">
-            <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+919876543210" autoComplete="tel" inputMode="tel" />
+            <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9876543210" autoComplete="tel" inputMode="tel" />
             {error && (
               <p className="notice notice--error" role="alert">
                 {error}

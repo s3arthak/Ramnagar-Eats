@@ -138,6 +138,13 @@ async function main() {
     check("register creates a customer after OTP", reg.status === 201 && reg.body.success && reg.body.token && reg.body.user.role === "CUSTOMER", JSON.stringify(reg.body));
     const customerToken = reg.body.token;
 
+    // Bare 10-digit Indian numbers are auto-normalized to E.164 (no +91 needed).
+    const barePhone = await registerUser("Bare Phone User", "barephone@customer.test", { phone: "6006949465" });
+    check("register accepts a bare 10-digit phone and normalizes it", barePhone.status === 201 && barePhone.body.user.phone === "+916006949465", JSON.stringify(barePhone.body));
+
+    const garbagePhone = await registerUser("Garbage Phone User", "garbagephone@customer.test", { phone: "not-a-phone" });
+    check("invalid phone returns a friendly 400 (not a 500)", garbagePhone.status === 400 && garbagePhone.body.code === "VALIDATION_ERROR" && /phone/i.test(garbagePhone.body.message), JSON.stringify(garbagePhone.body));
+
     const adminSpoof = await registerUser("Spoof Admin", "spoof@admin.test", { role: "ADMIN" as any });
     check("client cannot create an ADMIN account", adminSpoof.status === 400 && adminSpoof.body.code === "VALIDATION_ERROR");
 
@@ -227,6 +234,8 @@ async function main() {
     // Profile updates (Google users add a phone).
     const updatePhone = await request(base, "/api/v1/auth/me", { method: "PATCH", body: JSON.stringify({ phone: "+919888888889" }) }, googleToken);
     check("user can add a phone to their profile", updatePhone.status === 200 && updatePhone.body.user.phone === "+919888888889");
+    const updateBarePhone = await request(base, "/api/v1/auth/me", { method: "PATCH", body: JSON.stringify({ phone: "7000000000" }) }, googleToken);
+    check("profile update accepts a bare 10-digit phone", updateBarePhone.status === 200 && updateBarePhone.body.user.phone === "+917000000000");
     const phoneTaken = await request(base, "/api/v1/auth/me", { method: "PATCH", body: JSON.stringify({ phone: "+919999999999" }) }, googleToken);
     check("phone already in use is rejected", phoneTaken.status === 409 && phoneTaken.body.code === "PHONE_TAKEN");
 
