@@ -10,11 +10,10 @@
 services:
   - type: web
     name: ramnagar-eats-api
-    runtime: docker
-    # Build context is the repo root — docker/backend.Dockerfile copies
-    # package.json + backend/ from there (monorepo).
-    rootDir: .
-    dockerfilePath: docker/backend.Dockerfile
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
