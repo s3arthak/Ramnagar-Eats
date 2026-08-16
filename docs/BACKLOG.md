@@ -12,8 +12,7 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
    - SMTP delivery is live and verified (welcome email reached a Gmail inbox). Remaining: verify a real sender domain in Brevo and set `EMAIL_FROM` to it so emails don't get spam-filtered; confirm order/status emails arrive too.
 3. **Google OAuth app**
    - Create a Google Cloud OAuth app (web), set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, add the callback URL, and test the full round trip (not just the dev-callback). **Envs are added by the owner.**
-4. **ImageKit keys**
-   - Set `IMAGEKIT_PUBLIC_KEY` / `IMAGEKIT_PRIVATE_KEY` / `IMAGEKIT_URL_ENDPOINT` to move uploads off local disk onto the CDN; verify upload + delete + delivery. **Envs are added by the owner.**
+4. *(resolved — ImageKit CDN is live: upload → CDN delivery → delete verified end-to-end with real keys)*
 
 ## P1 — Correctness & trust
 
@@ -61,3 +60,4 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 - **Default map position** — the location sheet now loads the service center from `/config` instead of a hardcoded `[19.076, 72.8777]`.
 - **Pincode format validation** — 6-digit Indian PIN enforced on the backend (addresses + service area) and in the location sheet UI.
 - **Phone number UX** — bare 10-digit numbers (e.g. `6006949465`) are now auto-normalized to E.164 (`+916006949465`) instead of failing with a generic "Something went wrong"; invalid numbers return a friendly 400. Applied to registration and profile updates.
+- **ImageKit CDN** — real keys set; uploads now go to the CDN. Verified end-to-end: upload via the app's provider, served from `ik.imagekit.io`, delete confirmed.

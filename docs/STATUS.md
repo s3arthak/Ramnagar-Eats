@@ -45,7 +45,7 @@
 | **Maps / geo** | Leaflet + OpenStreetMap tiles (browser) | Live browser test: 6/6 tiles loaded from `tile.openstreetmap.org` (HTTP 200) | ✅ Working |
 | **Distance / serviceability** | In-house haversine (no external API) | Live curl: center (0 km, serviceable) and Delhi (1146.3 km, rejected) | ✅ Working |
 | **Email** | Console (dev) → Brevo SMTP relay (prod) | **Real send verified**: welcome email delivered to a Gmail inbox via `smtp-relay.brevo.com:587` (STARTTLS + SMTP key auth). Brevo REST API also wired (fake key → real `401`) | ✅ Working |
-| **Images** | Local disk (dev) → ImageKit (prod) | ImageKit wiring tested against real API: fake keys → real `403 "account cannot be authenticated"` | ✅ Wired, ⚠️ needs real keys (backlog) |
+| **Images** | Local disk (dev) → ImageKit CDN (prod) | **Real end-to-end verified**: uploaded a test image via the app's provider → served from `ik.imagekit.io` (HTTP 200) → deleted (404 after). Keys authenticated against the real ImageKit API | ✅ Working |
 | **Google OAuth** | Dev-callback (dev) → Google (prod) | Unconfigured server returns clean `503 GOOGLE_NOT_CONFIGURED`; dev-callback round-trip green in walk | ✅ Wired, ⚠️ needs real OAuth app (backlog) |
 | **Payments** | COD + Mock (no real gateway) | Order flow with COD/Mock passes; **no real gateway exists** | ⚠️ Backlog: Razorpay/Stripe |
 | **Uploads serving** | API static `/uploads` (dev) | Browser walk uploads + previews; CORP header verified `cross-origin` | ✅ Working |
@@ -57,7 +57,7 @@
 ## 3. What is NOT done / not active
 
 1. **Sender verification / deliverability** — SMTP delivery works (Brevo accepted and delivered a real test email), but `EMAIL_FROM` uses an unverified `.test` sender; verify a real domain in Brevo and update `EMAIL_FROM` so emails don't land in spam.
-2. **ImageKit CDN** — provider wired and tested, but no `IMAGEKIT_*` keys; dev stores images on local disk.
+2. *(resolved — ImageKit CDN is live and verified; uploads now go to the CDN)*
 3. **Google sign-in** — flow wired, but no Google Cloud OAuth app exists; server returns `503` until configured.
 4. **Real payment gateway** — only Cash-on-Delivery and a mock provider; no online payment (deferred by the owner).
 5. **Multiple service areas / cities** — the platform supports exactly **one** admin-configurable delivery area.
