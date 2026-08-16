@@ -42,3 +42,6 @@ data/
 
 # Test / coverage
 coverage/
+
+.vercel
+.env*

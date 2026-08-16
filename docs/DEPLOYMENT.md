@@ -1,150 +1,150 @@
-# Deployment Plan — Render (API) + Vercel (Web Apps)
+# Deployment — Local Docker Compose (bundled MongoDB)
 
-How to take the current local setup live. Two frontends (customer + restaurant) on
-**Vercel**, one backend (Express + Socket.IO + MongoDB) on **Render**. MongoDB stays on
-**Atlas** (already configured). This is a plan — nothing here has been executed.
+The whole stack runs on one machine with Docker: the bundled **MongoDB**
+container (persistent `mongo-data` volume — no external database needed),
+the **API**, and both web apps (customer + restaurant) served by nginx.
+No Atlas, no external hosting required.
 
 ---
 
 ## Architecture
 
 ```
-┌────────────────────┐   ┌────────────────────┐
-│  customer-web      │   │  restaurant-web    │
-│  (Vercel, :3000)   │   │  (Vercel, :3001)   │
-│  Vercel project A  │   │  Vercel project B  │
-└─────────┬──────────┘   └─────────┬──────────┘
-          │  HTTPS /api/v1/*       │  HTTPS /api/v1/* + Socket.IO (ws)
-          ▼                        ▼
-        ┌──────────────────────────────────────┐
-        │  ramnagar-eats-api  (Render web svc) │
-        │  Express + Socket.IO, NODE_ENV=prod  │
-        └─────────────────┬────────────────────┘
-                          │ mongodb+srv
-                          ▼
-              MongoDB Atlas (already live)
+┌────────────────────────────────────────────────────────────┐
+│  docker compose up --build  (one machine, one network)     │
+│                                                            │
+│  customer-web  :3000  (nginx, static build)                │
+│  restaurant-web:3001  (nginx, static build)                │
+│        │  HTTPS/HTTP /api/v1/* + Socket.IO (ws)            │
+│        ▼                                                   │
+│  backend :5000  (Express + Socket.IO, NODE_ENV=production) │
+│        │  mongodb://mongodb:27017/ramnagar-eats            │
+│        ▼                                                   │
+│  mongodb (mongo:8, data in the mongo-data volume)          │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- Both web apps call the SAME API base URL (one Vercel env var: `VITE_API_URL`).
-- Socket.IO is a plain WebSocket upgrade on the same Render service — no extra infra.
-- Nothing runs inside Vercel Functions; Vercel only serves static React builds and
-  proxies API calls to Render.
+- The API talks to the bundled `mongodb` container by service name — no
+  `localhost` or external URI to configure.
+- **Data lives in the Docker volume `mongo-data`** — it survives
+  `docker compose down` and container rebuilds. Removing it (e.g. with
+  `docker compose down -v`) erases all data, so back it up first.
+- Socket.IO is a plain WebSocket upgrade on the same backend port.
 
 ---
 
-## Step 1 — MongoDB Atlas
+## Step 1 — Prerequisites
 
-Already running (cluster `cluster0`, db `ramnagar-eats`). Two things to confirm:
+1. **Docker Desktop** (or any Docker engine with `docker compose`).
+2. Copy the production env template and set the required values:
 
-1. **Network access**: allow the IPs Render uses to reach Atlas. Simplest for launch:
-   allow `0.0.0.0/0` **with the database user password set** (never a blank auth), or
-   add Render's egress IPs (see Render dashboard → your service → *Events/Details*).
-2. **Database user**: `kharkasarthak_db_user` already exists and authenticates
-   (verified locally). Reuse it; keep the password in the Render env vars only.
+```bash
+cp .env.production.example .env.production
+```
 
----
-
-## Step 2 — Render: the API service
-
-**Create** a new **Web Service** in Render, connected to this repo (or the
-`backend/` subdirectory).
-
-| Setting | Value |
-| --- | --- |
-| Root directory | `backend` (if repo-connected) |
-| Build command | `npm ci && npm run build` |
-| Start command | `node dist/server.js` |
-| Instance type | Free tier is fine to start (single instance — see Socket.IO note) |
-| Health check path | `/api/v1/health` |
-
-**Environment variables** (all required, none committed):
+Edit `.env.production`:
 
 | Variable | Value |
 | --- | --- |
-| `NODE_ENV` | `production` |
-| `MONGODB_URI` | `mongodb+srv://kharkasarthak_db_user:<password>@cluster0.dsfzkf3.mongodb.net/ramnagar-eats` |
+| `MONGODB_URI` | leave at `mongodb://mongodb:27017/ramnagar-eats` (the bundled container) |
 | `JWT_SECRET` | generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `CORS_ORIGINS` | `https://<customer-domain>.vercel.app,https://<restaurant-domain>.vercel.app` (comma-separated, no spaces) |
-| `OTP_PROVIDER` | `brevo` (or `smtp`) — the dev-otp endpoint is compile-time disabled in production |
-| `EMAIL_FROM` | a **verified sender** in Brevo (unverified `.test` senders get spam-filtered) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Brevo SMTP relay creds (`smtp-relay.brevo.com:587`) |
-| `MAPBOX_ACCESS_TOKEN` | optional — public token for real road routes; without it the geodesic fallback is used |
-| `BASE_DELIVERY_FEE`, `DELIVERY_FEE_FREE_ABOVE`, `CURRENCY_SYMBOL`, `ORDER_PREFIX`, `BRAND_NAME`, `PHONE_COUNTRY_CODE` | same values as `.env.production` |
-| `RATE_LIMIT_*`, `AUTH_RATE_LIMIT_*`, `OTP_TTL_MS`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN_MS` | defaults are fine |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | existing Google OAuth app |
+| `OTP_DELIVERY` | `console` (dev — codes printed to the API log) or `smtp` (needs `SMTP_*` + verified `EMAIL_FROM`) |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:3001` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional — Google sign-in (redirect URI `http://localhost:5000/api/v1/auth/google/callback`) |
+| `IMAGEKIT_*` | optional — image CDN; without them images store on the API's local disk (`/uploads`) |
 
-**Google OAuth**: add a production callback URI to the Google Cloud console:
-`https://<your-api-domain>.onrender.com/api/v1/auth/google/callback`
-(the dev `localhost:5000` URI stays for local testing).
-
-**Socket.IO note**: WebSockets work on Render, but only to the single instance that
-holds the socket. With one instance (free/startup tier) this is fine; if you scale to
-multiple instances later, either pin connections (sticky sessions) or add a pub/sub
-adapter (Redis) for Socket.IO.
-
-**Mapbox (optional)**: if you add `MAPBOX_ACCESS_TOKEN`, the route endpoint returns
-real road polylines. Free tier covers this app's volume. Set it, then trigger a redeploy.
+Compose fails fast if `JWT_SECRET` is missing.
 
 ---
 
-## Step 3 — Vercel: two frontend projects
+## Step 2 — Build and run
 
-Create **two separate Vercel projects** (the monorepo has two independent Vite apps):
-
-| | customer-web | restaurant-web |
-| --- | --- | --- |
-| Root directory | `apps/customer-web` | `apps/restaurant-web` |
-| Framework preset | Vite | Vite |
-| Build command | `npm ci && npm run build` | `npm ci && npm run build` |
-| Output directory | `dist` | `dist` |
-| Env var `VITE_API_URL` | `https://<your-api-domain>.onrender.com/api/v1` | same |
-
-**SPA routing**: Vercel serves static files; add a rewrite so deep links work
-(`/orders/123`, `/admin`, …). Add `vercel.json` in each app root:
-
-```json
-{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```bash
+docker compose --env-file .env.production up --build -d
 ```
 
-(If Vite's `base` is left at `/`, no other config is needed.)
+| App | URL |
+| --- | --- |
+| Customer web | http://localhost:3000 |
+| Restaurant web | http://localhost:3001 |
+| API + Socket.IO | http://localhost:5000/api/v1 |
+| Health check | http://localhost:5000/api/v1/health |
 
-**CORS**: after both projects deploy, update the Render `CORS_ORIGINS` env var with the
-two real `*.vercel.app` (or custom) domains and redeploy Render.
+Check it came up green:
 
-**Socket.IO from Vercel**: the frontend connects its WebSocket to the Render domain
-(the socket client uses `VITE_API_URL`'s host), which Vercel allows since it is a
-direct client→Render connection, not a Vercel proxy.
+```bash
+docker compose ps                # all four services: running (healthy)
+curl http://localhost:5000/api/v1/health   # {"status":"ok","database":"connected",...}
+```
 
 ---
 
-## Step 4 — Cutover checklist
+## Step 3 — Seed sample data (fresh installs only)
 
-1. [ ] Atlas network access allows Render (or `0.0.0.0/0` + strong DB password).
-2. [ ] Render service boots green: log shows `MongoDB connected` + `API listening`; `/api/v1/health` returns `{"database":"connected"}`.
-3. [ ] Both Vercel projects deploy green and load with no console errors.
-4. [ ] Register a fresh customer on the customer site (OTP email arrives from Brevo with the **verified** sender).
-5. [ ] Restaurant owner logs in on the restaurant site; OTP email arrives.
-6. [ ] Place an order: real-time toasts on both sides (Socket.IO over HTTPS works).
-7. [ ] Google sign-in works from both domains (production callback URI added).
-8. [ ] Admin logs in (`admin@ramnagareats.test`), edits the service area from the live admin panel.
-9. [ ] Tracking page shows the route map + dynamic ETA; optionally verify a road route after adding the Mapbox token.
-10. [ ] `git status` clean — no `.env` / secrets in the repo; all secrets live in Render/Vercel env vars.
+The bundled MongoDB starts empty. On a fresh deployment, seed the demo
+restaurants, menus, coupons, and demo accounts:
+
+```bash
+docker compose --env-file .env.production up seed
+```
+
+This is a one-shot container; run it whenever you want to reset to demo
+data (it refuses to overwrite existing restaurants).
+
+---
+
+## Step 4 — Everyday operations
+
+```bash
+docker compose logs -f backend     # API logs (OTP codes in dev, if console)
+docker compose down                # stop everything (data stays in the volume)
+docker compose up -d               # start again
+docker compose up --build -d       # rebuild after pulling new code
+```
+
+### Backups (do this regularly — the volume is your only copy)
+
+```bash
+docker compose exec mongodb mongodump --archive=/data/db/dump-$(date +%F).archive
+docker compose cp mongodb:/data/db/dump-<date>.archive ./backups/
+```
+
+Restore with `mongorestore --archive=...`.
+
+---
+
+## Cutover checklist
+
+1. [ ] `docker compose ps` — mongodb, backend, customer-web, restaurant-web all healthy.
+2. [ ] `curl http://localhost:5000/api/v1/health` → `"database":"connected"`.
+3. [ ] `http://localhost:3000` loads; `http://localhost:3001` loads (restaurant dashboard).
+4. [ ] Register/login a customer on :3000 — OTP arrives (console log or email).
+5. [ ] Place an order — real-time toasts on both sides (Socket.IO).
+6. [ ] Restaurant owner logs in on :3001, accepts an order, status updates live.
+7. [ ] Admin (`/admin` on :3001) edits the service area — takes effect immediately.
+8. [ ] Tracking page shows the route map + dynamic ETA.
+9. [ ] `git status` clean — no secrets committed; secrets live in `.env.production` (gitignored).
 
 ---
 
 ## Notes & gotchas
 
-- **HTTPS**: Vercel + Render both serve HTTPS by default — the browser GPS
-  geolocation API ("use my current location") requires HTTPS and will work in prod.
-- **Email deliverability**: the admin/restaurant emails currently go to
-  `*.ramnagareats.test` addresses (fake inboxes). For real sign-ups, users use real
-  emails; verify your sender domain in Brevo first (`EMAIL_FROM`).
-- **Render free tier** sleeps after inactivity — first request after idle takes
-  ~30–60 s to cold start. The health check keeps the service warm while it's being used.
-- **Database**: Atlas is outside Render — no persistent-disk worry. Take an Atlas
-  backup before go-live and periodically after.
-- **Seeding**: run the seed against Atlas once before go-live
-  (`npm run seed --workspace=backend` with the production URI) to create demo
-  restaurants, menus, coupons, and the admin account.
-- **Scaling later**: add Socket.IO Redis adapter + sticky sessions on Render, and a
-  real payment gateway (P0 backlog) before taking real money.
+- **Data persistence**: everything lives in the `mongo-data` volume. Back it
+  up before any `docker compose down -v`.
+- **Email**: with `OTP_DELIVERY=console` no SMTP is needed — codes print to
+  the API log (`docker compose logs -f backend`). To send real mail, set
+  `OTP_DELIVERY=smtp`, the `SMTP_*` vars, and a **verified** `EMAIL_FROM`
+  sender; unverified senders get spam-filtered.
+- **Google OAuth**: the redirect URI must be
+  `http://localhost:5000/api/v1/auth/google/callback` in the Google Cloud
+  console when running locally.
+- **ImageKit**: without the three `IMAGEKIT_*` keys, uploads go to the API
+  container's local disk, which is **ephemeral** — they disappear on
+  `docker compose down` + rebuild. Add ImageKit keys if images must persist.
+- **HTTPS**: localhost works without HTTPS, but the browser geolocation API
+  ("use my current location") requires a secure context — use
+  `http://localhost` (treated as secure) or add a reverse proxy with TLS.
+- **Scaling later**: if this ever moves to the cloud, use a managed or VPS
+  MongoDB reachable over the internet — a deployed app cannot reach
+  `localhost` on a laptop. `render.yaml` in the repo root documents the
+  (currently parked) Render blueprint for that day.
