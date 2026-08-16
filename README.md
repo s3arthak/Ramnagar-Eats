@@ -2,6 +2,12 @@
 
 Hyperlocal food delivery for one configured service area (default: Mumbai, 5 km radius). A customer web app, a restaurant partner dashboard (with an admin panel), and one Express + MongoDB API with real-time order updates.
 
+## Documentation
+
+- [docs/FEATURES.md](docs/FEATURES.md) — every feature in plain English
+- [docs/STATUS.md](docs/STATUS.md) — what is done vs not, with per-service real-test evidence
+- [docs/BACKLOG.md](docs/BACKLOG.md) — prioritized backlog (pending features, dynamic-config work, service integrations)
+
 ## Apps
 
 | App | URL | Purpose |

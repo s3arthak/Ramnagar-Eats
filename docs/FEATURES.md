@@ -2,6 +2,8 @@
 
 Every feature in the platform, explained in plain English. No code.
 
+> **Project status:** see [STATUS.md](./STATUS.md) (what is done vs not, with per-service test evidence) and [BACKLOG.md](./BACKLOG.md) (everything pending).
+
 ---
 
 ## 1. Authentication (Phone + OTP, no passwords)
