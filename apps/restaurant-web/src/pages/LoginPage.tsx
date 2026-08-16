@@ -122,8 +122,9 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <section className="login-panel">
-        <a className="brand" href="/">
-          RAMNAGAR EATS<span>•</span>
+        <a className="brand" href="/" aria-label="Ramnagar Eats home">
+          <span className="brand-mark" aria-hidden="true">🍛</span>
+          <span className="brand-name">RAMNAGAR <b>EATS</b></span>
         </a>
         <p className="eyebrow">RESTAURANT PARTNER</p>
         <h1>
@@ -141,7 +142,7 @@ export function LoginPage() {
           {stage === "choose" && (
             <div className="auth-form-inner">
               <div className="oauth-options">
-                <button className="oauth-option" onClick={() => setStage("email")}>
+                <button className="oauth-option oauth-option--email" onClick={() => setStage("email")}>
                   <Mail size={18} /> Continue with Email
                 </button>
                 <button className="oauth-option oauth-option--google" onClick={startGoogle}>

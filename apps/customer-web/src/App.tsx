@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import "./App-extra.css";
+import "./components/ui/ui.css";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { LocationProvider, useLocation } from "./context/LocationContext";

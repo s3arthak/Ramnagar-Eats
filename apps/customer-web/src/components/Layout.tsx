@@ -22,9 +22,9 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
   return (
     <div className="app">
       <header className="topbar sticky-top">
-        <Link className="brand" to="/">
-          RAMNAGAR <b>EATS</b>
-          <span>•</span>
+        <Link className="brand" to="/" aria-label="Ramnagar Eats home">
+          <span className="brand-mark" aria-hidden="true">🍛</span>
+          <span className="brand-name">RAMNAGAR <b>EATS</b></span>
         </Link>
         <button className="location-button" onClick={onOpenLocation} aria-label="Change delivery location">
           <MapPin size={17} />

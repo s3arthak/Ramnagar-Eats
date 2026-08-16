@@ -344,8 +344,16 @@ try {
   async function noOverflow(page, url, name) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(1600);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    ok(`mobile ${name} has no horizontal overflow`, overflow <= 1, `overflow px: ${overflow}`);
+    const { overflow, culprits } = await page.evaluate(() => {
+      const vw = window.innerWidth;
+      const culprits = [];
+      for (const el of document.querySelectorAll("*")) {
+        const r = el.getBoundingClientRect();
+        if (r.right > vw + 1 && culprits.length < 6) culprits.push(`${el.tagName}.${String(el.className).split(" ")[0]}(r:${Math.round(r.right)},l:${Math.round(r.left)},w:${Math.round(r.width)})`);
+      }
+      return { overflow: document.documentElement.scrollWidth - vw, culprits };
+    });
+    ok(`mobile ${name} has no horizontal overflow`, overflow <= 1, `overflow px: ${overflow}${culprits.length ? ` — ${culprits.join(", ")}` : ""}`);
   }
   await customer.setViewportSize({ width: 390, height: 844 });
   await noOverflow(customer, `${CUSTOMER_URL}/`, "home");

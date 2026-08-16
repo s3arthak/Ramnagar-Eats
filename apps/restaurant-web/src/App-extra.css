@@ -70,7 +70,7 @@ aside nav a:hover{color:#fff}
 .food-type label.selected.nonveg{border-color:#d9483a;background:#fdeeea}
 .food-type input{width:auto}
 .field-hint{grid-column:1/-1;font-size:12px;color:var(--muted);margin:0}
-.item-name em.rec{color:var(--brand);font-weight:800}
+.item-name em.rec{color:var(--brand-600);font-weight:800}
 .item-name em.sold{color:#b3402f}
 .empty-inline{color:#657a72;font-size:13px;padding:12px 0}
 .admin-tabs{display:flex;gap:6px;margin:26px 0 22px;background:#eef3ec;border-radius:11px;padding:4px;width:max-content}
@@ -83,9 +83,18 @@ aside nav a:hover{color:#fff}
 .service-area-form label{font-size:11px;font-weight:900;display:grid;gap:6px}
 .service-area-form input{border:1px solid #c9d7cb;border-radius:8px;padding:10px;font:inherit}
 .link-button{border:0;background:none;padding:0;font:inherit;font-weight:800;color:#173b35;text-decoration:underline;cursor:pointer}
+.brand{display:inline-flex;align-items:center;gap:10px;padding:0}
+.brand .brand-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#d7f960,#ffd166);display:grid;place-items:center;font-size:16px;box-shadow:0 4px 12px #0f312a26;flex:none;color:initial}
+.brand .brand-name{color:#fff;font-size:18px;letter-spacing:-.8px;white-space:nowrap}
+.brand .brand-name b{color:#d7f960;font-weight:900}
+.brand:hover .brand-mark{transform:rotate(-6deg) scale(1.06)}
+.brand .brand-mark{transition:transform .2s ease}
 .oauth-options{display:grid;gap:12px;margin:20px 0 4px}
-.oauth-option{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:1.5px solid #d5e0d6;background:#fff;color:#173b35;border-radius:10px;padding:13px 16px;font:inherit;font-weight:800;cursor:pointer}
-.oauth-option:hover{border-color:#9db8a6}
+.oauth-option{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:1.5px solid #d5e0d6;background:#fff;color:#173b35;border-radius:10px;padding:13px 16px;font:inherit;font-weight:800;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.oauth-option:hover{border-color:#9db8a6;transform:translateY(-1px);box-shadow:0 8px 18px #0f312a14}
+.oauth-option--email{background:linear-gradient(135deg,#173b35,#0c2c27);border-color:transparent;color:#fff}
+.oauth-option--email:hover{border-color:transparent;box-shadow:0 12px 26px #0f312a38}
+.oauth-option--email svg{color:#d7f960}
 @media(max-width:520px){.service-area-form .form-grid{grid-template-columns:1fr}}
 .overlay{position:fixed;inset:0;background:#092a25b8;z-index:20;display:grid;place-items:center;padding:16px}
 .sheet{position:relative;background:#fff;border-radius:16px;padding:26px;width:min(100%,560px);max-height:86vh;overflow:auto;box-shadow:0 24px 80px #0006}

@@ -137,9 +137,9 @@ export function LoginPage() {
           <span className="floaty f6">🍢</span>
         </div>
         <div className="auth-panel-inner">
-          <Link className="brand brand--light" to="/">
-            RAMNAGAR <b>EATS</b>
-            <span>•</span>
+          <Link className="brand brand--light" to="/" aria-label="Ramnagar Eats home">
+            <span className="brand-mark" aria-hidden="true">🍛</span>
+            <span className="brand-name">RAMNAGAR <b>EATS</b></span>
           </Link>
           <p className="eyebrow">WELCOME TO RAMNAGAR EATS</p>
           <h1>
@@ -158,14 +158,14 @@ export function LoginPage() {
       <section className="auth-form">
         {stage === "choose" && (
           <div className="auth-form-card">
-            <p className="eyebrow">WELCOME</p>
-            <h2>Sign in to start ordering</h2>
+            <p className="eyebrow auth-eyebrow">WELCOME</p>
+            <h2 className="auth-title">Sign in to start ordering</h2>
             <p className="auth-copy">Use your email or Google account — your order history and saved addresses will be waiting.</p>
             <div className="oauth-options">
-              <Button type="button" className="oauth-option" onClick={() => setStage("email")}>
+              <Button type="button" className="oauth-option oauth-option--email" onClick={() => setStage("email")}>
                 <Mail size={18} /> Continue with Email
               </Button>
-              <Button type="button" variant="secondary" className="oauth-option" onClick={startGoogle}>
+              <Button type="button" variant="secondary" className="oauth-option oauth-option--google" onClick={startGoogle}>
                 <GoogleIcon /> Continue with Google
               </Button>
             </div>

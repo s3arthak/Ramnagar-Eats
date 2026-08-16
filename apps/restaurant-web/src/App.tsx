@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./App.css";
 import "./App-extra.css";
+import "./components/ui/ui.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { api } from "./lib/api";
