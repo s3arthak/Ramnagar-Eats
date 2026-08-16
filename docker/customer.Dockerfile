@@ -7,6 +7,8 @@ ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 COPY package.json package-lock.json ./
 COPY apps/customer-web/package.json apps/customer-web/package.json
 RUN npm ci --workspace=customer-web
+# ui.css imports the shared design tokens — copy the shared dir too.
+COPY shared shared
 COPY apps/customer-web apps/customer-web
 RUN npm run build --workspace=customer-web
 
