@@ -1,0 +1,56 @@
+# Render Blueprint — Ramnagar Eats API
+#
+# How to deploy:
+#   1. Push this repo to GitHub.
+#   2. In Render: New + -> Blueprint -> pick this repo.
+#   3. Render prompts for the env vars marked "sync: false" below
+#      (MONGODB_URI, JWT_SECRET, CORS_ORIGINS, SMTP/email, Google OAuth...).
+# See docs/DEPLOYMENT.md for the full cutover checklist.
+
+services:
+  - type: web
+    name: ramnagar-eats-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: OTP_PROVIDER
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAPBOX_ACCESS_TOKEN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: BRAND_NAME
+        value: Ramnagar Eats
+      - key: CURRENCY_SYMBOL
+        value: "₹"
+      - key: ORDER_PREFIX
+        value: RE-
+      - key: PHONE_COUNTRY_CODE
+        value: "91"
+      - key: BASE_DELIVERY_FEE
+        value: "20"
+      - key: DELIVERY_FEE_FREE_ABOVE
+        value: "499"
