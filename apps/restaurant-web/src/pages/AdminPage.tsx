@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { inr, timeAgo } from "../lib/format";
 import { STATUS_LABELS, statusTone } from "../lib/order";
+import { useToast } from "../context/ToastContext";
 
 interface Metrics {
   totalOrders: number;
@@ -95,6 +96,7 @@ export function AdminPage() {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [couponForm, setCouponForm] = useState<CouponForm>(EMPTY_COUPON);
   const [notice, setNotice] = useState("");
+  const { push } = useToast();
   const [savingArea, setSavingArea] = useState(false);
   const [savingCoupon, setSavingCoupon] = useState(false);
 
@@ -139,8 +141,10 @@ export function AdminPage() {
     try {
       await api.patch("/admin/service-area", serviceArea);
       setNotice("Delivery area updated — customers see the new radius immediately.");
+      push("📍 Delivery area saved", { body: "Customers are now measured against the new center and radius.", tone: "success" });
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : "Could not update the delivery area");
+      push(caught instanceof Error ? caught.message : "Could not update the delivery area", { tone: "danger" });
     } finally {
       setSavingArea(false);
     }
