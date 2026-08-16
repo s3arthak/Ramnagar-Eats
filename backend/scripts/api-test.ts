@@ -227,9 +227,11 @@ async function main() {
     const existingUser = JSON.parse(decodeURIComponent(googleUrl(existingGoogle.location ?? "").searchParams.get("user") ?? "{}"));
     check("Google sign-in with an existing email links the account", existingGoogle.status === 302 && existingUser.email === "test@customer.test" && googleUrl(existingGoogle.location ?? "").searchParams.get("isNew") === "false");
 
-    // Google sign-in unavailable when not configured (no keys in the test env).
-    const unconfigured = await request(base, "/api/v1/auth/google?app=customer", { redirect: "manual" });
-    check("Google sign-in reports when not configured", unconfigured.status === 503 && unconfigured.body.code === "GOOGLE_NOT_CONFIGURED");
+    // Google sign-in: 503 when the server has no OAuth keys, 302 to accounts.google.com when configured.
+    const googleStart = await request(base, "/api/v1/auth/google?app=customer", { redirect: "manual" });
+    const configured = googleStart.status === 302 && (googleStart.location ?? "").includes("accounts.google.com");
+    const unconfigured = googleStart.status === 503 && googleStart.body.code === "GOOGLE_NOT_CONFIGURED";
+    check("Google sign-in handles configuration state (503 without keys, 302 with keys)", configured || unconfigured, JSON.stringify(googleStart.body));
 
     // Profile updates (Google users add a phone).
     const updatePhone = await request(base, "/api/v1/auth/me", { method: "PATCH", body: JSON.stringify({ phone: "+919888888889" }) }, googleToken);

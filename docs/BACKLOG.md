@@ -10,8 +10,8 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
    - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Deferred by the owner — do not touch until asked.** Needs credentials.
 2. **Sender verification & deliverability (Brevo)**
    - SMTP delivery is live and verified (welcome email reached a Gmail inbox). Remaining: verify a real sender domain in Brevo and set `EMAIL_FROM` to it so emails don't get spam-filtered; confirm order/status emails arrive too.
-3. **Google OAuth app**
-   - Create a Google Cloud OAuth app (web), set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, add the callback URL, and test the full round trip (not just the dev-callback). **Envs are added by the owner.**
+3. **Google OAuth redirect URIs + browser test**
+   - Client ID/secret are set and `/auth/google` redirects correctly. Remaining: add the authorized redirect URI in the Google Cloud console (`http://localhost:5000/api/v1/auth/google/callback` for dev; production callback once a domain exists) and complete a real browser sign-in round trip.
 4. *(resolved — ImageKit CDN is live: upload → CDN delivery → delete verified end-to-end with real keys)*
 
 ## P1 — Correctness & trust
@@ -61,3 +61,4 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 - **Pincode format validation** — 6-digit Indian PIN enforced on the backend (addresses + service area) and in the location sheet UI.
 - **Phone number UX** — bare 10-digit numbers (e.g. `6006949465`) are now auto-normalized to E.164 (`+916006949465`) instead of failing with a generic "Something went wrong"; invalid numbers return a friendly 400. Applied to registration and profile updates.
 - **ImageKit CDN** — real keys set; uploads now go to the CDN. Verified end-to-end: upload via the app's provider, served from `ik.imagekit.io`, delete confirmed.
+- **Google OAuth keys** — client ID/secret set; `/auth/google` verified to redirect to Google with the correct callback for both apps.

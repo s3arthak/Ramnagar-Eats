@@ -46,7 +46,7 @@
 | **Distance / serviceability** | In-house haversine (no external API) | Live curl: center (0 km, serviceable) and Delhi (1146.3 km, rejected) | ✅ Working |
 | **Email** | Console (dev) → Brevo SMTP relay (prod) | **Real send verified**: welcome email delivered to a Gmail inbox via `smtp-relay.brevo.com:587` (STARTTLS + SMTP key auth). Brevo REST API also wired (fake key → real `401`) | ✅ Working |
 | **Images** | Local disk (dev) → ImageKit CDN (prod) | **Real end-to-end verified**: uploaded a test image via the app's provider → served from `ik.imagekit.io` (HTTP 200) → deleted (404 after). Keys authenticated against the real ImageKit API | ✅ Working |
-| **Google OAuth** | Dev-callback (dev) → Google (prod) | Unconfigured server returns clean `503 GOOGLE_NOT_CONFIGURED`; dev-callback round-trip green in walk | ✅ Wired, ⚠️ needs real OAuth app (backlog) |
+| **Google OAuth** | Dev-callback (dev) → Google (prod) | **Live**: `/auth/google` redirects to `accounts.google.com` with the real client ID (verified for both apps); dev-callback round-trip green. Remaining: authorize redirect URIs in the Google Cloud console + a real browser sign-in | ✅ Configured, ⚠️ redirect URIs + browser test pending |
 | **Payments** | COD + Mock (no real gateway) | Order flow with COD/Mock passes; **no real gateway exists** | ⚠️ Backlog: Razorpay/Stripe |
 | **Uploads serving** | API static `/uploads` (dev) | Browser walk uploads + previews; CORP header verified `cross-origin` | ✅ Working |
 | **Security headers** | Helmet | `curl -I` on live API | ✅ Working |
@@ -58,7 +58,7 @@
 
 1. **Sender verification / deliverability** — SMTP delivery works (Brevo accepted and delivered a real test email), but `EMAIL_FROM` uses an unverified `.test` sender; verify a real domain in Brevo and update `EMAIL_FROM` so emails don't land in spam.
 2. *(resolved — ImageKit CDN is live and verified; uploads now go to the CDN)*
-3. **Google sign-in** — flow wired, but no Google Cloud OAuth app exists; server returns `503` until configured.
+3. **Google sign-in browser round-trip** — client ID/secret are set and the redirect to Google works; a real browser login still needs the **Authorized redirect URIs** added in the Google Cloud console (`http://localhost:5000/api/v1/auth/google/callback` for dev, the production callback once a domain exists).
 4. **Real payment gateway** — only Cash-on-Delivery and a mock provider; no online payment (deferred by the owner).
 5. **Multiple service areas / cities** — the platform supports exactly **one** admin-configurable delivery area.
 6. **Pincode ↔ coordinates cross-check** — the pincode format is now validated (6-digit), but it is not yet cross-checked against the map/GPS coordinates (no geocoding service), so any pincode can still be paired with any map point.
