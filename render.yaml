@@ -10,10 +10,11 @@
 services:
   - type: web
     name: ramnagar-eats-api
-    runtime: node
-    rootDir: backend
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
+    runtime: docker
+    # Build context is the repo root — docker/backend.Dockerfile copies
+    # package.json + backend/ from there (monorepo).
+    rootDir: .
+    dockerfilePath: docker/backend.Dockerfile
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
@@ -24,8 +25,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      - key: OTP_PROVIDER
-        sync: false
+      - key: OTP_DELIVERY
+        value: smtp
       - key: EMAIL_FROM
         sync: false
       - key: SMTP_HOST
@@ -38,10 +39,32 @@ services:
         sync: false
       - key: MAPBOX_ACCESS_TOKEN
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: CUSTOMER_WEB_URL
+        sync: false
+      - key: RESTAURANT_WEB_URL
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
+      - key: SERVICE_CENTER_LAT
+        value: "19.076"
+      - key: SERVICE_CENTER_LNG
+        value: "72.8777"
+      - key: SERVICE_RADIUS_KM
+        value: "5"
       - key: BRAND_NAME
         value: Ramnagar Eats
       - key: CURRENCY_SYMBOL
