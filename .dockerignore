@@ -1,0 +1,29 @@
+# Dependencies (rebuilt inside images)
+node_modules
+**/node_modules
+
+# Build output (rebuilt inside images)
+dist
+**/dist
+
+# Local data, dev uploads, logs
+data
+/backend/uploads
+*.log
+
+# Git / editor
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Environment files — never baked into images
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# CI / docs
+.github
+docs

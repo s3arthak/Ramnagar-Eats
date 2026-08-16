@@ -28,3 +28,38 @@ jobs:
 
       - name: Run API test suite (in-memory MongoDB)
         run: npm run test:api --workspace=backend
+
+  docker:
+    name: Production Docker stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and boot the production stack
+        run: docker compose up --build -d
+        env:
+          JWT_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+
+      - name: Wait for the API to report healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5000/api/v1/health >/dev/null 2>&1; then
+              echo "API healthy after ~$((i * 2))s"
+              break
+            fi
+            sleep 2
+          done
+          curl -sf http://localhost:5000/api/v1/health
+
+      - name: Verify both web apps are served by nginx
+        run: |
+          curl -sf http://localhost:3000/ -o /dev/null && echo "customer app OK"
+          curl -sf http://localhost:3001/ -o /dev/null && echo "restaurant app OK"
+
+      - name: Smoke-test the API
+        run: |
+          curl -sf "http://localhost:5000/api/v1/restaurants?lat=19.076&lng=72.8777" -o /dev/null && echo "API responds"
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v
