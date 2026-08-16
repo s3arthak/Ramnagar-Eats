@@ -29,6 +29,8 @@ export interface Restaurant {
   name: string;
   description: string;
   address: string;
+  phone?: string;
+  location?: { lat: number; lng: number } | null;
   logo?: string;
   coverImage?: string;
   cuisines: string[];
@@ -136,4 +138,25 @@ export interface Place {
   lng: number;
   label: string;
   pincode: string;
+}
+
+export interface RestaurantReview {
+  id: string;
+  rating: number;
+  comment: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface RestaurantReviews {
+  reviews: RestaurantReview[];
+  summary: { average: number; count: number; breakdown: { star: number; count: number }[] };
+}
+
+/** Restaurant → delivery route returned by GET /orders/:id/route. */
+export interface OrderRoute {
+  restaurant: { id: string; name: string; phone?: string; location: { lat: number; lng: number } } | null;
+  delivery: { address: Order["deliveryAddress"]; location: { lat: number; lng: number } | null };
+  route: { distanceMeters: number; durationSeconds: number; polyline: [number, number][] } | null;
+  eta: { at: string; minutes: number | null; distanceKm: number | null } | null;
 }

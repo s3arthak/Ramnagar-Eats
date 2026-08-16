@@ -79,6 +79,27 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
         </div>
       </header>
       <main>{children}</main>
+      <footer className="footer">
+        <div className="footer-grid">
+          <div className="footer-brand">
+            <span className="brand-mark" aria-hidden="true">🍛</span>
+            <strong>RAMNAGAR <b>EATS</b></strong>
+            <p>Local food from independent kitchens, delivered fast to your door.</p>
+          </div>
+          <nav className="footer-links" aria-label="Footer">
+            <Link to="/restaurants">Browse restaurants</Link>
+            <Link to="/orders">Track an order</Link>
+            <Link to="/profile">My profile</Link>
+            <Link to="/addresses">Saved addresses</Link>
+          </nav>
+          <div className="footer-support">
+            <strong>Need help?</strong>
+            <p>Reach out to the restaurant directly from your order page — or check the order status live on the tracking map.</p>
+            <p className="footer-small">Orders are packed with ❤ by local kitchens in your neighbourhood.</p>
+          </div>
+        </div>
+        <p className="footer-bottom">© {new Date().getFullYear()} Ramnagar Eats · Delivering happiness, one meal at a time.</p>
+      </footer>
     </div>
   );
 }

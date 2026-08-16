@@ -14,6 +14,7 @@ import { restaurantAvailability } from "../../utils/availability.js";
 import { validateCoupon } from "../../services/coupon.js";
 import { paymentService } from "../../services/payment.js";
 import { assertTransition, CUSTOMER_CANCELABLE, RESTAURANT_TRANSITIONS } from "../../services/order-status.js";
+import { getRoute, type RouteResult } from "../../services/routing.js";
 import { emitOrder, getIo } from "../../sockets/index.js";
 import { orderDto } from "../../utils/order-dto.js";
 import { serviceability } from "../../utils/geo.js";
@@ -166,7 +167,7 @@ router.post(
     // Transactional email — failures must never fail the order.
     const customer = await User.findById(userId).select("email name");
     if (customer?.email) {
-      void emailService.sendOrderConfirmation(customer.email, { orderNumber, restaurantName: restaurant.name, total }).catch(() => undefined);
+      void emailService.sendOrderConfirmation(customer.email, { orderNumber, restaurantName: restaurant.name, total, orderId: order.id.toString() }).catch(() => undefined);
     }
 
     try {
@@ -204,6 +205,10 @@ router.patch(
     order.status = "CANCELLED";
     order.statusHistory.push({ status: "CANCELLED", at: new Date() });
     await order.save();
+    const canceller = await User.findById(order.customerId).select("email");
+    if (canceller?.email) {
+      void emailService.sendOrderCancelled(canceller.email, { orderNumber: order.orderNumber, orderId: order.id.toString() }).catch(() => undefined);
+    }
     try {
       emitOrder(getIo(), order, "order:updated");
     } catch {
@@ -224,6 +229,50 @@ router.get(
     const feedback =
       request.user!.role === "CUSTOMER" ? await Feedback.findOne({ orderId: order._id }).lean() : null;
     return ok(response, { order: orderDto(order), feedback: feedback ? { id: feedback._id.toString(), rating: feedback.rating, comment: feedback.comment } : null });
+  }),
+);
+
+router.get(
+  "/:orderId/route",
+  authenticate,
+  asyncHandler(async (request: AuthRequest, response) => {
+    const order = await Order.findById(request.params.orderId);
+    if (!order || !(await canReadOrder(request, order))) throw notFound("Order not found", "ORDER_NOT_FOUND");
+
+    const restaurant = await Restaurant.findById(order.restaurantId).select("name location deliveryTimeMax phone");
+    const to =
+      order.deliveryAddress?.latitude != null && order.deliveryAddress?.longitude != null
+        ? { lat: order.deliveryAddress.latitude, lng: order.deliveryAddress.longitude }
+        : null;
+    const from = restaurant?.location?.coordinates?.length === 2 ? { lat: restaurant.location.coordinates[1], lng: restaurant.location.coordinates[0] } : null;
+
+    // Route is immutable for an order — compute once and cache it on the order document.
+    let route: RouteResult | null = (order.route as RouteResult | null) ?? null;
+    if (!route && from && to) {
+      route = await getRoute(from, to);
+      order.set("route", route);
+      await order.save().catch(() => undefined); // best-effort cache; never fail the request
+    }
+
+    // Dynamic ETA: prep time (restaurant target) + route travel time, from placement.
+    const prepMinutes = restaurant?.deliveryTimeMax ?? 30;
+    const etaAt = route
+      ? new Date(order.createdAt.getTime() + prepMinutes * 60_000 + route.durationSeconds * 1000)
+      : (order.estimatedDeliveryAt ?? null);
+    const etaMinutes = etaAt ? Math.max(1, Math.ceil((etaAt.getTime() - Date.now()) / 60_000)) : null;
+
+    return ok(response, {
+      restaurant: restaurant && from ? { id: restaurant.id.toString(), name: restaurant.name, phone: restaurant.phone ?? "", location: from } : null,
+      delivery: { address: order.deliveryAddress, location: to },
+      route,
+      eta: etaAt
+        ? {
+            at: etaAt,
+            minutes: etaMinutes,
+            distanceKm: route ? Math.round((route.distanceMeters / 1000) * 10) / 10 : null,
+          }
+        : null,
+    });
   }),
 );
 

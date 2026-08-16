@@ -35,14 +35,6 @@ const ALLOWED_TYPES: Record<string, string> = {
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 
-const MAGIC_BYTES: Array<{ type: string; prefix: number[] }> = [
-  { type: "image/jpeg", prefix: [0xff, 0xd8, 0xff] },
-  { type: "image/png", prefix: [0x89, 0x50, 0x4e, 0x47] },
-  { type: "image/webp", prefix: [0x52, 0x49, 0x46, 0x46] }, // "RIFF" — refined below
-  { type: "image/gif", prefix: [0x47, 0x49, 0x46, 0x38] }, // "GIF8"
-  { type: "image/avif", prefix: [0x00, 0x00, 0x00] }, // ISO-BMFF box — checked loosely
-];
-
 /**
  * Validate that the buffer is actually the image type it claims to be by
  * sniffing magic bytes. The MIME type from the client is never trusted on its

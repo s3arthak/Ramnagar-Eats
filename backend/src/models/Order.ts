@@ -46,6 +46,18 @@ const orderSchema = new Schema(
     statusHistory: { type: [{ status: { type: String, enum: ORDER_STATUSES }, at: Date }], default: [] },
     idempotencyKey: String,
     estimatedDeliveryAt: Date,
+    /** Cached restaurant → delivery route (road route when configured, geodesic fallback). */
+    route: {
+      type: new Schema(
+        {
+          distanceMeters: Number,
+          durationSeconds: Number,
+          polyline: { type: [[Number]], default: [] },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
   },
   { timestamps: true },
 );

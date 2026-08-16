@@ -45,6 +45,8 @@ aside nav a:hover{color:#fff}
 .order-tile-head strong{font-size:15px}
 .order-tile-time{color:#8a9c93;font-size:12px}
 .order-tile-customer{color:#173b35;font-weight:700;font-size:13px;margin:10px 0 8px}
+.order-tile-call{display:inline-flex;align-items:center;gap:4px;margin-left:8px;color:#ff6b45;font-weight:600;text-decoration:none;font-size:12px;background:#fff0eb;border:1px solid #ffd9cc;padding:2px 8px;border-radius:999px;transition:background .15s ease}
+.order-tile-call:hover{background:#ffe4da}
 .order-tile-items{list-style:none;padding:0;margin:0 0 10px;display:grid;gap:5px}
 .order-tile-items li{display:flex;justify-content:space-between;font-size:13px;color:#40584f}
 .order-tile-items small{color:#8a9c93}

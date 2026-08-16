@@ -11,10 +11,14 @@
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Customer web app (browse, cart, coupons, checkout, orders, tracking, profile, addresses) | ✅ Done | 64/64 browser E2E checks (`scripts/browser-walk.mjs`) |
+| Customer web app (browse, cart, coupons, checkout, orders, tracking, profile, addresses) | ✅ Done | 76/76 browser E2E checks (`scripts/browser-walk.mjs`) |
 | Restaurant partner dashboard (live queue, status flow, menu CRUD, profile, open/close) | ✅ Done | Same browser walk, real-time flow verified |
 | Admin panel (metrics, restaurants, users, orders, service area, coupons) | ✅ Done | Walk: radius edit round-trip; API tests: admin endpoints + coupon CRUD |
-| Backend API (Express + MongoDB, REST + Socket.IO) | ✅ Done | **151/151 API acceptance tests** pass |
+| Backend API (Express + MongoDB, REST + Socket.IO) | ✅ Done | **162/162 API acceptance tests** pass |
+| Live tracking map (restaurant→home route, polyline, dynamic ETA) | ✅ Done | Walk: route map tiles + markers + ETA badge; API: route endpoint (geodesic fallback; Mapbox-ready) |
+| Customer in-app notifications (status-change toasts) | ✅ Done | Walk: tracking page live-updates to DELIVERED; toasts on every status move |
+| Restaurant contact + location + reviews in customer UI | ✅ Done | Walk: call/directions actions, mini-map tiles, reviews section; API: reviews endpoint |
+| Transactional emails (welcome, OTP, confirmation, status, cancelled) | ✅ Done | Real SMTP send verified; status/cancellation emails wired + branded HTML |
 | Auth — email OTP + Google OAuth, role-based (CUSTOMER/RESTAURANT/ADMIN) | ✅ Done | OTP security matrix + role-spoofing tests; Google dev-callback E2E |
 | Server-authoritative pricing & coupons | ✅ Done | Tampering / invalid-coupon tests |
 | Service-area enforcement (radius rule, re-checked at checkout + order) | ✅ Done | Inside / exactly-at / outside radius tests |
@@ -44,7 +48,8 @@
 | **Real-time** | Socket.IO (self-hosted) | Socket auth + `order:new`/`order:updated` events in tests + browser walk | ✅ Working |
 | **Maps / geo** | Leaflet + OpenStreetMap tiles (browser) | Live browser test: 6/6 tiles loaded from `tile.openstreetmap.org` (HTTP 200) | ✅ Working |
 | **Distance / serviceability** | In-house haversine (no external API) | Live curl: center (0 km, serviceable) and Delhi (1146.3 km, rejected) | ✅ Working |
-| **Email** | Console (dev) → Brevo SMTP relay (prod) | **Real send verified**: welcome email delivered to a Gmail inbox via `smtp-relay.brevo.com:587` (STARTTLS + SMTP key auth). Brevo REST API also wired (fake key → real `401`) | ✅ Working |
+| **Email** | Console (dev) → Brevo SMTP relay (prod) | **Real send verified**: welcome email delivered to a Gmail inbox via `smtp-relay.brevo.com:587` (STARTTLS + SMTP key auth). Status + cancellation emails wired with branded HTML; dev OTP printed to the server log | ✅ Working |
+| **Route / ETA** | Mapbox Directions (token) → geodesic fallback | Live API: polyline + distance + dynamic ETA; walk: route map renders; Mapbox token optional (road routes) | ✅ Working (fallback) / ⚠️ road routes need token |
 | **Images** | Local disk (dev) → ImageKit CDN (prod) | **Real end-to-end verified**: uploaded a test image via the app's provider → served from `ik.imagekit.io` (HTTP 200) → deleted (404 after). Keys authenticated against the real ImageKit API | ✅ Working |
 | **Google OAuth** | Dev-callback (dev) → Google (prod) | **Live**: `/auth/google` redirects to `accounts.google.com` with the real client ID (verified for both apps); dev-callback round-trip green. Remaining: authorize redirect URIs in the Google Cloud console + a real browser sign-in | ✅ Configured, ⚠️ redirect URIs + browser test pending |
 | **Payments** | COD + Mock (no real gateway) | Order flow with COD/Mock passes; **no real gateway exists** | ⚠️ Backlog: Razorpay/Stripe |
@@ -81,7 +86,6 @@
 
 ### Hardcoded (should become configurable → see BACKLOG)
 
-- Homepage hero copy + "30 min delivery" chip
-- Phone placeholder text (bare 10-digit format now, country code config-driven)
+- Homepage hero *headline/subcopy* (the eyebrow brand name and the chips — delivery time + top-rated count — are already dynamic from `/config` and live data)
 - Google Fonts (DM Sans) import
 - Frontend logo markup (deliberately a static brand design element; brand name itself is server-driven via `BRAND_NAME`/`/config` for all copy)

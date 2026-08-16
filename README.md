@@ -7,6 +7,7 @@ Hyperlocal food delivery for one configured service area (default: Mumbai, 5 km 
 - [docs/FEATURES.md](docs/FEATURES.md) — every feature in plain English
 - [docs/STATUS.md](docs/STATUS.md) — what is done vs not, with per-service real-test evidence
 - [docs/BACKLOG.md](docs/BACKLOG.md) — prioritized backlog (pending features, dynamic-config work, service integrations)
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Render + Vercel hosting plan
 
 ## Apps
 
@@ -52,7 +53,7 @@ npm run build
 
 The API test suite covers the full customer flow (OTP register → login → browse → menu → coupon → order), every documented failure case (out-of-stock, invalid/expired coupon, wrong address, closed restaurant, price tampering, duplicate submissions, cross-restaurant cart), restaurant status transitions, owner authorization boundaries, admin operations, real-time Socket.IO events, the complete OTP security matrix (wrong/expired/reused codes, attempt lockout, resend cooldown, duplicate phones, role spoofing), and the service-area rules (inside/exactly-at/outside radius, admin radius changes taking effect immediately, out-of-area orders rejected server-side).
 
-With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end, including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads):
+The API test suite currently passes **162/162** checks. With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end — including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads), the live tracking map with route + dynamic ETA, and the Google OAuth round-trip (currently **76/76** checks):
 
 ```bash
 node scripts/browser-walk.mjs   # needs Edge, MongoDB, and the three apps running
@@ -60,10 +61,10 @@ node scripts/browser-walk.mjs   # needs Edge, MongoDB, and the three apps runnin
 
 ## Feature summary
 
-- **Customer**: homepage with search + cuisine categories + restaurant sections, filterable/sortable restaurant listing (`/restaurants`), restaurant detail with menu search, sticky categories and item customizations (`/restaurant/:id`), **email + Google OTP auth** (no passwords; OTP with expiry, resend timer, attempt lockout and reuse prevention), service-area validation with map + pincode, cart with single-restaurant rule, free-delivery progress and coupon rack (drawer + `/cart`), address book with city/state/locality (`/addresses`), checkout with backend-validated coupons, out-of-area address blocking and COD/mock payment (`/checkout`), order confirmation (`/order/:id/success`), order history + real-time tracking timeline (`/orders`, `/orders/:id`), reorder, profile (`/profile`).
-- **Restaurant**: dashboard with live stats, order queue with accept/reject/prepare/ready/out-for-delivery/delivered actions and real-time new-order toasts (Socket.IO), open/close toggle, full menu management (categories + items, availability, pricing, veg/popular flags), profile management.
+- **Customer**: homepage with search + cuisine categories + restaurant sections, filterable/sortable restaurant listing (`/restaurants`), restaurant detail with menu search, sticky categories and item customizations (`/restaurant/:id`), **email + Google OTP auth** (no passwords; OTP with expiry, resend timer, attempt lockout and reuse prevention), service-area validation with map + pincode, cart with single-restaurant rule, free-delivery progress and coupon rack (drawer + `/cart`), address book with city/state/locality (`/addresses`), checkout with backend-validated coupons, out-of-area address blocking and COD/mock payment (`/checkout`), order confirmation (`/order/:id/success`), order history + real-time tracking timeline (`/orders`, `/orders/:id`) with a **live route map** (restaurant 🍴 → home 🏠 markers, road-route polyline, auto-fit bounds, dynamic ETA countdown), **in-app status-change toasts**, and **Call restaurant / Get directions** actions on the tracking page, reorder, profile (`/profile`). Restaurant pages show the **phone (Call button), live location mini-map + directions link, and a dynamic reviews section** (star breakdown + recent reviews) — nothing hardcoded.
+- **Restaurant**: dashboard with live stats, order queue with accept/reject/prepare/ready/out-for-delivery/delivered actions and real-time new-order toasts (Socket.IO), **customer phone with a tap-to-call link on every order tile**, open/close toggle, full menu management (categories + items, availability, pricing, veg/popular flags), profile management.
 - **Admin** (in the restaurant app at `/admin`): platform metrics, restaurant approve/disable, users, all orders.
-- **Backend**: role-based auth (`CUSTOMER` / `RESTAURANT` / `ADMIN`) via OTP only, hashed OTP storage (scrypt), consistent `{ success, message, code }` error responses, server-authoritative order pricing (menu prices and coupons are re-verified from the DB at order time — client totals are never trusted), order item snapshots, idempotent order creation, replaceable payment layer (`CODPayment` / `MockPayment`), transactional `EmailService` abstraction (console provider in dev, wired to welcome + order confirmation emails), admin-controlled service area (lat/lng/address/pincode/radius in MongoDB — serviceability is re-checked at checkout and enforced at order creation, so the radius rule cannot be bypassed via the API).
+- **Backend**: role-based auth (`CUSTOMER` / `RESTAURANT` / `ADMIN`) via OTP only, hashed OTP storage (scrypt), consistent `{ success, message, code }` error responses, server-authoritative order pricing (menu prices and coupons are re-verified from the DB at order time — client totals are never trusted), order item snapshots, idempotent order creation, replaceable payment layer (`CODPayment` / `MockPayment`), **routing service** (`GET /orders/:id/route` — Mapbox Directions when `MAPBOX_ACCESS_TOKEN` is set, geodesic fallback otherwise; route cached per order, ETA dynamic), public **reviews endpoint** (`GET /restaurants/:id/reviews` with star breakdown), transactional `EmailService` abstraction (console provider in dev; Brevo SMTP live — wired to welcome, OTP, **order confirmation, order status, and cancellation** emails with branded HTML templates; dev OTP codes are printed to the server log), admin-controlled service area (lat/lng/address/pincode/radius in MongoDB — serviceability is re-checked at checkout and enforced at order creation, so the radius rule cannot be bypassed via the API).
 
 ## API overview
 
@@ -73,7 +74,8 @@ POST /api/v1/auth/logout · GET /api/v1/auth/me
 GET  /api/v1/restaurants · GET /api/v1/restaurants/:id · GET /api/v1/restaurants/:id/menu
 GET  /api/v1/categories · GET /api/v1/locations/serviceability · GET /api/v1/config
 POST /api/v1/coupons/validate
-POST /api/v1/orders · GET /api/v1/orders · GET /api/v1/orders/:id · PATCH /api/v1/orders/:id/cancel
+POST /api/v1/orders · GET /api/v1/orders · GET /api/v1/orders/:id · GET /api/v1/orders/:id/route · PATCH /api/v1/orders/:id/cancel
+GET  /api/v1/restaurants/:id/reviews
 GET  /api/v1/users/addresses · POST | PATCH | DELETE /api/v1/users/addresses[/:id]
 GET  /api/v1/restaurant/orders · PATCH /api/v1/restaurant/orders/:id/status · PATCH /api/v1/restaurant/status · GET /api/v1/restaurant/dashboard
 GET  /api/v1/restaurants/me ... (owner profile, categories, menu items)

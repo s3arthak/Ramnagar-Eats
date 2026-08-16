@@ -95,8 +95,8 @@ export function OrderSuccessPage() {
           <PriceBreakdown subtotal={order.subtotal} deliveryFee={order.deliveryFee} discount={order.discount} total={order.total} />
           {order.couponCode && <p className="coupon-applied coupon-applied--static">🏷 Coupon {order.couponCode} applied</p>}
           <div className="success-actions">
-            <Link className="filter" to="/orders">
-              Track my orders
+            <Link className="confirm" to={`/orders/${order.id}`}>
+              Track order with live map
             </Link>
             <Link className="filter" to="/">
               Back to home

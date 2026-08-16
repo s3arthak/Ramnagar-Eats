@@ -264,6 +264,8 @@ async function main() {
   {
     const list = await request(base, "/api/v1/restaurants?lat=19.076&lng=72.8777&limit=50");
     check("list returns restaurants from DB", list.status === 200 && list.body.restaurants.length >= 10, `got ${list.body.restaurants?.length}`);
+    const firstRestaurant = list.body.restaurants[0];
+    check("restaurant DTO exposes phone + location", Boolean(firstRestaurant?.phone) && firstRestaurant?.location?.lat != null && firstRestaurant?.location?.lng != null, JSON.stringify(firstRestaurant ?? null));
     check("every restaurant has display fields", list.body.restaurants.every((r: any) => r.name && r.rating !== undefined && r.deliveryTimeMin && r.priceForTwo && r.cuisines.length));
     check("distance computed for nearby query", list.body.restaurants.every((r: any) => r.distanceKm !== undefined));
 
@@ -307,6 +309,9 @@ async function main() {
     const id = list.body.restaurants[0].id;
     const detail = await request(base, `/api/v1/restaurants/${id}`);
     check("restaurant detail loads dynamically", detail.status === 200 && detail.body.restaurant.id === id);
+
+    const reviews = await request(base, `/api/v1/restaurants/${id}/reviews`);
+    check("reviews endpoint returns summary + list", reviews.status === 200 && typeof reviews.body.summary?.count === "number" && Array.isArray(reviews.body.reviews) && reviews.body.summary.breakdown.length === 5, JSON.stringify(reviews.body));
 
     const menu = await request(base, `/api/v1/restaurants/${id}/menu`);
     check("menu loads dynamically with categories", menu.status === 200 && menu.body.categories.length >= 2 && menu.body.categories.every((c: any) => Array.isArray(c.items)));
@@ -569,6 +574,13 @@ async function main() {
     const orderDetail = await request(base, `/api/v1/orders/${orderId}`, {}, token);
     check("order detail loads", orderDetail.status === 200 && orderDetail.body.order.orderNumber === order.body.order.orderNumber);
 
+    // Route + dynamic ETA (geodesic fallback — tests run without a Mapbox token).
+    const route = await request(base, `/api/v1/orders/${orderId}/route`, {}, token);
+    check("route returns restaurant + delivery points", route.status === 200 && route.body.restaurant?.location?.lat != null && route.body.delivery?.location?.lat != null, JSON.stringify(route.body));
+    check("route returns a polyline between both points", route.body.route && route.body.route.polyline.length >= 2 && typeof route.body.eta?.minutes === "number", JSON.stringify(route.body.route ?? null));
+    check("route ETA is dynamic and finite", route.body.eta?.minutes >= 1 && typeof route.body.eta.distanceKm === "number");
+    check("route exposes the restaurant phone for the call button", typeof route.body.restaurant?.phone === "string");
+
     const otherUserDetail = await request(base, `/api/v1/orders/${orderId}`, {}, other.body.token);
     check("another customer cannot read this order", otherUserDetail.status === 404);
 
@@ -755,6 +767,7 @@ async function main() {
 
     const ownerOrders = await request(base, "/api/v1/restaurant/orders", {}, ownerToken);
     check("restaurant sees its orders", ownerOrders.body.orders.some((o: any) => o.id === orderId));
+    check("restaurant orders expose customer name + phone for calling", ownerOrders.body.orders.some((o: any) => o.id === orderId && typeof o.customerName === "string" && typeof o.customerPhone === "string"));
 
     const transitions = ["CONFIRMED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
     let ok = true;
@@ -784,6 +797,10 @@ async function main() {
     const ratingBefore = (await request(base, "/api/v1/restaurants?limit=50")).body.restaurants.find((r: any) => r.id === biryani.id)?.rating;
     const feedback = await request(base, `/api/v1/orders/${orderId}/feedback`, { method: "POST", body: JSON.stringify({ rating: 5, comment: "Great biryani!" }) }, customer.body.token);
     check("feedback accepted after delivery", feedback.status === 201 && feedback.body.feedback.rating === 5);
+
+    // The same feedback must surface on the public restaurant page (dynamic reviews).
+    const biryaniReviews = await request(base, `/api/v1/restaurants/${biryani.id}/reviews`);
+    check("restaurant reviews reflect submitted feedback", biryaniReviews.body.summary.count >= 1 && biryaniReviews.body.reviews.some((review: any) => review.comment === "Great biryani!"), JSON.stringify(biryaniReviews.body));
     const duplicate = await request(base, `/api/v1/orders/${orderId}/feedback`, { method: "POST", body: JSON.stringify({ rating: 1 }) }, customer.body.token);
     check("duplicate feedback rejected", duplicate.status === 409 && duplicate.body.code === "FEEDBACK_ALREADY_SUBMITTED");
     const ratingAfter = (await request(base, "/api/v1/restaurants?limit=50")).body.restaurants.find((r: any) => r.id === biryani.id)?.rating;

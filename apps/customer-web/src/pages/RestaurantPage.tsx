@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Clock3, MapPin, Search, ShoppingBag, Wallet } from "lucide-react";
+import L from "leaflet";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { ArrowLeft, Clock3, MapPin, Navigation, Phone, Search, ShoppingBag, Wallet } from "lucide-react";
 import { api } from "../lib/api";
-import type { MenuCategory, Restaurant } from "../lib/types";
+import type { MenuCategory, Restaurant, RestaurantReviews } from "../lib/types";
 import { useCart } from "../context/CartContext";
 import { useLocation } from "../context/LocationContext";
-import { deliveryTime, distanceKm, inr } from "../lib/format";
+import { deliveryTime, distanceKm, inr, timeAgo } from "../lib/format";
 import { MenuItemCard } from "../components/ui/MenuItemCard";
 import { Rating, VegBadge } from "../components/ui/Badges";
 import { Spinner } from "../components/ui/Skeleton";
 import { ErrorState } from "../components/ui/StateViews";
+
+/** Emoji map marker — consistent with the tracking route map. */
+function emojiIcon(emoji: string) {
+  return L.divIcon({
+    html: `<span style="font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">${emoji}</span>`,
+    className: "",
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
 
 /** Veg / Non-Veg / All filter tabs — filtering is dynamic over the DB menu. */
 type FoodFilter = "ALL" | "VEG" | "NON_VEG";
@@ -24,6 +36,7 @@ export function RestaurantPage() {
   const { place } = useLocation();
   const { cart, addItem, changeQuantity, itemCount, subtotal, setDrawerOpen } = useCart();
   const [data, setData] = useState<MenuResponse | null>(null);
+  const [reviews, setReviews] = useState<RestaurantReviews | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -38,6 +51,10 @@ export function RestaurantPage() {
       const suffix = place ? `?lat=${place.lat}&lng=${place.lng}` : "";
       const menu = await api.get<MenuResponse>(`/restaurants/${id}/menu${suffix}`);
       setData(menu);
+      api
+        .get<RestaurantReviews>(`/restaurants/${id}/reviews`)
+        .then(setReviews)
+        .catch(() => setReviews(null));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load this restaurant");
     } finally {
@@ -161,6 +178,41 @@ export function RestaurantPage() {
         )}
       </section>
 
+      {(restaurant.phone || restaurant.location) && (
+        <section className="restaurant-info" aria-label="Restaurant contact">
+          {restaurant.phone && (
+            <a className="restaurant-action" href={`tel:${restaurant.phone}`}>
+              <Phone size={16} /> Call
+            </a>
+          )}
+          {restaurant.location && (
+            <a
+              className="restaurant-action"
+              href={`https://www.google.com/maps/dir/?api=1&destination=${restaurant.location.lat},${restaurant.location.lng}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Navigation size={16} /> Get directions
+            </a>
+          )}
+          {restaurant.phone && <span className="restaurant-phone">{restaurant.phone}</span>}
+        </section>
+      )}
+
+      {restaurant.location && (
+        <section className="restaurant-map-card">
+          <div className="restaurant-map">
+            <MapContainer center={[restaurant.location.lat, restaurant.location.lng]} zoom={15} scrollWheelZoom={false}>
+              <TileLayer attribution='© OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={[restaurant.location.lat, restaurant.location.lng]} icon={emojiIcon("🍴")} />
+            </MapContainer>
+          </div>
+          <p className="restaurant-map-caption">
+            <MapPin size={13} /> {restaurant.address || restaurant.name}
+          </p>
+        </section>
+      )}
+
       {closed && (
         <div className="notice notice--closed" role="status">
           {availability.status === "OPENING_SOON" ? `Opening soon${availability.opensAt ? ` at ${availability.opensAt}` : ""}. You can browse the menu now.` : availability.status === "NOT_ACCEPTING" ? "This restaurant is not accepting orders right now. You can still browse the menu." : "This restaurant is currently closed. You can browse the menu, but orders can't be placed right now."}
@@ -252,6 +304,47 @@ export function RestaurantPage() {
         )}
       </div>
       {anyFilteredOut && <p className="empty-inline">Some dishes are hidden by your filters.</p>}
+
+      <section className="reviews-section">
+        <div className="reviews-head">
+          <h2>Ratings &amp; reviews</h2>
+          {reviews && reviews.summary.count > 0 && <Rating value={reviews.summary.average} count={reviews.summary.count} />}
+        </div>
+        {!reviews ? (
+          <Spinner label="Loading reviews…" />
+        ) : reviews.summary.count === 0 ? (
+          <p className="notice notice--muted">No reviews yet — be the first to review after your order is delivered.</p>
+        ) : (
+          <>
+            <div className="reviews-breakdown" aria-label="Rating breakdown">
+              {reviews.summary.breakdown.map(({ star, count }) => (
+                <div key={star} className="review-bar-row">
+                  <span className="review-bar-star">{star}★</span>
+                  <div className="review-bar">
+                    <div className="review-bar-fill" style={{ width: `${reviews.summary.count ? (count / reviews.summary.count) * 100 : 0}%` }} />
+                  </div>
+                  <span className="review-bar-count">{count}</span>
+                </div>
+              ))}
+            </div>
+            <ul className="reviews-list">
+              {reviews.reviews.map((review) => (
+                <li key={review.id} className="review-item">
+                  <div className="review-item-head">
+                    <b>{review.name}</b>
+                    <span className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                      {"★".repeat(review.rating)}
+                      <span className="dim">{"★".repeat(5 - review.rating)}</span>
+                    </span>
+                    <small>{timeAgo(review.createdAt)}</small>
+                  </div>
+                  {review.comment && <p className="review-comment">{review.comment}</p>}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       {itemCount > 0 && (
         <div className="cart-bar" role="region" aria-label="Cart summary">

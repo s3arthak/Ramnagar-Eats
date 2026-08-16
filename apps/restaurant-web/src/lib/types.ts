@@ -57,6 +57,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   customerName: string;
+  customerPhone?: string;
   items: { itemId: string; name: string; price: number; quantity: number; customizations: { name: string; optionName: string; price: number }[] }[];
   deliveryAddress: { label: string; formattedAddress: string; pincode: string };
   subtotal: number;

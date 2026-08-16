@@ -85,6 +85,11 @@ export function OrdersPage() {
                 </div>
                 <p className="order-tile-customer">
                   {order.customerName} · {order.paymentMethod === "COD" ? "COD" : "Paid online"}
+                  {order.customerPhone && (
+                    <a className="order-tile-call" href={`tel:${order.customerPhone}`}>
+                      📞 {order.customerPhone}
+                    </a>
+                  )}
                 </p>
                 <ul className="order-tile-items">
                   {order.items.map((item, index) => (

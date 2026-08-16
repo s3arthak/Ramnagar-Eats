@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LocateFixed, MapPin, Search, Star, Zap } from "lucide-react";
 import { api } from "../lib/api";
+import { useConfig } from "../lib/config";
 import type { CuisineCategory, Restaurant } from "../lib/types";
 import { useLocation } from "../context/LocationContext";
 import { RestaurantCard } from "../components/ui/RestaurantCard";
@@ -14,6 +15,7 @@ interface HomeData {
 
 export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
   const { place } = useLocation();
+  const { brandName } = useConfig();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<CuisineCategory[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -51,12 +53,13 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
 
   const topRated = [...restaurants].sort((a, b) => b.rating - a.rating).slice(0, 8);
   const fast = [...restaurants].sort((a, b) => a.deliveryTimeMin - b.deliveryTimeMin).slice(0, 8);
+  const fastestDelivery = restaurants.length > 0 ? Math.min(...restaurants.map((restaurant) => restaurant.deliveryTimeMin)) : null;
 
   return (
     <>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">RAMNAGAR EATS · FRESH &amp; FAST</p>
+          <p className="eyebrow">{brandName.toUpperCase()} · FRESH &amp; FAST</p>
           <h1>
             Your neighbourhood
             <br />
@@ -75,8 +78,8 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
         </div>
         <div className="hero-art">
           <div className="plate">🍲</div>
-          <span className="chip chip-one">✦ 30 min delivery</span>
-          <span className="chip chip-two">★ Loved locally</span>
+          <span className="chip chip-one">✦ {fastestDelivery ? `~${fastestDelivery} min avg delivery` : "Fast local delivery"}</span>
+          <span className="chip chip-two">★ {topRated.length > 0 ? `${topRated.length} top-rated spots` : "Loved locally"}</span>
         </div>
       </section>
 

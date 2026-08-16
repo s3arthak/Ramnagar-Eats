@@ -1,15 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Bike, Check, ChefHat, MapPin, Package, ShoppingCart, Star, Wallet } from "lucide-react";
+import L from "leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, Wallet } from "lucide-react";
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
-import type { Order, OrderStatus } from "../lib/types";
+import type { Order, OrderRoute } from "../lib/types";
 import { getSocket } from "../lib/socket";
 import { PriceBreakdown } from "../components/cart";
 import { ErrorState } from "../components/ui/StateViews";
 import { Spinner } from "../components/ui/Skeleton";
 import { useToast } from "../context/ToastContext";
+
+/** Toast shown to the customer when the order moves to a new status (in-app notification). */
+const STATUS_NOTIFY: Partial<Record<string, { title: string; body?: string }>> = {
+  CONFIRMED: { title: "✅ Restaurant accepted your order", body: "The kitchen is getting ready for you." },
+  PREPARING: { title: "👨‍🍳 Your food is being prepared" },
+  READY: { title: "📦 Your order is ready" },
+  PICKED_UP: { title: "🛵 Your order is out for delivery" },
+  OUT_FOR_DELIVERY: { title: "🛵 Your rider is on the way" },
+  DELIVERED: { title: "🎉 Order delivered — enjoy!" },
+  CANCELLED: { title: "This order was cancelled" },
+};
 
 /** Icons for each tracking stage — keeps the timeline visual and consistent. */
 const STAGE_ICONS: Record<string, React.ReactNode> = {
@@ -22,23 +35,59 @@ const STAGE_ICONS: Record<string, React.ReactNode> = {
   DELIVERED: <Check size={14} />,
 };
 
-/** Remaining ETA in minutes, computed from the server timestamp so refresh never resets it. */
-function useEtaMinutes(estimatedDeliveryAt?: string, status?: OrderStatus): number | null {
+/** Minutes remaining until `at`, ticking every 30s so the ETA stays live. */
+function useMinutesUntil(at?: string | null): number | null {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!estimatedDeliveryAt || !isActive(status ?? "PLACED")) return;
+    if (!at) return;
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
-  }, [estimatedDeliveryAt, status]);
-  if (!estimatedDeliveryAt) return null;
-  const remaining = Math.ceil((new Date(estimatedDeliveryAt).getTime() - now) / 60_000);
-  return remaining;
+  }, [at]);
+  if (!at) return null;
+  return Math.max(0, Math.ceil((new Date(at).getTime() - now) / 60_000));
+}
+
+/** Emoji map marker — avoids the Leaflet default-icon asset issue in Vite builds. */
+function emojiIcon(emoji: string) {
+  return L.divIcon({
+    html: `<span style="font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">${emoji}</span>`,
+    className: "",
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
+
+function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds(bounds, { padding: [36, 36] });
+  }, [map, bounds]);
+  return null;
+}
+
+/** Clean live map: restaurant → home route polyline with both endpoints visible. */
+function RouteMap({ routeInfo }: { routeInfo: OrderRoute }) {
+  if (!routeInfo.route || !routeInfo.restaurant?.location || !routeInfo.delivery.location) return null;
+  const from = routeInfo.restaurant.location;
+  const to = routeInfo.delivery.location;
+  const bounds = L.latLngBounds([from, to].map((point) => [point.lat, point.lng] as [number, number]));
+  return (
+    <MapContainer center={from} zoom={13} scrollWheelZoom={false}>
+      <TileLayer attribution='© OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <Polyline positions={routeInfo.route.polyline} pathOptions={{ color: "#ff6b45", weight: 4, opacity: 0.9 }} />
+      <Marker position={[from.lat, from.lng]} icon={emojiIcon("🍴")} />
+      <Marker position={[to.lat, to.lng]} icon={emojiIcon("🏠")} />
+      <FitBounds bounds={bounds} />
+    </MapContainer>
+  );
 }
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [feedback, setFeedback] = useState<{ rating: number; comment: string } | null>(null);
+  const [routeInfo, setRouteInfo] = useState<OrderRoute | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -53,6 +102,13 @@ export function OrderDetailPage() {
       setOrder(data.order);
       setFeedback(data.feedback ?? null);
       setError("");
+      // Route + dynamic ETA — the server caches the route, so this stays cheap on polling.
+      setRouteLoading(true);
+      api
+        .get<OrderRoute>(`/orders/${id}/route`)
+        .then(setRouteInfo)
+        .catch(() => setRouteInfo(null))
+        .finally(() => setRouteLoading(false));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load this order");
     } finally {
@@ -64,7 +120,13 @@ export function OrderDetailPage() {
     void load();
     // Live updates via socket; polling remains as a fallback while the order is active.
     const handleUpdate = (payload: { order: Order }) => {
-      if (payload.order.id === id) setOrder(payload.order);
+      if (payload.order.id !== id) return;
+      const previous = order?.status;
+      if (previous && previous !== payload.order.status) {
+        const notice = STATUS_NOTIFY[payload.order.status];
+        if (notice) push(notice.title, { body: notice.body, tone: "success" });
+      }
+      setOrder(payload.order);
     };
     getSocket().on("order:updated", handleUpdate);
     const timer = setInterval(() => {
@@ -77,9 +139,10 @@ export function OrderDetailPage() {
     };
   }, [load, order?.status, id]);
 
-  const etaMinutes = useEtaMinutes(order?.estimatedDeliveryAt, order?.status);
+  const etaAt = routeInfo?.eta?.at ?? order?.estimatedDeliveryAt ?? null;
+  const etaMinutes = useMinutesUntil(etaAt);
   const etaMessage =
-    order && order.estimatedDeliveryAt && isActive(order.status)
+    order && etaAt && isActive(order.status)
       ? etaMinutes !== null && etaMinutes > 0
         ? etaMinutes <= 1
           ? "Arriving in under a minute"
@@ -181,8 +244,54 @@ export function OrderDetailPage() {
         {etaMessage && (
           <p className="timeline-eta" role="status">
             🛵 {etaMessage}
-            <small>Estimated by {formatDateTime(order.estimatedDeliveryAt!)}</small>
+            {etaAt && <small>Estimated by {formatDateTime(etaAt)}</small>}
           </p>
+        )}
+      </section>
+
+      <section className="tracking-map-card">
+        <div className="tracking-map-head">
+          <h2>Delivery route</h2>
+          {etaMessage && (
+            <span className="route-eta-badge" role="status">
+              🛵 {etaMessage}
+            </span>
+          )}
+        </div>
+        {routeLoading && !routeInfo ? (
+          <Spinner label="Loading route…" />
+        ) : routeInfo?.route && routeInfo.restaurant && routeInfo.delivery.location ? (
+          <>
+            <div className="tracking-map">
+              <RouteMap routeInfo={routeInfo} />
+            </div>
+            <div className="route-facts">
+              <span>🍴 {routeInfo.restaurant.name}</span>
+              {routeInfo.eta?.distanceKm != null && <span>📏 {routeInfo.eta.distanceKm} km away</span>}
+              {etaAt && <span>🕐 Arriving by {formatDateTime(etaAt)}</span>}
+              <span>🏠 {order.deliveryAddress.formattedAddress}</span>
+            </div>
+          </>
+        ) : (
+          <p className="notice notice--muted">Route preview unavailable for this order.</p>
+        )}
+        {(routeInfo?.restaurant?.phone || order.deliveryAddress.formattedAddress) && (
+          <div className="order-help-row">
+            {routeInfo?.restaurant?.phone && (
+              <a className="filter order-help-btn" href={`tel:${routeInfo.restaurant.phone}`}>
+                <Phone size={15} /> Call {routeInfo.restaurant.name}
+              </a>
+            )}
+            <a
+              className="filter order-help-btn"
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.deliveryAddress.formattedAddress)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Navigation size={15} /> Get directions
+            </a>
+            <span className="order-help-hint">Need help? Call the restaurant or navigate to your delivery address.</span>
+          </div>
         )}
       </section>
 

@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authenticate, authorize, type AuthRequest } from "../../middleware/auth.js";
+import { Feedback } from "../../models/Feedback.js";
 import { MenuCategory, MenuItem } from "../../models/Menu.js";
 import { Restaurant } from "../../models/Restaurant.js";
+import { User } from "../../models/User.js";
 import { getServiceArea } from "../../services/service-area.js";
 import { restaurantAvailability } from "../../utils/availability.js";
 import { haversineKm } from "../../utils/geo.js";
@@ -31,6 +33,8 @@ const restaurantDto = (restaurant: any, lat?: number, lng?: number) => {
     name: restaurant.name,
     description: restaurant.description,
     address: restaurant.address,
+    phone: restaurant.phone || undefined,
+    location: restaurant.location?.coordinates?.length === 2 ? { lat: restaurant.location.coordinates[1], lng: restaurant.location.coordinates[0] } : undefined,
     logo: restaurant.logo,
     coverImage: restaurant.coverImage,
     cuisines: restaurant.cuisines,
@@ -269,6 +273,46 @@ router.use("/me", ownerRouter);
 
 // ---- Public detail + menu (registered after the owner router) ----
 
+// ---- Public reviews (dynamic feedback per restaurant) ----
+
+router.get(
+  "/:restaurantId/reviews",
+  asyncHandler(async (request, response) => {
+    const restaurant = await Restaurant.findOne({ _id: request.params.restaurantId, isActive: true }).select("_id").lean();
+    if (!restaurant) throw notFound("Restaurant not found");
+
+    const [feedbacks, aggregate] = await Promise.all([
+      Feedback.find({ restaurantId: restaurant._id }).sort({ createdAt: -1 }).limit(20).lean(),
+      Feedback.aggregate([
+        { $match: { restaurantId: restaurant._id } },
+        { $group: { _id: null, avg: { $avg: "$rating" }, total: { $sum: 1 }, stars: { $push: "$rating" } } },
+      ]),
+    ]);
+
+    const userIds = [...new Set(feedbacks.map((entry) => entry.userId.toString()))];
+    const users = await User.find({ _id: { $in: userIds } }).select("name").lean();
+    const nameBy = new Map(users.map((user) => [user._id.toString(), user.name]));
+
+    const reviews = feedbacks.map((entry) => ({
+      id: entry._id.toString(),
+      rating: entry.rating,
+      comment: entry.comment,
+      name: nameBy.get(entry.userId.toString()) ?? "Verified customer",
+      createdAt: entry.createdAt,
+    }));
+
+    const summary = aggregate[0]
+      ? {
+          average: Math.round(aggregate[0].avg * 10) / 10,
+          count: aggregate[0].total,
+          breakdown: [5, 4, 3, 2, 1].map((star) => ({ star, count: aggregate[0].stars.filter((rating: number) => rating === star).length })),
+        }
+      : { average: 0, count: 0, breakdown: [5, 4, 3, 2, 1].map((star) => ({ star, count: 0 })) };
+
+    return ok(response, { reviews, summary });
+  }),
+);
+
 router.get(
   "/:restaurantId",
   asyncHandler(async (request, response) => {
@@ -283,7 +327,7 @@ router.get(
   "/:restaurantId/menu",
   asyncHandler(async (request, response) => {
     const restaurant = await Restaurant.findOne({ _id: request.params.restaurantId, isActive: true })
-      .select("name description cuisines isActive isOpen isAcceptingOrders openingTime closingTime isPureVeg coverImage logo rating ratingCount deliveryTimeMin deliveryTimeMax priceForTwo minOrder offers")
+      .select("name description cuisines phone location isActive isOpen isAcceptingOrders openingTime closingTime isPureVeg coverImage logo rating ratingCount deliveryTimeMin deliveryTimeMax priceForTwo minOrder offers")
       .lean();
     if (!restaurant) throw notFound("Restaurant not found");
     const [categories, items] = await Promise.all([

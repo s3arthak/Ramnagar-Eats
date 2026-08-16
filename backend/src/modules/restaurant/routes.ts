@@ -4,10 +4,11 @@ import { authenticate, authorize, type AuthRequest } from "../../middleware/auth
 import { Order, ORDER_STATUSES, type OrderStatus } from "../../models/Order.js";
 import { Restaurant } from "../../models/Restaurant.js";
 import { User } from "../../models/User.js";
+import { emailService } from "../../services/email.js";
 import { assertTransition, RESTAURANT_TRANSITIONS } from "../../services/order-status.js";
 import { emitOrder, getIo } from "../../sockets/index.js";
 import { orderDto } from "../../utils/order-dto.js";
-import { ApiError, asyncHandler, badRequest, notFound, ok } from "../../utils/errors.js";
+import { asyncHandler, badRequest, notFound, ok } from "../../utils/errors.js";
 
 const router = Router();
 
@@ -26,7 +27,14 @@ router.get(
     const customerIds = [...new Set(orders.map((order) => order.customerId.toString()))];
     const customers = await User.find({ _id: { $in: customerIds } }).select("name phone");
     const nameBy = new Map(customers.map((customer) => [customer._id.toString(), customer.name]));
-    return ok(response, { orders: orders.map((order) => ({ ...orderDto(order), customerName: nameBy.get(order.customerId.toString()) ?? "Customer" })) });
+    const phoneBy = new Map(customers.map((customer) => [customer._id.toString(), customer.phone]));
+    return ok(response, {
+      orders: orders.map((order) => ({
+        ...orderDto(order),
+        customerName: nameBy.get(order.customerId.toString()) ?? "Customer",
+        customerPhone: phoneBy.get(order.customerId.toString()) ?? "",
+      })),
+    });
   }),
 );
 
@@ -45,6 +53,10 @@ router.patch(
     order.status = parsed.data.status as OrderStatus;
     order.statusHistory.push({ status: order.status, at: new Date() });
     await order.save();
+    const customer = await User.findById(order.customerId).select("email");
+    if (customer?.email) {
+      void emailService.sendOrderStatus(customer.email, { orderNumber: order.orderNumber, orderId: order.id.toString(), status: order.status }).catch(() => undefined);
+    }
     try {
       emitOrder(getIo(), order, "order:updated");
     } catch {

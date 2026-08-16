@@ -40,7 +40,12 @@ export async function sendOtpEmail(email: string) {
   await Otp.deleteMany({ email });
   await Otp.create({ email, codeHash: hashPassword(code), attempts: 0, expiresAt: new Date(Date.now() + ttlMs()) });
   await emailService.sendOtpEmail(email, code);
-  if (!isProduction) devCodeStore.record(email, code);
+  if (!isProduction) {
+    devCodeStore.record(email, code);
+    // Dev convenience: the code is always visible in the log (and via /dev-otp),
+    // even when a real email provider is configured and the address is a fake .test inbox.
+    console.info(`[dev-otp] ${email}: ${code}`);
+  }
 }
 
 export type OtpVerifyResult = "OK" | "EXPIRED" | "TOO_MANY_ATTEMPTS" | "INVALID";

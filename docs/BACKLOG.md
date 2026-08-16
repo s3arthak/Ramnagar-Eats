@@ -10,8 +10,7 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
    - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Deferred by the owner — do not touch until asked.** Needs credentials.
 2. **Sender verification & deliverability (Brevo)**
    - SMTP delivery is live and verified (welcome email reached a Gmail inbox). Remaining: verify a real sender domain in Brevo and set `EMAIL_FROM` to it so emails don't get spam-filtered; confirm order/status emails arrive too.
-3. **Google OAuth redirect URIs + browser test**
-   - Client ID/secret are set and `/auth/google` redirects correctly. Remaining: add the authorized redirect URI in the Google Cloud console (`http://localhost:5000/api/v1/auth/google/callback` for dev; production callback once a domain exists) and complete a real browser sign-in round trip.
+3. *(resolved — the Google redirect URI was added to the console and the full callback round-trip is verified for both apps: start redirect, dev-callback session handoff, real exchange against Google)*
 4. *(resolved — ImageKit CDN is live: upload → CDN delivery → delete verified end-to-end with real keys)*
 
 ## P1 — Correctness & trust
@@ -24,17 +23,17 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 ## P2 — Product gaps
 
 7. **Multiple service areas / cities** — the platform is single-area by design; model multiple areas and pick per-user, then generalize the seed and the admin UI.
-8. **Branded email templates** — only the OTP email has HTML; make consistent branded templates (welcome, confirmation, status, cancelled).
+8. *(resolved — all transactional emails now use the same branded HTML template: welcome, OTP, order confirmation, order status, and cancellation)*
 9. **Search improvements** — text search is simple substring matching; add ranking (relevance, rating, distance) and typo tolerance.
 10. **Restaurant analytics** — dashboard is live stats only; add trends (orders/revenue by day), popular items, and CSV export for admins.
-11. **Push / in-app notifications for customers** — status changes are socket-only while the app is open; no push when closed.
+11. **Push notifications (closed app)** — in-app status-change toasts are done (socket-driven on the tracking page); no push/email-notification when the app is closed. Email status updates exist but are opt-in via the customer's email.
 12. **i18n** — English only; prepare string tables if Hindi/Marathi support is planned.
 13. **Customer support / cancellation self-service** — cancellation exists; add refund tracking UI and a support contact path.
 14. **PWA** — no offline support or installability.
 
 ## P3 — Dynamic configuration (stop hardcoding)
 
-15. **Homepage marketing copy** — hero headline/subcopy and the "30 min delivery" chip are hardcoded; expose as admin-editable content (simple CMS or config).
+15. **Homepage hero headline/subcopy** — the eyebrow brand + the delivery-time and top-rated chips are already dynamic (config + live data); the headline sentence itself is still hardcoded; expose as admin-editable content when wanted.
 16. **Phone dialing localization** — bare 10-digit numbers are now auto-normalized via `PHONE_COUNTRY_CODE` (default `91`), but there is no per-locale country-code selection for non-Indian numbers.
 17. **Google Fonts** — self-host DM Sans to remove the runtime dependency.
 
@@ -49,6 +48,13 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 ---
 
 ## Recently completed (moved out of the backlog)
+
+- **Google OAuth redirect URI + round-trip** — the callback URI was added to the Google Cloud console and the full flow verified for the customer and restaurant apps (start redirect → dev-callback session → correct role; real exchange against Google rejects bogus codes with 401).
+- **Branded transactional emails** — all flows (welcome, OTP, confirmation, status, cancelled) share one branded HTML template; status and cancellation emails are now actually wired to the order/status/cancel endpoints.
+- **Dev OTP visibility** — in development the generated OTP code is printed to the server log (and shown in the login UIs) even when a real email provider is active, so demo accounts can always sign in.
+- **Customer in-app notifications** — status-change toasts (e.g. "✅ Restaurant accepted your order") fire live on the tracking page via Socket.IO.
+- **Restaurant contact in customer UI** — phone (tap-to-call), live location mini-map + directions link, and a dynamic reviews section (star breakdown + recent reviews) on the restaurant page; customer phone with tap-to-call on restaurant order tiles.
+- **Footer** — brand + quick links + support text across the customer app.
 
 - **Admin coupon management** — full CRUD API (`/admin/coupons`) + admin panel "Coupons" tab (create, pause/activate, delete, usage stats). Covered by API tests.
 - **Seed for production** — `seed` service in `docker-compose.yml` (`docker compose up seed`) seeds demo accounts, restaurants, menu, coupons, service area on a fresh deploy.

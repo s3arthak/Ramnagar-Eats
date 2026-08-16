@@ -546,3 +546,107 @@
   .auth-form{padding:40px 22px}
   .restaurant-page{padding:18px 14px 70px}
 }
+
+/* --- Order tracking route map --- */
+.tracking-map-card{margin:26px 0;border:1px solid #e2e9e1;border-radius:14px;background:#fff;padding:18px}
+.tracking-map-card h2{font-size:18px;letter-spacing:-.4px;margin:0}
+.tracking-map-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.route-eta-badge{background:#e6f2de;color:#2d6b3b;font-weight:800;font-size:12px;padding:7px 11px;border-radius:999px;white-space:nowrap}
+.tracking-map{height:300px;border-radius:11px;overflow:hidden;border:1px solid #e2e9e1}
+.tracking-map .leaflet-container{height:100%;width:100%}
+.route-facts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:12px;font-weight:700;color:#536a61}
+.notice--muted{color:#6a7b75}
+@media(max-width:740px){.tracking-map{height:240px}}
+
+/* --- Restaurant contact, map & reviews --- */
+.restaurant-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+.restaurant-action{display:inline-flex;align-items:center;gap:8px;border:1px solid #d5e0d6;background:#fff;border-radius:9px;padding:10px 14px;font:inherit;font-weight:800;font-size:13px;color:var(--ink);text-decoration:none;cursor:pointer}
+.restaurant-action:hover{border-color:#9db8a6;transform:translateY(-1px)}
+.restaurant-phone{margin-left:auto;font-size:13px;font-weight:800;color:#536a61}
+.restaurant-map-card{margin:14px 0 0;border:1px solid #e2e9e1;border-radius:14px;background:#fff;padding:12px}
+.restaurant-map{height:220px;border-radius:10px;overflow:hidden}
+.restaurant-map .leaflet-container{height:100%;width:100%}
+.restaurant-map-caption{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#536a61;margin:10px 2px 2px}
+.reviews-section{margin:30px 0 10px}
+.reviews-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.reviews-head h2{font-size:22px;letter-spacing:-.8px;margin:0}
+.reviews-breakdown{border:1px solid #e2e9e1;border-radius:12px;background:#fff;padding:14px 16px;margin-bottom:16px}
+.review-bar-row{display:grid;grid-template-columns:22px 1fr 24px;align-items:center;gap:10px;font-size:12px;font-weight:800;color:#536a61;padding:3px 0}
+.review-bar{height:8px;border-radius:999px;background:#eef3ec;overflow:hidden}
+.review-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#dafa57,#ff6b45);transition:width .5s ease}
+.reviews-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.review-item{border:1px solid #e2e9e1;border-radius:12px;background:#fff;padding:13px 15px}
+.review-item-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.review-item-head b{font-size:13px}
+.review-item-head small{margin-left:auto;color:#8a9b93;font-size:11px}
+.review-stars{color:#e8a13c;font-size:13px;letter-spacing:2px}
+.review-stars .dim{color:#dde5dd}
+.review-comment{margin:8px 0 0;font-size:13px;color:#3d554c;line-height:1.5}
+@media(max-width:740px){.restaurant-phone{margin-left:0}}
+
+/* --- Filters: mobile sheet + desktop row --- */
+.filters-toggle{display:none;align-items:center;gap:7px;border:1px solid #d5e0d6;background:#fff;border-radius:9px;padding:10px 13px;font:inherit;font-weight:800;font-size:13px;color:var(--ink);cursor:pointer}
+.filters-count{background:var(--orange);color:#fff;border-radius:999px;font-size:10px;padding:2px 6px;margin-left:2px}
+.filters-panel{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+@media(max-width:740px){
+  .filters-toggle{display:flex;margin-right:auto}
+  .filters-panel{display:none;width:100%}
+  .filters-panel.open{display:grid;grid-template-columns:1fr 1fr}
+  .filters-panel .filter-search{grid-column:1/-1}
+  .filters-panel select{width:100%}
+  .filters-panel .veg-toggle{justify-content:center;border:1px solid #d5e0d6;border-radius:9px;padding:10px;background:#fff}
+  .filters-panel .clear-filters{grid-column:1/-1;justify-content:center}
+}
+
+/* --- Motion & polish --- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hero-copy>*{animation:fadeUp .5s ease both}
+.hero-copy>*:nth-child(2){animation-delay:.08s}
+.hero-copy>*:nth-child(3){animation-delay:.16s}
+.hero-copy>*:nth-child(4){animation-delay:.24s}
+.hero-copy>*:nth-child(5){animation-delay:.32s}
+.restaurant-card{transition:transform .18s ease,box-shadow .18s ease}
+.restaurant-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px #0f312a14}
+.food-image{overflow:hidden}
+.food-image img{transition:transform .45s ease}
+.restaurant-card:hover .food-image img{transform:scale(1.05)}
+.restaurant-card .card-menu-btn,.restaurant-card .restaurant-link{transition:background .15s ease}
+button,.filter,.confirm,.hero-cta,.restaurant-action,.filters-toggle{transition:transform .15s ease,box-shadow .15s ease}
+button:active,.filter:active,.confirm:active,.hero-cta:active,.restaurant-action:active{transform:scale(.97)}
+:focus-visible{outline:2px solid #ff6b45;outline-offset:2px}
+.menu-toolbar{position:sticky;top:0;z-index:20;background:rgba(253,251,244,.94);backdrop-filter:blur(8px);padding:10px 0 12px;border-bottom:1px solid #e2e9e1}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* --- Footer --- */
+.footer{background:#17211e;color:#e9efe9;margin-top:48px;padding:40px 24px 20px}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1.2fr;gap:28px;max-width:1120px;margin:0 auto}
+.footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.footer-brand strong{font-size:18px;letter-spacing:.06em;color:#fff}
+.footer-brand b{color:#ff6b45}
+.footer-brand p{color:#aab8b0;font-size:13px;line-height:1.6;margin:4px 0 0}
+.footer-links{display:flex;flex-direction:column;gap:10px}
+.footer-links a{color:#d6e0da;text-decoration:none;font-size:14px;transition:color .15s ease,transform .15s ease}
+.footer-links a:hover{color:#ff6b45;transform:translateX(2px)}
+.footer-support strong{font-size:14px;color:#fff}
+.footer-support p{color:#aab8b0;font-size:13px;line-height:1.6;margin:6px 0 0}
+.footer-small{font-size:12px!important;opacity:.8}
+.footer-bottom{max-width:1120px;margin:26px auto 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);color:#8ea098;font-size:12px;text-align:center}
+@media(max-width:740px){.footer-grid{grid-template-columns:1fr;gap:20px}.footer{padding:32px 20px 16px}}
+
+/* --- Order page: call / directions support row --- */
+.order-help-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;background:#f4f1e6;border:1px solid #e2e9e1;border-radius:14px}
+.order-help-btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600}
+.order-help-hint{font-size:12px;color:#6a7b75;flex-basis:100%}
+@media(max-width:740px){.order-help-hint{flex-basis:auto}}
+
+/* --- Page + card entrance animations --- */
+main>.content,main>.listing{animation:fadeUp .45s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.order-card,.restaurant-card{animation:fadeUp .4s ease both}
+.restaurant-card:nth-child(2){animation-delay:.04s}
+.restaurant-card:nth-child(3){animation-delay:.08s}
+.restaurant-card:nth-child(4){animation-delay:.12s}
+.restaurant-card:nth-child(5){animation-delay:.16s}
+.restaurant-card:nth-child(6){animation-delay:.2s}
+.order-card{animation-delay:0s}
+.order-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(23,33,30,.08)}

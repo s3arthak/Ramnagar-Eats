@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MapPin, Search, X } from "lucide-react";
+import { MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 import { api } from "../lib/api";
 import type { CuisineCategory, Restaurant } from "../lib/types";
 import { useLocation } from "../context/LocationContext";
@@ -52,6 +52,7 @@ export function RestaurantsPage({ onOpenLocation }: { onOpenLocation: () => void
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
   const [cuisines, setCuisines] = useState<CuisineCategory[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const query = searchParams.get("q") ?? "";
   const sort = searchParams.get("sort") ?? "relevance";
@@ -146,55 +147,61 @@ export function RestaurantsPage({ onOpenLocation }: { onOpenLocation: () => void
       </div>
 
       <div className="filters" role="group" aria-label="Filters">
-        <form className="filter-search" onSubmit={(event) => { event.preventDefault(); }}>
-          <Search size={16} />
-          <input value={query} onChange={(event) => setParam("q", event.target.value)} placeholder="Search restaurants, dishes…" aria-label="Search within restaurants" />
-        </form>
-        <select value={sort} onChange={(event) => setParam("sort", event.target.value)} aria-label="Sort by">
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              Sort: {option.label}
-            </option>
-          ))}
-        </select>
-        <select value={cuisineParam} onChange={(event) => setParam("cuisines", event.target.value)} aria-label="Cuisine">
-          <option value="">All cuisines</option>
-          {cuisines.map((category) => (
-            <option key={category.id} value={category.name}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-        <select value={rating} onChange={(event) => setParam("rating", event.target.value)} aria-label="Minimum rating">
-          {RATING_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select value={deliveryTime} onChange={(event) => setParam("deliveryTime", event.target.value)} aria-label="Delivery time">
-          {DELIVERY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select value={price} onChange={(event) => setParam("price", event.target.value)} aria-label="Price range">
-          {PRICE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <label className="veg-toggle" title="Vegetarian only">
-          <input type="checkbox" checked={veg} onChange={(event) => setParam("veg", event.target.checked ? "true" : "")} />
-          Pure veg
-        </label>
-        {activeFilters > 0 && (
-          <button className="filter clear-filters" onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}>
-            <X size={13} /> Clear
-          </button>
-        )}
+        <button className="filters-toggle" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen}>
+          <SlidersHorizontal size={15} /> Filters
+          {activeFilters > 0 && <span className="filters-count">{activeFilters}</span>}
+        </button>
+        <div className={`filters-panel${filtersOpen ? " open" : ""}`}>
+          <form className="filter-search" onSubmit={(event) => { event.preventDefault(); }}>
+            <Search size={16} />
+            <input value={query} onChange={(event) => setParam("q", event.target.value)} placeholder="Search restaurants, dishes…" aria-label="Search within restaurants" />
+          </form>
+          <select value={sort} onChange={(event) => setParam("sort", event.target.value)} aria-label="Sort by">
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                Sort: {option.label}
+              </option>
+            ))}
+          </select>
+          <select value={cuisineParam} onChange={(event) => setParam("cuisines", event.target.value)} aria-label="Cuisine">
+            <option value="">All cuisines</option>
+            {cuisines.map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <select value={rating} onChange={(event) => setParam("rating", event.target.value)} aria-label="Minimum rating">
+            {RATING_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select value={deliveryTime} onChange={(event) => setParam("deliveryTime", event.target.value)} aria-label="Delivery time">
+            {DELIVERY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select value={price} onChange={(event) => setParam("price", event.target.value)} aria-label="Price range">
+            {PRICE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <label className="veg-toggle" title="Vegetarian only">
+            <input type="checkbox" checked={veg} onChange={(event) => setParam("veg", event.target.checked ? "true" : "")} />
+            Pure veg
+          </label>
+          {activeFilters > 0 && (
+            <button className="filter clear-filters" onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}>
+              <X size={13} /> Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
