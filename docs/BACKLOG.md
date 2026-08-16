@@ -6,8 +6,6 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 
 ## P0 — Required before real production traffic
 
-1. **Real payment gateway (Razorpay or Stripe)**
-   - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Deferred by the owner — do not touch until asked.** Needs credentials.
 2. **Sender verification & deliverability (Brevo)**
    - SMTP delivery is live and verified (welcome email reached a Gmail inbox). Remaining: verify a real sender domain in Brevo and set `EMAIL_FROM` to it so emails don't get spam-filtered; confirm order/status emails arrive too.
 3. *(resolved — the Google redirect URI was added to the console and the full callback round-trip is verified for both apps: start redirect, dev-callback session handoff, real exchange against Google)*
