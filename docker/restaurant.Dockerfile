@@ -7,6 +7,9 @@ ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 COPY package.json package-lock.json ./
 COPY apps/restaurant-web/package.json apps/restaurant-web/package.json
 RUN npm ci --workspace=restaurant-web
+# The restaurant app re-exports Button/Input from the customer app and its
+# ui.css imports the customer ui.css — the customer source must be present.
+COPY apps/customer-web apps/customer-web
 COPY apps/restaurant-web apps/restaurant-web
 RUN npm run build --workspace=restaurant-web
 

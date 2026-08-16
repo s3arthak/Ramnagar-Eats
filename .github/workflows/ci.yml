@@ -63,3 +63,5 @@ jobs:
       - name: Tear down the stack
         if: always()
         run: docker compose down -v
+        env:
+          JWT_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
