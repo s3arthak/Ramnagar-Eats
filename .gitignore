@@ -25,7 +25,9 @@ lerna-debug.log*
 
 # Local data (MongoDB files, screenshots, dev uploads)
 data/
-uploads/
+# Dev uploads are stored to <backend>/uploads — only ignore that output dir,
+# never the uploads source module (backend/src/modules/uploads).
+/backend/uploads/
 
 # Editor / OS
 .vscode/*
