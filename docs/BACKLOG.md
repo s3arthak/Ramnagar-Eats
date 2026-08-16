@@ -8,8 +8,8 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 
 1. **Real payment gateway (Razorpay or Stripe)**
    - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Deferred by the owner — do not touch until asked.** Needs credentials.
-2. **Real email delivery (Brevo)**
-   - Provider is written and tested against the real API; set `BREVO_API_KEY`, verify the sender domain, and switch `OTP_DELIVERY` away from `console`. Confirm welcome/order/status emails actually arrive. **Envs are added by the owner.**
+2. **Sender verification & deliverability (Brevo)**
+   - SMTP delivery is live and verified (welcome email reached a Gmail inbox). Remaining: verify a real sender domain in Brevo and set `EMAIL_FROM` to it so emails don't get spam-filtered; confirm order/status emails arrive too.
 3. **Google OAuth app**
    - Create a Google Cloud OAuth app (web), set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, add the callback URL, and test the full round trip (not just the dev-callback). **Envs are added by the owner.**
 4. **ImageKit keys**
@@ -53,7 +53,7 @@ Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](.
 
 - **Admin coupon management** — full CRUD API (`/admin/coupons`) + admin panel "Coupons" tab (create, pause/activate, delete, usage stats). Covered by API tests.
 - **Seed for production** — `seed` service in `docker-compose.yml` (`docker compose up seed`) seeds demo accounts, restaurants, menu, coupons, service area on a fresh deploy.
-- **SMTP inconsistency** — stale `SMTP_HOST`/`SMTP_PORT` removed from `docker-compose.dev.yml` (the email service has Console + Brevo only).
+- **SMTP provider** — NodeMailer SMTP delivery implemented (`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` + `OTP_DELIVERY=smtp`) and **verified with a real send** to a Gmail inbox via Brevo's relay. Stale vars were also removed from `docker-compose.dev.yml`.
 - **OTP expiry copy** — emails now derive the expiry text from the configured `OTP_TTL_MS` instead of hardcoding "5 minutes".
 - **Currency symbol** — config-driven (`CURRENCY_SYMBOL`, default `₹`), consumed by backend emails, `/config`, and both apps' `inr()` formatters.
 - **Order-number prefix** — config-driven (`ORDER_PREFIX`, default `RE-`).

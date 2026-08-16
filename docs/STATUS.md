@@ -44,7 +44,7 @@
 | **Real-time** | Socket.IO (self-hosted) | Socket auth + `order:new`/`order:updated` events in tests + browser walk | ✅ Working |
 | **Maps / geo** | Leaflet + OpenStreetMap tiles (browser) | Live browser test: 6/6 tiles loaded from `tile.openstreetmap.org` (HTTP 200) | ✅ Working |
 | **Distance / serviceability** | In-house haversine (no external API) | Live curl: center (0 km, serviceable) and Delhi (1146.3 km, rejected) | ✅ Working |
-| **Email** | Console (dev) → Brevo (prod) | Brevo wiring tested against the real `api.brevo.com`: fake key → real `401 "Key not found"` | ✅ Wired, ⚠️ needs real key (backlog) |
+| **Email** | Console (dev) → Brevo SMTP relay (prod) | **Real send verified**: welcome email delivered to a Gmail inbox via `smtp-relay.brevo.com:587` (STARTTLS + SMTP key auth). Brevo REST API also wired (fake key → real `401`) | ✅ Working |
 | **Images** | Local disk (dev) → ImageKit (prod) | ImageKit wiring tested against real API: fake keys → real `403 "account cannot be authenticated"` | ✅ Wired, ⚠️ needs real keys (backlog) |
 | **Google OAuth** | Dev-callback (dev) → Google (prod) | Unconfigured server returns clean `503 GOOGLE_NOT_CONFIGURED`; dev-callback round-trip green in walk | ✅ Wired, ⚠️ needs real OAuth app (backlog) |
 | **Payments** | COD + Mock (no real gateway) | Order flow with COD/Mock passes; **no real gateway exists** | ⚠️ Backlog: Razorpay/Stripe |
@@ -56,7 +56,7 @@
 
 ## 3. What is NOT done / not active
 
-1. **Real email delivery** — provider is wired and tested, but no `BREVO_API_KEY` is set; dev uses the console provider.
+1. **Sender verification / deliverability** — SMTP delivery works (Brevo accepted and delivered a real test email), but `EMAIL_FROM` uses an unverified `.test` sender; verify a real domain in Brevo and update `EMAIL_FROM` so emails don't land in spam.
 2. **ImageKit CDN** — provider wired and tested, but no `IMAGEKIT_*` keys; dev stores images on local disk.
 3. **Google sign-in** — flow wired, but no Google Cloud OAuth app exists; server returns `503` until configured.
 4. **Real payment gateway** — only Cash-on-Delivery and a mock provider; no online payment (deferred by the owner).
@@ -76,8 +76,8 @@
 - Currency symbol (`CURRENCY_SYMBOL`), order prefix (`ORDER_PREFIX`), brand name (`BRAND_NAME`), default phone country code (`PHONE_COUNTRY_CODE`) → **env**, consumed by backend copy + both apps via `GET /api/v1/config`
 - OTP TTL / max attempts / resend cooldown → **env** (email copy derives the expiry text from the configured TTL)
 - Rate limits, CORS origins, JWT secret, ports → **env**
+- Email delivery (SMTP relay creds or Brevo API key, `OTP_DELIVERY` mode, sender `EMAIL_FROM`) → **env**
 - Coupons (admin CRUD), restaurants, menu, categories, offers, users, orders → **DB**
-- Sender email (`EMAIL_FROM`) → **env**
 
 ### Hardcoded (should become configurable → see BACKLOG)
 
