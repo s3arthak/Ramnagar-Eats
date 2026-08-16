@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: node:24-alpine
+    working_dir: /workspace
+    command: sh -c "npm install && npm run dev:backend"
+    environment:
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/ramnagar-eats
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    ports: ["5000:5000"]
+    volumes: [".:/workspace", "backend-node-modules:/workspace/node_modules"]
+    depends_on: { mongodb: { condition: service_healthy } }
+  customer-web:
+    image: node:24-alpine
+    working_dir: /workspace
+    command: sh -c "npm install && npm run dev:customer -- --host 0.0.0.0"
+    ports: ["3000:3000"]
+    volumes: [".:/workspace", "customer-node-modules:/workspace/node_modules"]
+  restaurant-web:
+    image: node:24-alpine
+    working_dir: /workspace
+    command: sh -c "npm install && npm run dev:restaurant -- --host 0.0.0.0"
+    ports: ["3001:3001"]
+    volumes: [".:/workspace", "restaurant-node-modules:/workspace/node_modules"]
+volumes:
+  backend-node-modules:
+  customer-node-modules:
+  restaurant-node-modules:
