@@ -3,7 +3,11 @@ import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-route
 import "./App.css";
 import "./App-extra.css";
 import "./components/ui/ui.css";
+import { loadConfig } from "./lib/config";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+
+// Warm the server config (currency, brand) as early as possible.
+void loadConfig();
 import { ToastProvider } from "./context/ToastContext";
 import { api } from "./lib/api";
 import type { RestaurantProfile } from "./lib/types";

@@ -3,18 +3,21 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import { LocateFixed, X } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { useLocation, type Serviceability } from "../context/LocationContext";
+import { useConfig } from "../lib/config";
 import { distanceKm } from "../lib/format";
 
-const DEFAULT_POSITION: [number, number] = [19.076, 72.8777];
+const PINCODE_PATTERN = /^\d{6}$/;
 
 export function LocationSheet({ onClose }: { onClose: () => void }) {
   const { place, setPlace, checkServiceability } = useLocation();
-  const [position, setPosition] = useState<[number, number]>([place?.lat ?? DEFAULT_POSITION[0], place?.lng ?? DEFAULT_POSITION[1]]);
+  const { serviceCenter } = useConfig();
+  const [position, setPosition] = useState<[number, number]>([place?.lat ?? serviceCenter.lat, place?.lng ?? serviceCenter.lng]);
   const [pincode, setPincode] = useState(place?.pincode ?? "");
   const [label, setLabel] = useState(place?.label ?? "Home");
   const [status, setStatus] = useState<Serviceability | null>(null);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
+  const pincodeValid = PINCODE_PATTERN.test(pincode.trim());
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -30,6 +33,10 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
 
   async function confirm() {
     if (!pincode.trim() || !label.trim()) return;
+    if (!pincodeValid) {
+      setError("Enter a valid 6-digit pincode");
+      return;
+    }
     setError("");
     setChecking(true);
     try {
@@ -80,12 +87,17 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
             Sorry, we don't deliver here yet. You're {distanceKm(status.distanceKm)} from our delivery area (max {status.radiusKm} km).
           </p>
         )}
+        {pincode.trim() && !pincodeValid && !error && (
+          <p className="notice notice--error" role="alert">
+            Enter a valid 6-digit pincode.
+          </p>
+        )}
         {error && (
           <p className="notice notice--error" role="alert">
             {error}
           </p>
         )}
-        <button className="confirm" disabled={!pincode.trim() || !label.trim() || checking} onClick={() => void confirm()}>
+        <button className="confirm" disabled={!pincode.trim() || !pincodeValid || !label.trim() || checking} onClick={() => void confirm()}>
           {checking ? "Checking…" : "Confirm delivery location"}
         </button>
       </section>

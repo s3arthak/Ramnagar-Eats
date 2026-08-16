@@ -1,59 +1,62 @@
 # Ramnagar Eats — Backlog
 
-Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](./STATUS.md).
+Everything that is pending, grouped by priority. Companion to [docs/STATUS.md](./STATUS.md) (what is done + service audit).
 
 ---
 
 ## P0 — Required before real production traffic
 
 1. **Real payment gateway (Razorpay or Stripe)**
-   - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Needs credentials.**
+   - Only COD + a mock provider exist today. Add a `PaymentService` implementation for a real gateway (create order → verify webhook → mark PAID), keep COD, and gate the provider by env. **Deferred by the owner — do not touch until asked.** Needs credentials.
 2. **Real email delivery (Brevo)**
-   - Provider is written and tested against the real API; set `BREVO_API_KEY`, verify the sender domain, and switch `OTP_DELIVERY` away from `console`. Confirm welcome/order/status emails actually arrive.
+   - Provider is written and tested against the real API; set `BREVO_API_KEY`, verify the sender domain, and switch `OTP_DELIVERY` away from `console`. Confirm welcome/order/status emails actually arrive. **Envs are added by the owner.**
 3. **Google OAuth app**
-   - Create a Google Cloud OAuth app (web), set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, add the callback URL, and test the full round trip (not just the dev-callback).
+   - Create a Google Cloud OAuth app (web), set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, add the callback URL, and test the full round trip (not just the dev-callback). **Envs are added by the owner.**
 4. **ImageKit keys**
-   - Set `IMAGEKIT_PUBLIC_KEY` / `IMAGEKIT_PRIVATE_KEY` / `IMAGEKIT_URL_ENDPOINT` to move uploads off local disk onto the CDN; verify upload + delete + delivery.
-5. **Seed data for production**
-   - The Docker stack boots empty — add a seed step/service so the first deploy has restaurants, menu, coupons, and the admin account.
-6. **SMTP inconsistency**
-   - `docker-compose.dev.yml` sets `SMTP_HOST`/`SMTP_PORT` but the email service has **no SMTP provider** (only Console + Brevo). Either implement an SMTP provider (NodeMailer) or remove the stale env vars.
+   - Set `IMAGEKIT_PUBLIC_KEY` / `IMAGEKIT_PRIVATE_KEY` / `IMAGEKIT_URL_ENDPOINT` to move uploads off local disk onto the CDN; verify upload + delete + delivery. **Envs are added by the owner.**
 
 ## P1 — Correctness & trust
 
-7. **Pincode ↔ coordinates validation**
-   - Pincode is free text and never checked against the map point. Add a pincode→lat/lng lookup (or a consistency check) so users can't claim an out-of-area pincode with an in-area map pin.
-8. **OTP expiry copy matches config**
-   - Emails say "expires in 5 minutes" but `OTP_TTL_MS` is configurable. Generate the copy from the configured TTL.
-9. **Payment status honesty**
+5. **Pincode ↔ coordinates cross-check**
+   - Pincode format is now validated (6-digit Indian PIN, backend + location sheet), but the pincode is not yet cross-checked against the map/GPS point. Add a pincode→lat/lng lookup (needs a geocoding service or a postal database) so users can't claim an in-area pincode with an out-of-area map pin (or vice versa).
+6. **Payment status honesty**
    - COD is stored as PENDING with no settlement tracking; document the intended settlement flow (manual mark-paid vs gateway) before real COD usage.
 
 ## P2 — Product gaps
 
-10. **Admin coupon management** — coupons are seeded only; add create/edit/deactivate + usage stats in the admin panel.
-11. **Multiple service areas / cities** — the platform is single-area by design; model multiple areas and pick per-user, then generalize the seed and the admin UI.
-12. **Branded email templates** — only the OTP email has HTML; make consistent branded templates (welcome, confirmation, status, cancelled).
-13. **Search improvements** — text search is simple substring matching; add ranking (relevance, rating, distance) and typo tolerance.
-14. **Restaurant analytics** — dashboard is live stats only; add trends (orders/revenue by day), popular items, and CSV export for admins.
-15. **Push / in-app notifications for customers** — status changes are socket-only while the app is open; no push when closed.
-16. **i18n** — English only; prepare string tables if Hindi/Marathi support is planned.
-17. **Customer support / cancellation self-service** — cancellation exists; add refund tracking UI and a support contact path.
-18. **PWA** — no offline support or installability.
+7. **Multiple service areas / cities** — the platform is single-area by design; model multiple areas and pick per-user, then generalize the seed and the admin UI.
+8. **Branded email templates** — only the OTP email has HTML; make consistent branded templates (welcome, confirmation, status, cancelled).
+9. **Search improvements** — text search is simple substring matching; add ranking (relevance, rating, distance) and typo tolerance.
+10. **Restaurant analytics** — dashboard is live stats only; add trends (orders/revenue by day), popular items, and CSV export for admins.
+11. **Push / in-app notifications for customers** — status changes are socket-only while the app is open; no push when closed.
+12. **i18n** — English only; prepare string tables if Hindi/Marathi support is planned.
+13. **Customer support / cancellation self-service** — cancellation exists; add refund tracking UI and a support contact path.
+14. **PWA** — no offline support or installability.
 
 ## P3 — Dynamic configuration (stop hardcoding)
 
-19. **Currency symbol** — `₹` is hardcoded in 11 backend spots + the frontend `inr()` formatter; make it a config value (default INR).
-20. **Order-number prefix** — `RE-` is hardcoded in `orders/routes.ts`; make it configurable.
-21. **App brand name** — "Ramnagar Eats" is repeated across UI and emails; centralize into one brand config consumed by both apps + the backend.
-22. **Homepage marketing copy** — hero headline/subcopy and the "30 min delivery" chip are hardcoded; expose as admin-editable content (simple CMS or config).
-23. **Default map position** — `[19.076, 72.8777]` is hardcoded in the location sheet; load the service center from `/config` so a new city works without a code change.
-24. **Phone placeholder / dialing defaults** — `+919876543210` is India-specific; derive from config or localization.
-25. **Google Fonts** — self-host DM Sans to remove the runtime dependency.
+15. **Homepage marketing copy** — hero headline/subcopy and the "30 min delivery" chip are hardcoded; expose as admin-editable content (simple CMS or config).
+16. **Phone placeholder / dialing defaults** — `+919876543210` is India-specific; derive from config or localization.
+17. **Google Fonts** — self-host DM Sans to remove the runtime dependency.
 
 ## P4 — Ops & tooling
 
-26. **Browser E2E in CI** — the 64-check walk runs locally only; add a job that boots the Docker stack and drives Edge (Playwright) end-to-end.
-27. **MongoDB backup strategy** — no documented backup/restore for the production volume.
-28. **Observability** — structured logs + health endpoint only; add request metrics, error tracking (Sentry), and uptime monitoring.
-29. **Secret management** — env vars in compose; evaluate a secrets manager or at minimum a documented rotation process.
-30. **Dependency updates** — pin and schedule updates for npm packages and base images (Dependabot/Renovate).
+18. **Browser E2E in CI** — the 64-check walk runs locally only; add a job that boots the Docker stack and drives Edge (Playwright) end-to-end.
+19. **MongoDB backup strategy** — no documented backup/restore for the production volume.
+20. **Observability** — structured logs + health endpoint only; add request metrics, error tracking (Sentry), and uptime monitoring.
+21. **Secret management** — env vars in compose; evaluate a secrets manager or at minimum a documented rotation process.
+22. **Dependency updates** — pin and schedule updates for npm packages and base images (Dependabot/Renovate).
+
+---
+
+## Recently completed (moved out of the backlog)
+
+- **Admin coupon management** — full CRUD API (`/admin/coupons`) + admin panel "Coupons" tab (create, pause/activate, delete, usage stats). Covered by API tests.
+- **Seed for production** — `seed` service in `docker-compose.yml` (`docker compose up seed`) seeds demo accounts, restaurants, menu, coupons, service area on a fresh deploy.
+- **SMTP inconsistency** — stale `SMTP_HOST`/`SMTP_PORT` removed from `docker-compose.dev.yml` (the email service has Console + Brevo only).
+- **OTP expiry copy** — emails now derive the expiry text from the configured `OTP_TTL_MS` instead of hardcoding "5 minutes".
+- **Currency symbol** — config-driven (`CURRENCY_SYMBOL`, default `₹`), consumed by backend emails, `/config`, and both apps' `inr()` formatters.
+- **Order-number prefix** — config-driven (`ORDER_PREFIX`, default `RE-`).
+- **App brand name** — config-driven (`BRAND_NAME`); used in emails and exposed via `GET /api/v1/config`. The frontend logo stays a static design element.
+- **Default map position** — the location sheet now loads the service center from `/config` instead of a hardcoded `[19.076, 72.8777]`.
+- **Pincode format validation** — 6-digit Indian PIN enforced on the backend (addresses + service area) and in the location sheet UI.

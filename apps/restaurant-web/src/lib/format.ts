@@ -1,5 +1,7 @@
+import { getConfig } from "./config";
+
 export function inr(value: number): string {
-  return `₹${Math.round(value).toLocaleString("en-IN")}`;
+  return `${getConfig().currency}${Math.round(value).toLocaleString("en-IN")}`;
 }
 
 export function timeAgo(value: string): string {

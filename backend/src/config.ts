@@ -12,6 +12,12 @@ export const config = {
   port: Number(process.env.PORT ?? 5000),
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET ?? "local-dev-secret-change-me",
+  /** Display brand name used in transactional copy. */
+  brandName: process.env.BRAND_NAME ?? "Ramnagar Eats",
+  /** Currency symbol shown to users (India default). */
+  currency: process.env.CURRENCY_SYMBOL ?? "₹",
+  /** Prefix for human-readable order numbers. */
+  orderPrefix: process.env.ORDER_PREFIX ?? "RE-",
   /** Comma-separated list of allowed browser origins. */
   corsOrigins: csv(process.env.CORS_ORIGINS).length > 0 ? csv(process.env.CORS_ORIGINS) : ["http://localhost:3000", "http://localhost:3001"],
   /** General API rate limit. */

@@ -9,7 +9,7 @@ const router = Router();
 const addressSchema = z.object({
   label: z.enum(["Home", "Work", "Other"]),
   formattedAddress: z.string().trim().min(5, "Enter the full address").max(300),
-  pincode: z.string().regex(/^\d{4,10}$/, "Enter a valid pincode"),
+  pincode: z.string().regex(/^\d{6}$/, "Enter a valid 6-digit pincode"),
   city: z.string().trim().max(80).optional(),
   state: z.string().trim().max(80).optional(),
   locality: z.string().trim().max(80).optional(),

@@ -6,8 +6,6 @@ services:
     environment:
       PORT: 5000
       MONGODB_URI: mongodb://mongodb:27017/ramnagar-eats
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
     ports: ["5000:5000"]
     volumes: [".:/workspace", "backend-node-modules:/workspace/node_modules"]
     depends_on: { mongodb: { condition: service_healthy } }

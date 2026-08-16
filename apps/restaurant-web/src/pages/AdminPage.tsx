@@ -45,10 +45,45 @@ interface ServiceArea {
   pincode: string;
   radiusKm: number;
 }
+interface AdminCoupon {
+  id: string;
+  code: string;
+  description: string;
+  discountType: "PERCENT" | "FLAT";
+  discountValue: number;
+  maxDiscount: number | null;
+  minOrderValue: number;
+  usageLimit: number;
+  perUserLimit: number;
+  usedCount: number;
+  isActive: boolean;
+}
 
 const EMPTY_AREA: ServiceArea = { lat: 19.076, lng: 72.8777, address: "", pincode: "", radiusKm: 10 };
 
-type Tab = "metrics" | "restaurants" | "users" | "orders" | "service";
+type Tab = "metrics" | "restaurants" | "users" | "orders" | "service" | "coupons";
+
+interface CouponForm {
+  code: string;
+  description: string;
+  discountType: "PERCENT" | "FLAT";
+  discountValue: string;
+  maxDiscount: string;
+  minOrderValue: string;
+  usageLimit: string;
+  isActive: boolean;
+}
+
+const EMPTY_COUPON: CouponForm = {
+  code: "",
+  description: "",
+  discountType: "PERCENT",
+  discountValue: "",
+  maxDiscount: "",
+  minOrderValue: "0",
+  usageLimit: "0",
+  isActive: true,
+};
 
 export function AdminPage() {
   const [tab, setTab] = useState<Tab>("metrics");
@@ -57,23 +92,28 @@ export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [serviceArea, setServiceArea] = useState<ServiceArea>(EMPTY_AREA);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [couponForm, setCouponForm] = useState<CouponForm>(EMPTY_COUPON);
   const [notice, setNotice] = useState("");
   const [savingArea, setSavingArea] = useState(false);
+  const [savingCoupon, setSavingCoupon] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [metricsData, restaurantData, userData, orderData, areaData] = await Promise.all([
+      const [metricsData, restaurantData, userData, orderData, areaData, couponData] = await Promise.all([
         api.get<{ metrics: Metrics }>("/admin/metrics"),
         api.get<{ restaurants: AdminRestaurant[] }>("/admin/restaurants"),
         api.get<{ users: AdminUser[] }>("/admin/users"),
         api.get<{ orders: AdminOrder[] }>("/admin/orders"),
         api.get<{ serviceArea: ServiceArea }>("/admin/service-area"),
+        api.get<{ coupons: AdminCoupon[] }>("/admin/coupons"),
       ]);
       setMetrics(metricsData.metrics);
       setRestaurants(restaurantData.restaurants);
       setUsers(userData.users);
       setOrders(orderData.orders);
       setServiceArea(areaData.serviceArea);
+      setCoupons(couponData.coupons);
       setNotice("");
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : "Could not load admin data");
@@ -106,6 +146,52 @@ export function AdminPage() {
     }
   }
 
+  async function createCoupon() {
+    if (!couponForm.code.trim() || !couponForm.discountValue) return;
+    setNotice("");
+    setSavingCoupon(true);
+    try {
+      const body: Record<string, unknown> = {
+        code: couponForm.code.trim(),
+        description: couponForm.description.trim(),
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+        minOrderValue: Number(couponForm.minOrderValue) || 0,
+        usageLimit: Number(couponForm.usageLimit) || 0,
+        isActive: couponForm.isActive,
+      };
+      if (couponForm.maxDiscount.trim()) body.maxDiscount = Number(couponForm.maxDiscount);
+      await api.post("/admin/coupons", body);
+      setCouponForm(EMPTY_COUPON);
+      setNotice(`Coupon ${couponForm.code.trim().toUpperCase()} created.`);
+      await load();
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "Could not create the coupon");
+    } finally {
+      setSavingCoupon(false);
+    }
+  }
+
+  async function toggleCoupon(coupon: AdminCoupon) {
+    try {
+      await api.patch(`/admin/coupons/${coupon.id}`, { isActive: !coupon.isActive });
+      await load();
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "Could not update the coupon");
+    }
+  }
+
+  async function deleteCoupon(coupon: AdminCoupon) {
+    if (!window.confirm(`Delete coupon ${coupon.code}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/admin/coupons/${coupon.id}`);
+      setNotice(`Coupon ${coupon.code} deleted.`);
+      await load();
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "Could not delete the coupon");
+    }
+  }
+
   return (
     <>
       <header>
@@ -116,7 +202,7 @@ export function AdminPage() {
       </header>
       {notice && <p className="notice">{notice}</p>}
       <div className="admin-tabs">
-        {(["metrics", "restaurants", "users", "orders", "service"] as Tab[]).map((name) => (
+        {(["metrics", "restaurants", "users", "orders", "service", "coupons"] as Tab[]).map((name) => (
           <button key={name} className={tab === name ? "active" : ""} onClick={() => setTab(name)}>
             {name === "service" ? "Service area" : name[0].toUpperCase() + name.slice(1)}
           </button>
@@ -242,6 +328,86 @@ export function AdminPage() {
               <span className={`status ${statusTone(order.status as any)}`}>{STATUS_LABELS[order.status as keyof typeof STATUS_LABELS]}</span>
             </div>
           ))}
+        </section>
+      )}
+
+      {tab === "coupons" && (
+        <section className="service-area-form">
+          <div className="service-area-intro">
+            <h3>Coupons</h3>
+            <p>Create and manage discount codes. Active coupons are applied automatically at checkout (usage, limits and restaurant targeting are enforced by the backend).</p>
+          </div>
+          <div className="form-grid">
+            <label>
+              Code
+              <input value={couponForm.code} onChange={(event) => setCouponForm({ ...couponForm, code: event.target.value.toUpperCase() })} placeholder="SAVE20" />
+            </label>
+            <label>
+              Description
+              <input value={couponForm.description} onChange={(event) => setCouponForm({ ...couponForm, description: event.target.value })} placeholder="20% off up to ₹100" />
+            </label>
+            <label>
+              Discount type
+              <select value={couponForm.discountType} onChange={(event) => setCouponForm({ ...couponForm, discountType: event.target.value as "PERCENT" | "FLAT" })}>
+                <option value="PERCENT">Percentage (%)</option>
+                <option value="FLAT">Flat amount</option>
+              </select>
+            </label>
+            <label>
+              Discount value
+              <input type="number" min={1} value={couponForm.discountValue} onChange={(event) => setCouponForm({ ...couponForm, discountValue: event.target.value })} placeholder="20" />
+            </label>
+            <label>
+              Max discount (optional)
+              <input type="number" min={0} value={couponForm.maxDiscount} onChange={(event) => setCouponForm({ ...couponForm, maxDiscount: event.target.value })} placeholder="100" />
+            </label>
+            <label>
+              Minimum order
+              <input type="number" min={0} value={couponForm.minOrderValue} onChange={(event) => setCouponForm({ ...couponForm, minOrderValue: event.target.value })} placeholder="0" />
+            </label>
+            <label>
+              Usage limit (0 = unlimited)
+              <input type="number" min={0} value={couponForm.usageLimit} onChange={(event) => setCouponForm({ ...couponForm, usageLimit: event.target.value })} placeholder="0" />
+            </label>
+            <label className="wide checkbox-label">
+              <input type="checkbox" checked={couponForm.isActive} onChange={(event) => setCouponForm({ ...couponForm, isActive: event.target.checked })} />
+              Active immediately
+            </label>
+          </div>
+          <button className="action accept" disabled={savingCoupon || !couponForm.code.trim() || !couponForm.discountValue} onClick={() => void createCoupon()}>
+            {savingCoupon ? "Creating…" : "Create coupon"}
+          </button>
+          <div className="table" style={{ marginTop: 28 }}>
+            <div className="table-header">
+              <span>CODE</span>
+              <span>DISCOUNT</span>
+              <span>MIN ORDER</span>
+              <span>USAGE</span>
+              <span>STATUS</span>
+              <span />
+            </div>
+            {coupons.map((coupon) => (
+              <div className="table-row" key={coupon.id}>
+                <strong>{coupon.code}</strong>
+                <span>
+                  {coupon.discountType === "PERCENT" ? `${coupon.discountValue}%` : inr(coupon.discountValue)}
+                  {coupon.maxDiscount ? ` (max ${inr(coupon.maxDiscount)})` : ""}
+                </span>
+                <span>{coupon.minOrderValue > 0 ? inr(coupon.minOrderValue) : "—"}</span>
+                <span>{coupon.usageLimit > 0 ? `${coupon.usedCount}/${coupon.usageLimit}` : `${coupon.usedCount} used`}</span>
+                <span className={`status ${coupon.isActive ? "delivered" : "cancelled"}`}>{coupon.isActive ? "Active" : "Paused"}</span>
+                <span className="row-actions">
+                  <button className="action" onClick={() => void toggleCoupon(coupon)}>
+                    {coupon.isActive ? "Pause" : "Activate"}
+                  </button>
+                  <button className="action reject" onClick={() => void deleteCoupon(coupon)}>
+                    Delete
+                  </button>
+                </span>
+              </div>
+            ))}
+            {coupons.length === 0 && <p className="muted">No coupons yet — create one above.</p>}
+          </div>
         </section>
       )}
     </>

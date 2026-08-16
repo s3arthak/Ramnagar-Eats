@@ -379,6 +379,45 @@ async function main() {
     check("service area restored", restore.status === 200 && restore.body.serviceArea.radiusKm === 5);
   }
 
+  // ---------- Admin coupon management (CRUD) ----------
+  console.log("\nAdmin coupons");
+  {
+    const customer = await registerUser("Coupon Customer", "coupon@customer.test");
+    const admin = await loginUser("admin@ramnagareats.test");
+
+    const forbidden = await request(base, "/api/v1/admin/coupons", {}, customer.body.token);
+    check("non-admin cannot list coupons", forbidden.status === 403);
+
+    const list = await request(base, "/api/v1/admin/coupons", {}, admin.body.token);
+    check("admin can list seed coupons", list.status === 200 && list.body.coupons.some((c: any) => c.code === "WELCOME20"));
+
+    const created = await request(base, "/api/v1/admin/coupons", {
+      method: "POST",
+      body: JSON.stringify({ code: "ADMIN50", description: "Admin test coupon", discountType: "FLAT", discountValue: 50, minOrderValue: 150, usageLimit: 5 }),
+    }, admin.body.token);
+    check("admin can create a coupon", created.status === 201 && created.body.coupon.code === "ADMIN50" && created.body.coupon.minOrderValue === 150, JSON.stringify(created.body));
+
+    const duplicate = await request(base, "/api/v1/admin/coupons", { method: "POST", body: JSON.stringify({ code: "admin50", discountType: "FLAT", discountValue: 10 }) }, admin.body.token);
+    check("duplicate coupon code rejected case-insensitively", duplicate.status === 400 && duplicate.body.code === "COUPON_EXISTS");
+
+    const patched = await request(base, `/api/v1/admin/coupons/${created.body.coupon.id}`, { method: "PATCH", body: JSON.stringify({ discountValue: 75, isActive: false }) }, admin.body.token);
+    check("admin can update a coupon", patched.status === 200 && patched.body.coupon.discountValue === 75 && patched.body.coupon.isActive === false, JSON.stringify(patched.body));
+
+    // A paused coupon must not validate at checkout.
+    const listRestaurants = await request(base, "/api/v1/restaurants?limit=1");
+    const pausedCheck = await request(base, "/api/v1/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code: "ADMIN50", restaurantId: listRestaurants.body.restaurants[0].id, subtotal: 300 }),
+    }, customer.body.token);
+    check("paused coupon is rejected at checkout", pausedCheck.status === 200 && pausedCheck.body.valid === false, JSON.stringify(pausedCheck.body));
+
+    const deleted = await request(base, `/api/v1/admin/coupons/${created.body.coupon.id}`, { method: "DELETE" }, admin.body.token);
+    check("admin can delete a coupon", deleted.status === 204);
+
+    const afterDelete = await request(base, "/api/v1/admin/coupons", {}, admin.body.token);
+    check("deleted coupon no longer listed", !afterDelete.body.coupons.some((c: any) => c.code === "ADMIN50"));
+  }
+
   // ---------- Authorization ----------
   console.log("\nAuthorization");
   {

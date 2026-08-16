@@ -110,7 +110,7 @@ router.post(
     }
 
     if (restaurant.minOrder > 0 && subtotal < restaurant.minOrder) {
-      throw new ApiError(409, `Minimum order for ${restaurant.name} is ₹${restaurant.minOrder}`, "MIN_ORDER_NOT_MET");
+      throw new ApiError(409, `Minimum order for ${restaurant.name} is ${config.currency}${restaurant.minOrder}`, "MIN_ORDER_NOT_MET");
     }
 
     let discount = 0;
@@ -128,7 +128,7 @@ router.post(
     const total = subtotal + deliveryFee - discount;
 
     const now = new Date();
-    const orderNumber = `RE-${now.getTime().toString().slice(-6)}${Math.floor(Math.random() * 900 + 100)}`;
+    const orderNumber = `${config.orderPrefix}${now.getTime().toString().slice(-6)}${Math.floor(Math.random() * 900 + 100)}`;
     const payment = await paymentService(paymentMethod).createPayment({ amount: total, orderId: null, customerId: userId });
 
     const order = await Order.create({

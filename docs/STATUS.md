@@ -13,15 +13,15 @@
 | --- | --- | --- |
 | Customer web app (browse, cart, coupons, checkout, orders, tracking, profile, addresses) | ✅ Done | 64/64 browser E2E checks (`scripts/browser-walk.mjs`) |
 | Restaurant partner dashboard (live queue, status flow, menu CRUD, profile, open/close) | ✅ Done | Same browser walk, real-time flow verified |
-| Admin panel (metrics, restaurants, users, orders, service area) | ✅ Done | Walk: radius edit round-trip; API tests: admin endpoints |
-| Backend API (Express + MongoDB, REST + Socket.IO) | ✅ Done | **143/143 API acceptance tests** pass |
+| Admin panel (metrics, restaurants, users, orders, service area, coupons) | ✅ Done | Walk: radius edit round-trip; API tests: admin endpoints + coupon CRUD |
+| Backend API (Express + MongoDB, REST + Socket.IO) | ✅ Done | **151/151 API acceptance tests** pass |
 | Auth — email OTP + Google OAuth, role-based (CUSTOMER/RESTAURANT/ADMIN) | ✅ Done | OTP security matrix + role-spoofing tests; Google dev-callback E2E |
 | Server-authoritative pricing & coupons | ✅ Done | Tampering / invalid-coupon tests |
 | Service-area enforcement (radius rule, re-checked at checkout + order) | ✅ Done | Inside / exactly-at / outside radius tests |
 | Real-time order flow (Socket.IO, toasts, live status) | ✅ Done | Socket tests + browser walk (no reloads) |
 | Image uploads (avatar, cover, menu) | ✅ Done | Upload 201 + CORP fix verified in walk |
 | Production Docker stack | ✅ Done | `docker compose up --build` boots green in CI |
-| GitHub Actions CI (typecheck + build + 143 API tests + Docker stack) | ✅ Done | CI green on `main` |
+| GitHub Actions CI (typecheck + build + 151 API tests + Docker stack) | ✅ Done | CI green on `main` |
 
 ### Hardening (verified with live checks)
 
@@ -40,7 +40,7 @@
 
 | Service | Provider (dev → prod) | Real test performed | Result |
 | --- | --- | --- | --- |
-| **Database** | Local `mongod` / Mongo 8 in Docker | 143 API tests against real Mongo; Docker stack health check | ✅ Working |
+| **Database** | Local `mongod` / Mongo 8 in Docker | 151 API tests against real Mongo; Docker stack health check | ✅ Working |
 | **Real-time** | Socket.IO (self-hosted) | Socket auth + `order:new`/`order:updated` events in tests + browser walk | ✅ Working |
 | **Maps / geo** | Leaflet + OpenStreetMap tiles (browser) | Live browser test: 6/6 tiles loaded from `tile.openstreetmap.org` (HTTP 200) | ✅ Working |
 | **Distance / serviceability** | In-house haversine (no external API) | Live curl: center (0 km, serviceable) and Delhi (1146.3 km, rejected) | ✅ Working |
@@ -59,13 +59,11 @@
 1. **Real email delivery** — provider is wired and tested, but no `BREVO_API_KEY` is set; dev uses the console provider.
 2. **ImageKit CDN** — provider wired and tested, but no `IMAGEKIT_*` keys; dev stores images on local disk.
 3. **Google sign-in** — flow wired, but no Google Cloud OAuth app exists; server returns `503` until configured.
-4. **Real payment gateway** — only Cash-on-Delivery and a mock provider; no online payment.
-5. **SMTP provider** — the dev compose file references `SMTP_HOST`/`SMTP_PORT` (mailpit) but the email service has **no SMTP provider**; only Console and Brevo exist. (Inconsistency → backlog.)
-6. **Admin coupon management** — coupons are seeded in the DB but there is **no admin UI/API to create/edit coupons**.
-7. **Multiple service areas / cities** — the platform supports exactly **one** admin-configurable delivery area.
-8. **Pincode validation** — pincode is stored as text and never cross-checked against the map/GPS coordinates (no geocoding), so any pincode can be paired with any map point.
-9. **Browser E2E walk not in CI** — it needs Edge + three running apps; runs locally only.
-10. **Everything under "Backlog"** in [docs/BACKLOG.md](./BACKLOG.md).
+4. **Real payment gateway** — only Cash-on-Delivery and a mock provider; no online payment (deferred by the owner).
+5. **Multiple service areas / cities** — the platform supports exactly **one** admin-configurable delivery area.
+6. **Pincode ↔ coordinates cross-check** — the pincode format is now validated (6-digit), but it is not yet cross-checked against the map/GPS coordinates (no geocoding service), so any pincode can still be paired with any map point.
+7. **Browser E2E walk not in CI** — it needs Edge + three running apps; runs locally only.
+8. **Everything under "Backlog"** in [docs/BACKLOG.md](./BACKLOG.md).
 
 ---
 
@@ -75,18 +73,15 @@
 
 - Service center lat/lng/address/pincode + radius → **DB**, admin-editable, enforced server-side
 - Delivery fees (`BASE_DELIVERY_FEE`, `DELIVERY_FEE_FREE_ABOVE`) → **env**, exposed via `GET /api/v1/config`
-- OTP TTL / max attempts / resend cooldown → **env**
+- Currency symbol (`CURRENCY_SYMBOL`), order prefix (`ORDER_PREFIX`), brand name (`BRAND_NAME`) → **env**, consumed by backend copy + both apps via `GET /api/v1/config`
+- OTP TTL / max attempts / resend cooldown → **env** (email copy derives the expiry text from the configured TTL)
 - Rate limits, CORS origins, JWT secret, ports → **env**
-- Coupons, restaurants, menu, categories, offers, users, orders → **DB**
+- Coupons (admin CRUD), restaurants, menu, categories, offers, users, orders → **DB**
 - Sender email (`EMAIL_FROM`) → **env**
 
 ### Hardcoded (should become configurable → see BACKLOG)
 
-- Currency symbol `₹` (backend + frontend)
-- Order-number prefix `RE-`
-- OTP "expires in 5 minutes" email copy (ignores `OTP_TTL_MS`)
-- App brand name "Ramnagar Eats" (UI + emails)
 - Homepage hero copy + "30 min delivery" chip
 - Phone placeholder `+919876543210` (India-specific)
-- Default map position `[19.076, 72.8777]` in the location sheet (should come from `/config`)
 - Google Fonts (DM Sans) import
+- Frontend logo markup (deliberately a static brand design element; brand name itself is server-driven via `BRAND_NAME`/`/config` for all copy)

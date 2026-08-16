@@ -1,3 +1,4 @@
+import { config } from "../config.js";
 import { Coupon } from "../models/Coupon.js";
 
 export interface CouponValidation {
@@ -20,7 +21,7 @@ export async function validateCoupon(code: string, restaurantId: string, subtota
   const now = new Date();
   if (now < coupon.validFrom || now > coupon.validUntil) return { valid: false, message: "This coupon has expired" };
   if (subtotal < coupon.minOrderValue) {
-    return { valid: false, message: `Add items worth ₹${coupon.minOrderValue} or more to use this coupon` };
+    return { valid: false, message: `Add items worth ${config.currency}${coupon.minOrderValue} or more to use this coupon` };
   }
   if (coupon.restaurantIds.length > 0 && !coupon.restaurantIds.some((id) => id.toString() === restaurantId)) {
     return { valid: false, message: "This coupon is not valid for this restaurant" };

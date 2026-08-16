@@ -4,6 +4,8 @@
  * otherwise (or with OTP_DELIVERY=console) messages go to the server log.
  */
 
+import { config } from "../config.js";
+
 export interface EmailMessage {
   to: string;
   subject: string;
@@ -19,11 +21,17 @@ export interface EmailService {
   sendOrderCancelled(to: string, details: { orderNumber: string }): Promise<void>;
 }
 
-const FROM = process.env.EMAIL_FROM ?? "Ramnagar Eats <noreply@ramnagareats.test>";
+const FROM = process.env.EMAIL_FROM ?? `${config.brandName} <noreply@ramnagareats.test>`;
 
 function fromParts(): { name: string; email: string } {
   const match = FROM.match(/^(.*?)\s*<([^>]+)>$/);
-  return match ? { name: match[1].trim(), email: match[2] } : { name: "Ramnagar Eats", email: FROM };
+  return match ? { name: match[1].trim(), email: match[2] } : { name: config.brandName, email: FROM };
+}
+
+/** Human-friendly OTP validity window derived from the configured TTL. */
+function otpValidityCopy(): string {
+  const minutes = Math.round(config.otp.ttlMs / 60_000);
+  return minutes >= 1 ? `${minutes} minutes` : `${Math.round(config.otp.ttlMs / 1000)} seconds`;
 }
 
 /** Real Brevo transactional API (free tier: 300 emails/day). */
@@ -49,23 +57,24 @@ class BrevoEmailProvider implements EmailService {
   }
 
   async sendOtpEmail(to: string, code: string) {
+    const validity = otpValidityCopy();
     await this.send({
       to,
-      subject: `Your Ramnagar Eats verification code: ${code}`,
-      text: `Your verification code is ${code}.\n\nIt expires in 5 minutes. If you didn't request this, you can ignore this email.`,
-      html: `<p>Your verification code is</p><h1 style="letter-spacing:4px">${code}</h1><p>It expires in 5 minutes. If you didn't request this, you can ignore this email.</p>`,
+      subject: `Your ${config.brandName} verification code: ${code}`,
+      text: `Your verification code is ${code}.\n\nIt expires in ${validity}. If you didn't request this, you can ignore this email.`,
+      html: `<p>Your verification code is</p><h1 style="letter-spacing:4px">${code}</h1><p>It expires in ${validity}. If you didn't request this, you can ignore this email.</p>`,
     });
   }
 
   async sendWelcome(to: string, name: string) {
-    await this.send({ to, subject: "Welcome to Ramnagar Eats 🍽️", text: `Hi ${name},\n\nWelcome to Ramnagar Eats! Your account is ready.\n\nOrder from kitchens around the corner and track it live.` });
+    await this.send({ to, subject: `Welcome to ${config.brandName} 🍽️`, text: `Hi ${name},\n\nWelcome to ${config.brandName}! Your account is ready.\n\nOrder from kitchens around the corner and track it live.` });
   }
 
   async sendOrderConfirmation(to: string, details: { orderNumber: string; restaurantName: string; total: number }) {
     await this.send({
       to,
       subject: `Order ${details.orderNumber} confirmed`,
-      text: `Your order ${details.orderNumber} from ${details.restaurantName} is confirmed.\nTotal: ₹${details.total}\n\nTrack it live from your orders page.`,
+      text: `Your order ${details.orderNumber} from ${details.restaurantName} is confirmed.\nTotal: ${config.currency}${details.total}\n\nTrack it live from your orders page.`,
     });
   }
 
@@ -85,15 +94,15 @@ class ConsoleEmailProvider implements EmailService {
   }
 
   async sendOtpEmail(to: string, code: string) {
-    await this.send({ to, subject: "Your Ramnagar Eats verification code", text: `Your verification code is ${code}. It expires in 5 minutes.` });
+    await this.send({ to, subject: `Your ${config.brandName} verification code`, text: `Your verification code is ${code}. It expires in ${otpValidityCopy()}.` });
   }
 
   async sendWelcome(to: string, name: string) {
-    await this.send({ to, subject: "Welcome to Ramnagar Eats 🍽️", text: `Hi ${name},\n\nWelcome to Ramnagar Eats! Your account is ready.` });
+    await this.send({ to, subject: `Welcome to ${config.brandName} 🍽️`, text: `Hi ${name},\n\nWelcome to ${config.brandName}! Your account is ready.` });
   }
 
   async sendOrderConfirmation(to: string, details: { orderNumber: string; restaurantName: string; total: number }) {
-    await this.send({ to, subject: `Order ${details.orderNumber} confirmed`, text: `Your order ${details.orderNumber} from ${details.restaurantName} is confirmed.\nTotal: ₹${details.total}` });
+    await this.send({ to, subject: `Order ${details.orderNumber} confirmed`, text: `Your order ${details.orderNumber} from ${details.restaurantName} is confirmed.\nTotal: ${config.currency}${details.total}` });
   }
 
   async sendOrderStatus(to: string, details: { orderNumber: string; status: string }) {

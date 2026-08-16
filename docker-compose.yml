@@ -41,6 +41,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot database seed (demo accounts, restaurants, menu, coupons).
+  # Run manually on a fresh deployment: docker compose up seed
+  seed:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/ramnagar-eats
+      SERVICE_CENTER_LAT: ${SERVICE_CENTER_LAT:-19.076}
+      SERVICE_CENTER_LNG: ${SERVICE_CENTER_LNG:-72.8777}
+      SERVICE_RADIUS_KM: ${SERVICE_RADIUS_KM:-5}
+    command: ["node", "dist/seed.js"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+
   customer-web:
     build:
       context: .

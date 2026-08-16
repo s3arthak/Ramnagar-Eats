@@ -12,9 +12,12 @@ router.get(
     const area = await getServiceArea();
     return ok(response, {
       config: {
+        brandName: config.brandName,
+        currency: config.currency,
         baseDeliveryFee: config.service.baseDeliveryFee,
         deliveryFeeFreeAbove: config.service.freeDeliveryAbove,
         serviceRadiusKm: area.radiusKm,
+        serviceCenter: { lat: area.lat, lng: area.lng },
       },
     });
   }),
