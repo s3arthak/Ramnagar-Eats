@@ -12,7 +12,9 @@ services:
     name: ramnagar-eats-api
     runtime: node
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    # --include=dev: Render injects NODE_ENV=production into the build, which
+    # makes plain `npm ci` skip devDependencies (the @types/* needed by tsc).
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/v1/health
     envVars:
