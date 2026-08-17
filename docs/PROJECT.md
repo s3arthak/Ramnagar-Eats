@@ -275,8 +275,20 @@ Cluster `cluster0`, db `ramnagar-eats`, user `kharkasarthak_db_user`. Network ac
 ### Render — API
 Service **ramnagar-eats-api** (`https://ramnagar-eats-api.onrender.com`), repo-connected with `render.yaml` (root `backend`, build `npm ci && npm run build`, start `node dist/server.js`, health `/api/v1/health`). Env vars live in the dashboard (not committed): `MONGODB_URI`, `JWT_SECRET`, `OTP_DELIVERY=smtp`, `SMTP_*`, `EMAIL_FROM` (verified sender), `CORS_ORIGINS` (both Vercel domains), `IMAGEKIT_*`, Google OAuth creds, and the display/fee vars from `.env.production.example`. Free tier sleeps — first request after idle takes ~30–60 s.
 
+**Ops notes (learned the hard way):**
+- Render **caps env vars at 20 per service** — extra keys in a PUT are silently dropped. The service-area vars (`SERVICE_CENTER_*`, `SERVICE_RADIUS_KM`) are intentionally NOT in the Render env: the runtime reads the delivery area from MongoDB, and code defaults are Ramnagar anyway.
+- Env-var changes do **not** auto-deploy; and **API-triggered deploys (`POST /v1/services/{id}/deploys`) can fail with `update_failed`** for no exposed reason — pushing a commit to `main` triggers the reliable auto-deploy instead.
+- Env vars can be managed via the Render API: `GET/PUT /v1/services/{serviceId}/env-vars` (full replacement, raw JSON array body).
+
 ### Vercel — both web apps
 Projects **ramnagar-eats-customer** and **ramnagar-eats-restaurant**, root `apps/customer-web` / `apps/restaurant-web`, build `npm ci && npm run build`, output `dist`, `vercel.json` SPA rewrites. Env var: `VITE_API_URL=https://ramnagar-eats-api.onrender.com/api/v1`.
+
+**Ops notes:** the projects are **not connected to GitHub** (no auto-deploy on push). Deploy from the repo root with the Vercel CLI (the projects' `rootDirectory` setting points at each app, and both apps import `shared/` assets):
+```bash
+# .vercel/project.json at the repo root must name the target project, then:
+npx vercel deploy --prod --yes --token $VERCEL_TOKEN
+```
+(`rootDirectory` on the project must remain `apps/customer-web` / `apps/restaurant-web` for this to resolve.) Connecting the GitHub integration in the Vercel dashboard restores push-to-deploy.
 
 ### After deploying
 1. `GET /api/v1/health` → `{"status":"ok","database":"connected"}`.

@@ -23,6 +23,7 @@ Rules for any AI agent (or human) working on this repository. Read before changi
 ### Environment discipline
 11. **Any new env var** must be added to ALL of: `.env.example`, `.env.production.example`, `render.yaml` (production var list), and `docs/PROJECT.md` (env table). Missing one = broken deployment.
 12. **Renaming an env var** (e.g. `OTP_PROVIDER` → `OTP_DELIVERY`): grep the whole repo for the old name — code, tests, scripts, docs, CI, `render.yaml` — before considering it done.
+12b. **Render caps env vars at 20 per service** — never add a 21st key to the Render dashboard env; drop a redundant one (e.g. the `SERVICE_CENTER_*`/`SERVICE_RADIUS_KM` vars are redundant — the DB service area is authoritative). Env changes need a redeploy: push a commit (auto-deploy) — API-triggered deploys can fail with `update_failed`.
 13. **Production data (MongoDB Atlas):** only ever change it after a backup (`cd backend && npx tsx scripts/backup-atlas.ts`). Use the `--restaurants-only` seed mode for catalog changes; never wipe users/orders with a full reseed against production.
 14. **`backend/.env` targets the production Atlas cluster** — never run a plain `npm run dev:backend` or the seed against it unless you intend to touch production. Use `MONGODB_URI=mongodb://127.0.0.1:27017/ramnagar-eats` for local work.
 
@@ -66,4 +67,4 @@ Rules for any AI agent (or human) working on this repository. Read before changi
 - Restaurant web: `https://ramnagar-eats-restaurant.vercel.app`
 - API: `https://ramnagar-eats-api.onrender.com/api/v1`
 - MongoDB: Atlas cluster `cluster0`, db `ramnagar-eats` (URI in `backend/.env`)
-- After a push to `main`, Render + Vercel auto-redeploy when connected to the repo — **verify the live apps after deploying** (`node data/probe-live.mjs`).
+- **Render auto-deploys on push to `main`** (repo-connected). **Vercel does NOT** (no Git integration) — deploy manually with the CLI from the repo root: `npx vercel deploy --prod --yes --token $VERCEL_TOKEN` (the root `.vercel/project.json` must name the target project). **Verify the live apps after any deploy** (`node data/probe-live.mjs`).
