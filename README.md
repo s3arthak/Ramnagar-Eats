@@ -1,21 +1,20 @@
 # Ramnagar Eats
 
-Hyperlocal food delivery for one configured service area (default: Mumbai, 5 km radius). A customer web app, a restaurant partner dashboard (with an admin panel), and one Express + MongoDB API with real-time order updates.
+Hyperlocal food delivery for one configured service area: **Ramnagar, Jammu** (center `32.80674, 75.314854`, radius 15 km). A customer web app, a restaurant partner dashboard (with an admin panel), and one Express + MongoDB API with real-time order updates.
 
 ## Documentation
 
-- [docs/FEATURES.md](docs/FEATURES.md) — every feature in plain English
-- [docs/STATUS.md](docs/STATUS.md) — what is done vs not, with per-service real-test evidence
-- [docs/BACKLOG.md](docs/BACKLOG.md) — prioritized backlog (pending features, dynamic-config work, service integrations)
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Render + Vercel hosting plan
+- [docs/PROJECT.md](docs/PROJECT.md) — the complete project reference (architecture, file structure, tech stack, API, env vars, deployment)
+- [CLAUDE.md](CLAUDE.md) — agent working rules (testing, commit, and env discipline)
+- [docs/BACKLOG.md](docs/BACKLOG.md) — roadmap (performance, UI/UX, startup-grade features)
 
 ## Apps
 
-| App | URL | Purpose |
+| App | Local URL | Live URL |
 | --- | --- | --- |
-| Customer Web | http://localhost:3000 | Browse restaurants, order, track |
-| Restaurant Web | http://localhost:3001 | Partner dashboard, orders, menu, admin |
-| API | http://localhost:5000/api/v1 | REST API + Socket.IO |
+| Customer Web | http://localhost:3000 | https://ramnagar-eats-customer.vercel.app |
+| Restaurant Web | http://localhost:3001 | https://ramnagar-eats-restaurant.vercel.app |
+| API | http://localhost:5000/api/v1 | https://ramnagar-eats-api.onrender.com/api/v1 |
 
 ## Local development
 
@@ -35,7 +34,7 @@ All accounts log in with **email + OTP** (or Google) — there are no passwords.
 | Role | Phone |
 | --- | --- |
 | Admin | `+919876500002` |
-| Restaurant owner (owns Biryani Blues) | `+919876500001` |
+| Restaurant owner (owns Royal Biryani House) | `+919876500001` |
 | Customer | `+919876500000` |
 
 Customers register from the customer app; restaurant owners register from the restaurant app login page. The server always assigns the role — the client can never create an ADMIN.
@@ -53,7 +52,7 @@ npm run build
 
 The API test suite covers the full customer flow (OTP register → login → browse → menu → coupon → order), every documented failure case (out-of-stock, invalid/expired coupon, wrong address, closed restaurant, price tampering, duplicate submissions, cross-restaurant cart), restaurant status transitions, owner authorization boundaries, admin operations, real-time Socket.IO events, the complete OTP security matrix (wrong/expired/reused codes, attempt lockout, resend cooldown, duplicate phones, role spoofing), and the service-area rules (inside/exactly-at/outside radius, admin radius changes taking effect immediately, out-of-area orders rejected server-side).
 
-The API test suite currently passes **162/162** checks. With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end — including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads), the live tracking map with route + dynamic ETA, and the Google OAuth round-trip (currently **76/76** checks):
+The API test suite currently passes **164/164** checks. With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end — including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads), the live tracking map with route + dynamic ETA, and the Google OAuth round-trip (currently **76/76** checks):
 
 ```bash
 node scripts/browser-walk.mjs   # needs Edge, MongoDB, and the three apps running
