@@ -21,7 +21,7 @@ type AddressFormValues = {
   isDefault: boolean;
 };
 
-const EMPTY_FORM: AddressFormValues = { label: "Home", formattedAddress: "", pincode: "", city: "", state: "", locality: "", latitude: 19.076, longitude: 72.8777, deliveryInstructions: "", isDefault: false };
+const EMPTY_FORM: AddressFormValues = { label: "Home", formattedAddress: "", pincode: "", city: "", state: "", locality: "", latitude: 32.80674, longitude: 75.314854, deliveryInstructions: "", isDefault: false };
 
 function toFormValues(address: Address): AddressFormValues {
   return { ...address, city: address.city ?? "", state: address.state ?? "", locality: address.locality ?? "", deliveryInstructions: address.deliveryInstructions ?? "" };
@@ -128,7 +128,7 @@ export function AddressesPage() {
 
       {editing && (
         <AddressForm
-          initial={editing === "new" ? { ...EMPTY_FORM, latitude: place?.lat ?? 19.076, longitude: place?.lng ?? 72.8777 } : toFormValues(editing)}
+          initial={editing === "new" ? { ...EMPTY_FORM, latitude: place?.lat ?? 32.80674, longitude: place?.lng ?? 75.314854 } : toFormValues(editing)}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -191,7 +191,7 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
           </label>
           <label>
             Pincode
-            <input value={form.pincode} onChange={(event) => setForm({ ...form, pincode: event.target.value })} placeholder="400001" inputMode="numeric" />
+            <input value={form.pincode} onChange={(event) => setForm({ ...form, pincode: event.target.value })} placeholder="182122" inputMode="numeric" />
           </label>
           <label className="wide">
             Full address
@@ -199,7 +199,7 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
           </label>
           <label>
             City
-            <input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} placeholder="Mumbai" />
+            <input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} placeholder="Jammu" />
           </label>
           <label>
             State
@@ -207,7 +207,7 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
           </label>
           <label>
             Locality / area
-            <input value={form.locality} onChange={(event) => setForm({ ...form, locality: event.target.value })} placeholder="Bandra West" />
+            <input value={form.locality} onChange={(event) => setForm({ ...form, locality: event.target.value })} placeholder="Ramnagar" />
           </label>
           <label>
             Latitude

@@ -90,7 +90,7 @@ try {
   await waitFor(customer, ".location-sheet", 20000, "location sheet");
   ok("location sheet asks for delivery area", true);
   await customer.fill('.location-sheet input[placeholder="Home"]', "Home");
-  await customer.fill('.location-sheet input[placeholder="400001"]', "400001");
+  await customer.fill('.location-sheet input[placeholder="182122"]', "182122");
   await customer.click(".location-sheet .confirm");
   await waitFor(customer, ".restaurant-card:not(.skeleton-card)", 20000, "restaurant cards");
   ok("homepage shows restaurants from the API", (await customer.locator(".restaurant-card").count()) > 0);
@@ -219,8 +219,8 @@ try {
   await waitFor(customer, ".addresses-head", 10000, "addresses page");
   await clickByText(customer, ".addresses-head button, .empty-state button", "Add address");
   await waitFor(customer, ".location-sheet", 10000, "address form");
-  await customer.fill('.location-sheet input[placeholder="Flat, building, street, area"]', "42 Marine Drive, Ramnagar Eats Hub");
-  await customer.fill('.location-sheet input[placeholder="400001"]', "400001");
+  await customer.fill('.location-sheet input[placeholder="Flat, building, street, area"]', "1 Canal Road, Ramnagar, Jammu");
+  await customer.fill('.location-sheet input[placeholder="182122"]', "182122");
   await customer.click(".location-sheet .confirm");
   await waitFor(customer, ".address-card", 15000, "saved address card");
   ok("address saved", true);

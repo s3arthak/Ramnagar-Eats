@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { LocateFixed, X } from "lucide-react";
 import { api } from "../lib/api";
 import { useConfig } from "../lib/config";
@@ -6,7 +6,7 @@ import { useLocation, type Serviceability } from "../context/LocationContext";
 import { useToast } from "../context/ToastContext";
 import { distanceKm } from "../lib/format";
 
-// Mapbox (via the map chunk) is pulled in only when the picker actually opens.
+// Leaflet (via the map chunk) is pulled in only when the picker actually opens.
 const LocationMap = lazy(() => import("./LocationMap"));
 
 const PINCODE_PATTERN = /^\d{6}$/;
@@ -38,6 +38,13 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
   const { serviceCenter } = useConfig();
   const { push } = useToast();
   const [position, setPosition] = useState<[number, number]>([place?.lat ?? serviceCenter.lat, place?.lng ?? serviceCenter.lng]);
+  // The server config loads async, so the mount-time center may be the local
+  // fallback. Once it resolves, sync the map position — unless the user already
+  // moved the marker or a saved place exists.
+  const [touched, setTouched] = useState(Boolean(place));
+  useEffect(() => {
+    if (!touched) setPosition([serviceCenter.lat, serviceCenter.lng]);
+  }, [serviceCenter.lat, serviceCenter.lng, touched]);
   const [pincode, setPincode] = useState(place?.pincode ?? "");
   const [label, setLabel] = useState(place?.label ?? "Home");
   const [status, setStatus] = useState<Serviceability | null>(null);
@@ -62,6 +69,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
     setStatus(null);
     setAccuracy(null);
     setDetected(null);
+    setTouched(true);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (value) => {
@@ -93,6 +101,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
 
   function moveMarker(value: [number, number]) {
     setPosition(value);
+    setTouched(true);
     setAccuracy(null); // manual position — GPS accuracy no longer applies
   }
 
@@ -164,7 +173,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
           </label>
           <label>
             Pincode
-            <input value={pincode} onChange={(event) => setPincode(event.target.value)} placeholder="400001" inputMode="numeric" />
+            <input value={pincode} onChange={(event) => setPincode(event.target.value)} placeholder="182122" inputMode="numeric" />
           </label>
         </div>
         {status && !status.serviceable && (

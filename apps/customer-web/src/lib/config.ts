@@ -15,8 +15,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   currency: "₹",
   baseDeliveryFee: 20,
   deliveryFeeFreeAbove: 0,
-  serviceRadiusKm: 10,
-  serviceCenter: { lat: 19.076, lng: 72.8777 },
+  serviceRadiusKm: 15,
+  serviceCenter: { lat: 32.80674, lng: 75.314854 },
 };
 
 let cached: AppConfig | null = null;

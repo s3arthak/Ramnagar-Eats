@@ -60,7 +60,7 @@ interface AdminCoupon {
   isActive: boolean;
 }
 
-const EMPTY_AREA: ServiceArea = { lat: 19.076, lng: 72.8777, address: "", pincode: "", radiusKm: 10 };
+const EMPTY_AREA: ServiceArea = { lat: 32.80674, lng: 75.314854, address: "", pincode: "", radiusKm: 15 };
 
 type Tab = "metrics" | "restaurants" | "users" | "orders" | "service" | "coupons";
 
@@ -301,11 +301,11 @@ export function AdminPage() {
             </label>
             <label>
               Pincode
-              <input value={serviceArea.pincode} onChange={(event) => setServiceArea({ ...serviceArea, pincode: event.target.value })} placeholder="400001" />
+              <input value={serviceArea.pincode} onChange={(event) => setServiceArea({ ...serviceArea, pincode: event.target.value })} placeholder="182122" />
             </label>
             <label className="wide">
               Address label
-              <input value={serviceArea.address} onChange={(event) => setServiceArea({ ...serviceArea, address: event.target.value })} placeholder="Ramnagar Eats Hub, Mumbai" />
+              <input value={serviceArea.address} onChange={(event) => setServiceArea({ ...serviceArea, address: event.target.value })} placeholder="Ramnagar Eats Central Hub, Ramnagar, Jammu" />
             </label>
           </div>
           <button className="action accept" disabled={savingArea} onClick={() => void saveServiceArea()}>

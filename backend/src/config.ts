@@ -38,13 +38,13 @@ export const config = {
   /** Read live so tests (and hot env changes) take effect without a restart. */
   get serviceCenter() {
     return {
-      lat: Number(process.env.SERVICE_CENTER_LAT ?? 19.076),
-      lng: Number(process.env.SERVICE_CENTER_LNG ?? 72.8777),
+      lat: Number(process.env.SERVICE_CENTER_LAT ?? 32.80674),
+      lng: Number(process.env.SERVICE_CENTER_LNG ?? 75.314854),
     };
   },
   get service() {
     return {
-      radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 10),
+      radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 15),
       baseDeliveryFee: Number(process.env.BASE_DELIVERY_FEE ?? 20),
       freeDeliveryAbove: Number(process.env.DELIVERY_FEE_FREE_ABOVE ?? 0),
     };
