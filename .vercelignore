@@ -1,20 +1,18 @@
-# Never upload dependencies or build output — Vercel installs/builds server-side.
+# Keep Vercel CLI deploys lean. Deploys run from the repo root with the
+# project's rootDirectory pointing at apps/* — only shared/ (imported by the
+# apps' CSS) and the app dirs are needed at build time.
 node_modules
-**/node_modules
-dist
-**/dist
-
-# Local tooling / secrets
 .git
-.vercel
-.env
-.env.*
-!.env.example
-*.log
-
-# Not needed for the frontend builds (backend is deployed on Render)
+.github
 backend
-docker
-scripts
 docs
 data
+docker
+scripts
+*.log
+.env*
+!.env.example
+!.env.production.example
+**/dist
+**/node_modules
+**/.vercel
