@@ -232,6 +232,10 @@
 
 /* ===== Notices / confirm ===== */
 .notice--error{background:#fdeaea;color:#a33b2c}
+.notice--success{background:#e5f5df;color:#2f6b2c}
+.gps:disabled{opacity:.6;cursor:progress}
+.geocoding-hint{font-size:12px;color:var(--muted);margin:0 0 10px}
+.detected-address{font-size:12.5px;line-height:1.5;color:#3d554c;background:#f4f7f3;border:1px solid #e2e9e1;border-radius:8px;padding:9px 11px;margin:0 0 12px}
 .confirm-actions{display:grid;gap:10px;margin-top:20px}
 .cancel-replace{justify-content:center;background:#fff}
 .confirm-sheet h2{margin-bottom:10px}

@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
 import { serviceability } from "../../utils/geo.js";
-import { asyncHandler, badRequest, ok } from "../../utils/errors.js";
+import { ApiError, asyncHandler, badRequest, ok } from "../../utils/errors.js";
 
 const router = Router();
 
-const serviceabilitySchema = z.object({ lat: z.coerce.number().gte(-90).lte(90), lng: z.coerce.number().gte(-180).lte(180) });
+const coordsSchema = z.object({ lat: z.coerce.number().gte(-90).lte(90), lng: z.coerce.number().gte(-180).lte(180) });
 
 /** Whether a coordinate falls inside the configured delivery area. */
 router.get(
   "/serviceability",
   asyncHandler(async (request, response) => {
-    const parsed = serviceabilitySchema.safeParse(request.query);
+    const parsed = coordsSchema.safeParse(request.query);
     if (!parsed.success) throw badRequest("Valid latitude and longitude are required", "VALIDATION_ERROR");
     const result = await serviceability(parsed.data.lat, parsed.data.lng);
     return ok(response, {
@@ -20,6 +20,71 @@ router.get(
       radiusKm: result.radiusKm,
       message: result.serviceable ? "Great, we deliver to this location" : "Sorry, we don't deliver here yet",
     });
+  }),
+);
+
+// ---- Reverse geocoding (OpenStreetMap Nominatim, cached) ----
+//
+// Turns a coordinate into a human address + pincode so the location pickers can
+// auto-fill after a GPS fix. The geocoder is only consulted on a cache miss and
+// failures degrade to a clear 502 — the client always falls back to manual entry.
+
+export interface ReverseGeocodeResult {
+  address: string;
+  pincode: string;
+  city: string;
+  state: string;
+  locality: string;
+}
+
+/** Pointed at Nominatim by default; overridable so tests can simulate outages. */
+const geocoderBaseUrl = () => process.env.GEOCODER_BASE_URL ?? "https://nominatim.openstreetmap.org";
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 500;
+const geocodeCache = new Map<string, { result: ReverseGeocodeResult; at: number }>();
+
+async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult | null> {
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  const hit = geocodeCache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.result;
+
+  const url = `${geocoderBaseUrl()}/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=en`;
+  let data: any;
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "RamnagarEats/1.0 (hyperlocal food delivery; contact via app)" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    data = await response.json();
+  } catch {
+    return null; // network error / timeout — caller falls back to manual entry
+  }
+
+  const address = data?.address ?? {};
+  const result: ReverseGeocodeResult = {
+    address: typeof data?.display_name === "string" ? data.display_name : "",
+    pincode: typeof address.postcode === "string" ? address.postcode : "",
+    city: address.city ?? address.town ?? address.village ?? address.county ?? "",
+    state: typeof address.state === "string" ? address.state : "",
+    locality: address.road ?? address.neighbourhood ?? address.suburb ?? address.residential ?? "",
+  };
+
+  if (geocodeCache.size >= CACHE_MAX_ENTRIES) geocodeCache.clear(); // crude cap — single node
+  geocodeCache.set(key, { result, at: Date.now() });
+  return result;
+}
+
+router.post(
+  "/reverse-geocode",
+  asyncHandler(async (request, response) => {
+    const parsed = coordsSchema.safeParse(request.body);
+    if (!parsed.success) throw badRequest("Valid latitude and longitude are required", "VALIDATION_ERROR");
+    const result = await reverseGeocode(parsed.data.lat, parsed.data.lng);
+    if (!result) {
+      throw new ApiError(502, "Could not determine the address for this location. Enter the pincode manually.", "GEOCODE_FAILED");
+    }
+    return ok(response, { ...result });
   }),
 );
 
