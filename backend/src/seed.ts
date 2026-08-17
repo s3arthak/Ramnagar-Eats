@@ -10,7 +10,60 @@ import { ServiceArea } from "./models/ServiceArea.js";
 import { User } from "./models/User.js";
 import { hashPassword } from "./utils/password.js";
 
-const CENTER = { lat: Number(process.env.SERVICE_CENTER_LAT ?? 19.076), lng: Number(process.env.SERVICE_CENTER_LNG ?? 72.8777) };
+// Ramnagar, Jammu — the platform's real delivery area (matches the production
+// Atlas service area). Overridable via SERVICE_CENTER_LAT/LNG env vars.
+const CENTER = {
+  lat: Number(process.env.SERVICE_CENTER_LAT ?? 32.80674),
+  lng: Number(process.env.SERVICE_CENTER_LNG ?? 75.314854),
+};
+const RADIUS_KM = Number(process.env.SERVICE_RADIUS_KM ?? 15);
+
+// Verified real food photos (Unsplash CDN, all returning 200). Keyword-matched
+// by dish so every restaurant cover and menu item shows a genuine food photo
+// instead of a random placeholder.
+const U = (id: string) => `https://images.unsplash.com/photo-${id}?w=800&q=70&auto=format&fit=crop`;
+const FOOD_IMAGES: Record<string, string> = {
+  biryani: U("1589302168068-964664d93dc0"),
+  pizza: U("1565299624946-b28f40a0ae38"),
+  burger: U("1568901346375-23c9450c58cd"),
+  sandwich: U("1528735602780-2552fd46c7af"),
+  coffee: U("1495474472287-4d71bcdd2085"),
+  chai: U("1571934811356-5cc061b6821f"),
+  salad: U("1512621776951-a57141f2eefd"),
+  bowl: U("1546069901-ba9599a7e63c"),
+  indian: U("1517244683847-7456b63c5969"),
+  noodles: U("1563379091339-03b21ab4a4f8"),
+  dessert: U("1565958011703-44f9829ba187"),
+  sweet: U("1551024506-0bccd828d307"),
+  breakfast: U("1567620905732-2d1ec7ab7445"),
+  meal: U("1540189549336-e6e99c3679fe"),
+  curry: U("1601050690597-df0568f70950"),
+  roganjosh: U("1631452180519-c014fe946bc7"),
+  grill: U("1555939594-58d7cb561ad1"),
+  momo: U("1569718212165-3a8278d5f624"),
+  dumpling: U("1585032226651-759b368d7246"),
+  spread: U("1504674900247-0877df9cc836"),
+  rice: U("1512058564366-18510be2db19"),
+  juice: U("1613478223719-2ab802602423"),
+  cake: U("1578985545662-b28f40a0ae38"),
+  kulcha: U("1565557623262-b51c2513a641"),
+  roll: U("1552374196-1ab2a1c593e8"),
+  tandoori: U("1599487488170-d11ec9c172f0"),
+  snack: U("1601050690597-df0568f70950"),
+};
+
+const foodKeyword = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+/** Real food photo for a dish name: longest matching keyword wins, sensible fallback otherwise. */
+function imageFor(value: string): string {
+  const words = foodKeyword(value);
+  const matches = Object.entries(FOOD_IMAGES)
+    .filter(([keyword]) => words.includes(keyword))
+    .sort((a, b) => b[0].length - a[0].length);
+  if (matches.length) return matches[0][1];
+  if (words.includes("chicken") || words.includes("mutton") || words.includes("paneer")) return FOOD_IMAGES.curry;
+  if (words.includes("veg") || words.includes("salad")) return FOOD_IMAGES.salad;
+  return FOOD_IMAGES.indian;
+}
 
 type SeedItem = {
   name: string;
@@ -28,6 +81,7 @@ type SeedCategory = { name: string; items: SeedItem[] };
 type SeedRestaurant = {
   name: string;
   description: string;
+  street: string;
   cuisines: string[];
   rating: number;
   ratingCount: number;
@@ -45,10 +99,14 @@ type SeedRestaurant = {
   categories: SeedCategory[];
 };
 
+// 12 restaurants around the Ramnagar service area (real Jammu names, Indian
+// dishes). Ten sit inside a 5 km radius (API-test invariant), two further out
+// (8–13 km) so the 15 km production area feels real.
 const RESTAURANTS: SeedRestaurant[] = [
   {
-    name: "Biryani Blues",
+    name: "Royal Biryani House",
     description: "Slow-cooked dum biryanis and Mughlai classics, straight from the handi.",
+    street: "Gol Market, Ramnagar",
     cuisines: ["Biryani", "Mughlai"],
     rating: 4.5, ratingCount: 1200, deliveryTimeMin: 25, deliveryTimeMax: 35, priceForTwo: 350,
     offers: [{ title: "20% OFF up to ₹100", description: "On orders above ₹249" }],
@@ -56,22 +114,26 @@ const RESTAURANTS: SeedRestaurant[] = [
     categories: [
       { name: "Biryani", items: [
         { name: "Chicken Dum Biryani", price: 240, description: "Fragrant basmati layered with spiced chicken, sealed and slow-cooked.", veg: false, popular: true, recommended: true, prepTime: 20, customizations: [{ name: "Spice level", required: true, options: [{ name: "Mild", price: 0 }, { name: "Medium", price: 0 }, { name: "Extra spicy", price: 0 }] }, { name: "Add-ons", options: [{ name: "Extra chicken", price: 90 }, { name: "Extra raita", price: 30 }] }] },
-        { name: "Mutton Dum Biryani", price: 320, description: "Tender mutton pieces, saffron rice and fried onions.", veg: false, popular: true, recommended: true, prepTime: 25 },
-        { name: "Veg Dum Biryani", price: 200, description: "Garden vegetables and aromatic spices in dum style.", veg: true },
+        { name: "Mutton Dum Biryani", price: 320, description: "Tender mutton pieces, saffron rice and fried onions.", veg: false, popular: true, prepTime: 25 },
+        { name: "Hyderabadi Chicken Biryani", price: 260, description: "Tangy, spicy and packed with fresh mint.", veg: false, recommended: true, prepTime: 22 },
+        { name: "Veg Dum Biryani", price: 190, description: "Garden vegetables and aromatic spices in dum style.", veg: true, prepTime: 18 },
       ] },
       { name: "Starters", items: [
-        { name: "Chicken 65", price: 190, description: "Fiery fried chicken with curry leaves.", veg: false, popular: true, recommended: true, prepTime: 12 },
-        { name: "Paneer Tikka", price: 210, description: "Char-grilled cottage cheese, peppers and onions.", veg: true, recommended: true, prepTime: 12 },
+        { name: "Chicken 65", price: 190, description: "Fiery fried chicken tossed with curry leaves.", veg: false, popular: true, prepTime: 12 },
+        { name: "Paneer Tikka", price: 200, description: "Char-grilled cottage cheese, peppers and onions.", veg: true, recommended: true, prepTime: 12 },
+        { name: "Tandoori Chicken (Half)", price: 300, description: "Charred in the clay oven, smoky and juicy.", veg: false, prepTime: 18 },
       ] },
       { name: "Breads & Sides", items: [
         { name: "Butter Naan", price: 40, description: "Soft tandoor bread brushed with butter.", veg: true },
-        { name: "Burani Raita", price: 60, description: "Cooled yogurt with roasted cumin.", veg: true },
+        { name: "Garlic Naan", price: 60, description: "Tandoor bread with garlic butter.", veg: true },
+        { name: "Burani Raita", price: 50, description: "Cooled yogurt with roasted cumin.", veg: true },
       ] },
     ],
   },
   {
     name: "Pizza Roma",
-    description: "Wood-fired Neapolitan pizzas with hand-stretched dough.",
+    description: "Wood-fired pizzas and Italian classics, right here in Jammu.",
+    street: "Residency Road, Gandhi Nagar",
     cuisines: ["Pizza", "Italian"],
     rating: 4.2, ratingCount: 860, deliveryTimeMin: 30, deliveryTimeMax: 40, priceForTwo: 500,
     offers: [{ title: "Free delivery", description: "On orders above ₹299" }],
@@ -90,178 +152,208 @@ const RESTAURANTS: SeedRestaurant[] = [
     ],
   },
   {
-    name: "Burger Barn",
-    description: "Stacked smash burgers and crispy sides.",
-    cuisines: ["Burgers", "American"],
-    rating: 4.0, ratingCount: 540, deliveryTimeMin: 20, deliveryTimeMax: 30, priceForTwo: 250,
-    offsetLat: 0.005, offsetLng: 0.02,
-    categories: [
-      { name: "Burgers", items: [
-        { name: "Classic Smash Burger", price: 179, description: "Double smashed patty, cheddar, house sauce.", veg: false, popular: true },
-        { name: "Crispy Veg Burger", price: 129, description: "Crunchy veg patty, lettuce, mayo.", veg: true },
-        { name: "Peri Peri Chicken", price: 199, description: "Grilled chicken, peri peri glaze.", veg: false },
-      ] },
-      { name: "Sides & Shakes", items: [
-        { name: "Salted Fries", price: 99, description: "Golden and crispy.", veg: true },
-        { name: "Oreo Shake", price: 149, description: "Thick shake loaded with Oreo.", veg: true, popular: true },
-      ] },
-    ],
-  },
-  {
-    name: "Spice Route",
-    description: "North Indian and Chinese favourites done right.",
-    cuisines: ["North Indian", "Chinese"],
-    rating: 4.6, ratingCount: 1500, deliveryTimeMin: 25, deliveryTimeMax: 40, priceForTwo: 400,
-    offers: [{ title: "Flat ₹75 OFF", description: "On orders above ₹399" }],
+    name: "Kashmir Rasoi",
+    description: "Authentic Wazwan — Rogan Josh, Gushtaba and Kashmiri Dum Aloo.",
+    street: "Trikuta Nagar, Canal Road",
+    cuisines: ["Kashmiri", "North Indian"],
+    rating: 4.7, ratingCount: 950, deliveryTimeMin: 30, deliveryTimeMax: 45, priceForTwo: 450,
     offsetLat: -0.02, offsetLng: -0.015,
     categories: [
-      { name: "Main Course", items: [
-        { name: "Paneer Butter Masala", price: 260, description: "Cottage cheese in silky tomato-cashew gravy.", veg: true, popular: true },
-        { name: "Butter Chicken", price: 320, description: "Tandoori chicken in rich makhani gravy.", veg: false, popular: true, customizations: [{ name: "Spice level", required: true, options: [{ name: "Mild", price: 0 }, { name: "Medium", price: 0 }, { name: "Spicy", price: 0 }] }] },
-        { name: "Chilli Paneer", price: 240, description: "Indo-Chinese stir-fried paneer.", veg: true },
+      { name: "Wazwan", items: [
+        { name: "Rogan Josh", price: 380, description: "Kashmiri lamb curry with a deep red gravy of Kashmiri chillies.", veg: false, popular: true, recommended: true, prepTime: 25 },
+        { name: "Gushtaba", price: 420, description: "Hand-pounded mutton meatballs in yogurt gravy.", veg: false, prepTime: 30 },
+        { name: "Yakhni", price: 340, description: "Delicate fennel-flavoured mutton curry.", veg: false, recommended: true, prepTime: 25 },
+        { name: "Kashmiri Dum Aloo", price: 240, description: "Baby potatoes in a rich, spiced gravy.", veg: true, popular: true, prepTime: 20 },
       ] },
-      { name: "Chinese", items: [
-        { name: "Veg Hakka Noodles", price: 180, description: "Wok-tossed noodles with vegetables.", veg: true },
-        { name: "Chicken Fried Rice", price: 220, description: "Smoky rice with chicken and egg.", veg: false },
-      ] },
-      { name: "Breads", items: [
-        { name: "Garlic Naan", price: 70, description: "Tandoor bread with garlic butter.", veg: true },
+      { name: "Rice & Bread", items: [
+        { name: "Kashmiri Naan", price: 60, description: "Stuffed, soft tandoor bread.", veg: true },
+        { name: "Saffron Rice", price: 140, description: "Fragrant basmati with saffron and nuts.", veg: true },
       ] },
     ],
   },
   {
-    name: "Green Bowl",
-    description: "Fresh salads, grain bowls and cold-pressed juices.",
-    cuisines: ["Healthy", "Salads"],
-    rating: 4.4, ratingCount: 420, deliveryTimeMin: 15, deliveryTimeMax: 25, priceForTwo: 300, isPureVeg: true,
+    name: "Sharma Ji Dhaba",
+    description: "Highway-style dhaba — rajma, chole, tandoori and fresh rotis.",
+    street: "Jammu Bazaar, Shastri Nagar",
+    cuisines: ["North Indian", "Dhaba"],
+    rating: 4.4, ratingCount: 2100, deliveryTimeMin: 20, deliveryTimeMax: 25, priceForTwo: 200,
+    offsetLat: 0.005, offsetLng: 0.02,
+    categories: [
+      { name: "Main Course", items: [
+        { name: "Rajma Chawal", price: 120, description: "Creamy kidney beans, ghee-tossed rice.", veg: true, popular: true, recommended: true, prepTime: 10 },
+        { name: "Chole Bhature", price: 110, description: "Spicy chickpeas with fluffy bhature.", veg: true, popular: true, prepTime: 10 },
+        { name: "Dal Makhani", price: 160, description: "Slow-simmered black lentils with butter.", veg: true, prepTime: 15 },
+        { name: "Kadhi Chawal", price: 130, description: "Tangy yogurt curry with pakoras.", veg: true, prepTime: 12 },
+      ] },
+      { name: "Tandoor", items: [
+        { name: "Tandoori Chicken (Half)", price: 280, description: "Smoky, charred and spiced.", veg: false, prepTime: 18 },
+        { name: "Amritsari Fish", price: 320, description: "Crisp battered fish with ajwain.", veg: false, recommended: true, prepTime: 20 },
+        { name: "Paneer Tikka", price: 200, description: "Grilled cottage cheese and peppers.", veg: true, prepTime: 15 },
+        { name: "Tandoori Roti", price: 20, description: "Whole-wheat bread from the clay oven.", veg: true },
+      ] },
+    ],
+  },
+  {
+    name: "Amritsari Kulcha Junction",
+    description: "Stuffed kulchas, bhature and tall glasses of lassi.",
+    street: "Channi Himmat, Rohtak Chowk",
+    cuisines: ["Punjabi", "North Indian"],
+    rating: 4.3, ratingCount: 1100, deliveryTimeMin: 15, deliveryTimeMax: 25, priceForTwo: 220,
     offsetLat: 0.025, offsetLng: 0.005,
     categories: [
-      { name: "Bowls", items: [
-        { name: "Quinoa Power Bowl", price: 280, description: "Quinoa, chickpeas, avocado, tahini.", veg: true, popular: true },
-        { name: "Greek Salad Bowl", price: 240, description: "Feta, olives, cucumber, cherry tomatoes.", veg: true },
+      { name: "Kulchas", items: [
+        { name: "Amritsari Paneer Kulcha", price: 140, description: "Paneer-stuffed kulcha with chole and pickle.", veg: true, popular: true, prepTime: 12 },
+        { name: "Aloo Kulcha", price: 110, description: "Spiced potato-stuffed kulcha.", veg: true, prepTime: 10 },
+        { name: "Chole Kulcha", price: 150, description: "Kulcha served with Amritsari chole.", veg: true, recommended: true, prepTime: 10 },
+        { name: "Bhatura Chole", price: 120, description: "Deep-fried bhatura with chole.", veg: true, prepTime: 10 },
       ] },
-      { name: "Juices", items: [
-        { name: "Green Detox", price: 160, description: "Spinach, apple, cucumber, ginger.", veg: true },
-        { name: "Beetroot Boost", price: 170, description: "Beetroot, carrot, orange.", veg: true },
+      { name: "Lassi", items: [
+        { name: "Sweet Lassi", price: 80, description: "Thick, creamy and chilled.", veg: true },
+        { name: "Mango Lassi", price: 100, description: "Seasonal mango blended with curd.", veg: true, popular: true },
       ] },
     ],
   },
   {
-    name: "Sweet Tooth",
-    description: "Cakes, pastries and desserts baked fresh daily.",
+    name: "Green Leaf Bowl",
+    description: "Fresh salads, grain bowls and cold-pressed juices.",
+    street: "Bahu Plaza, Satwari",
+    cuisines: ["Healthy", "Salads"],
+    rating: 4.4, ratingCount: 620, deliveryTimeMin: 15, deliveryTimeMax: 25, priceForTwo: 250, isPureVeg: true,
+    offsetLat: 0.01, offsetLng: 0.03,
+    categories: [
+      { name: "Bowls", items: [
+        { name: "Quinoa Power Bowl", price: 260, description: "Quinoa, chickpeas, avocado, tahini.", veg: true, popular: true, prepTime: 12 },
+        { name: "Greek Salad Bowl", price: 230, description: "Feta, olives, cucumber, cherry tomatoes.", veg: true, prepTime: 8 },
+        { name: "Paneer Teriyaki Bowl", price: 280, description: "Grilled paneer over rice and greens.", veg: true, prepTime: 15 },
+      ] },
+      { name: "Juices", items: [
+        { name: "Green Detox", price: 140, description: "Spinach, apple, cucumber, ginger.", veg: true, prepTime: 5 },
+        { name: "Beetroot Boost", price: 150, description: "Beetroot, carrot, orange.", veg: true, prepTime: 5 },
+        { name: "Watermelon Cooler", price: 120, description: "Fresh watermelon and mint.", veg: true, prepTime: 5 },
+      ] },
+    ],
+  },
+  {
+    name: "Krishna Sweets & Bakers",
+    description: "Fresh mithai, cakes and pastries made every morning.",
+    street: "Gol Market, Ramnagar",
     cuisines: ["Desserts", "Bakery"],
-    rating: 4.7, ratingCount: 980, deliveryTimeMin: 20, deliveryTimeMax: 30, priceForTwo: 200, isPureVeg: true,
+    rating: 4.6, ratingCount: 1400, deliveryTimeMin: 20, deliveryTimeMax: 30, priceForTwo: 200, isPureVeg: true,
     offsetLat: -0.005, offsetLng: -0.025,
     categories: [
+      { name: "Mithai", items: [
+        { name: "Kaju Katli (500 g)", price: 240, description: "Diamond-cut cashew fudge.", veg: true, popular: true },
+        { name: "Motichoor Ladoo (500 g)", price: 180, description: "Bite-sized gram-flour ladoos.", veg: true },
+        { name: "Gulab Jamun (6 pc)", price: 120, description: "Warm, syrup-soaked dumplings.", veg: true, popular: true },
+        { name: "Jalebi (250 g)", price: 100, description: "Crisp, saffron syrup spirals.", veg: true },
+      ] },
       { name: "Cakes", items: [
         { name: "Belgian Chocolate Truffle", price: 320, description: "Rich dark chocolate layers.", veg: true, popular: true },
         { name: "Red Velvet Slice", price: 180, description: "Cream cheese frosting.", veg: true },
-      ] },
-      { name: "Desserts", items: [
-        { name: "Tiramisu", price: 220, description: "Espresso-soaked ladyfingers.", veg: true, popular: true },
-        { name: "Gulab Jamun Cheesecake", price: 210, description: "A desi twist on classic cheesecake.", veg: true },
+        { name: "Pineapple Pastry", price: 90, description: "Classic cream-filled pastry.", veg: true },
       ] },
     ],
   },
   {
-    name: "Cafe Mocha",
-    description: "Speciality coffee, all-day breakfast and continental plates.",
-    cuisines: ["Cafe", "Continental"],
-    rating: 4.1, ratingCount: 610, deliveryTimeMin: 15, deliveryTimeMax: 25, priceForTwo: 350,
-    offsetLat: 0.01, offsetLng: 0.03,
-    categories: [
-      { name: "Coffee", items: [
-        { name: "Cappuccino", price: 140, description: "Double shot, velvety foam.", veg: true, popular: true, customizations: [{ name: "Milk", required: false, options: [{ name: "Whole milk", price: 0 }, { name: "Oat milk", price: 30 }] }] },
-        { name: "Cold Brew", price: 170, description: "Slow-steeped 18 hours.", veg: true },
-      ] },
-      { name: "All Day Breakfast", items: [
-        { name: "Avocado Toast", price: 260, description: "Sourdough, smashed avocado, chilli flakes.", veg: true },
-        { name: "Club Sandwich", price: 240, description: "Triple-decker with fries.", veg: false, popular: true },
-      ] },
-    ],
-  },
-  {
-    name: "Andhra Kitchen",
-    description: "Authentic Andhra meals with fiery spice.",
-    cuisines: ["South Indian", "Andhra"],
-    rating: 4.3, ratingCount: 720, deliveryTimeMin: 30, deliveryTimeMax: 45, priceForTwo: 300,
-    offsetLat: -0.028, offsetLng: 0.02,
-    categories: [
-      { name: "Meals", items: [
-        { name: "Andhra Chicken Meal", price: 260, description: "Rice, curry, rasam, pickle and ghee.", veg: false, popular: true },
-        { name: "Veg Thali", price: 210, description: "Assorted veg curries with rice and breads.", veg: true },
-      ] },
-      { name: "Tiffin", items: [
-        { name: "Gongura Idli", price: 130, description: "Steamed idli with gongura chutney.", veg: true },
-        { name: "Masala Dosa", price: 150, description: "Crisp dosa with potato masala.", veg: true, popular: true },
-      ] },
-    ],
-  },
-  {
-    name: "Momo Junction",
-    description: "Steamed, fried and tandoori momos with fiery chutneys.",
-    cuisines: ["Chinese", "Tibetan"],
-    rating: 4.5, ratingCount: 890, deliveryTimeMin: 25, deliveryTimeMax: 35, priceForTwo: 250,
-    offsetLat: 0.018, offsetLng: -0.022,
-    categories: [
-      { name: "Momos", items: [
-        { name: "Steamed Chicken Momos (8)", price: 160, description: "Juicy chicken dumplings.", veg: false, popular: true },
-        { name: "Veg Cheese Momos (8)", price: 150, description: "Melted cheese and vegetables.", veg: true },
-        { name: "Tandoori Momos (8)", price: 190, description: "Smoky char-grilled momos.", veg: false, popular: true },
-      ] },
-      { name: "Sides", items: [
-        { name: "Chilli Potato", price: 140, description: "Crispy potatoes tossed in chilli sauce.", veg: true },
-        { name: "Chicken Noodle Soup", price: 180, description: "Clear broth with noodles.", veg: false },
-      ] },
-    ],
-  },
-  {
-    name: "Kebab Corner",
-    description: "Tandoori kebabs and rolls, charcoal-fired.",
+    name: "Tandoori Grill House",
+    description: "Charcoal-fired kebabs, rolls and Mughlai mains.",
+    street: "Residency Road, Gandhi Nagar",
     cuisines: ["Kebab", "Mughlai"],
-    rating: 4.8, ratingCount: 1100, deliveryTimeMin: 35, deliveryTimeMax: 50, priceForTwo: 600,
+    rating: 4.8, ratingCount: 1700, deliveryTimeMin: 35, deliveryTimeMax: 50, priceForTwo: 600,
     offers: [{ title: "10% OFF up to ₹150", description: "On orders above ₹499" }],
-    offsetLat: 0.04, offsetLng: 0.015, isOpen: true, isAcceptingOrders: false,
+    offsetLat: 0.035, offsetLng: 0.01, isAcceptingOrders: false,
     categories: [
       { name: "Kebabs", items: [
-        { name: "Seekh Kebab Roll", price: 220, description: "Mince kebab wrapped in roomali.", veg: false, popular: true },
-        { name: "Tandoori Chicken (Half)", price: 340, description: "Charred, smoky and spiced.", veg: false, popular: true },
-        { name: "Paneer Shashlik", price: 280, description: "Grilled paneer with peppers.", veg: true },
+        { name: "Seekh Kebab Roll", price: 220, description: "Mince kebab wrapped in roomali.", veg: false, popular: true, prepTime: 15 },
+        { name: "Malai Chicken Tikka", price: 290, description: "Creamy, mildly spiced tikka.", veg: false, recommended: true, prepTime: 18 },
+        { name: "Tandoori Chicken (Full)", price: 420, description: "Whole bird, charred and smoky.", veg: false, prepTime: 25 },
+        { name: "Fish Tikka", price: 340, description: "Spiced fish from the tandoor.", veg: false, prepTime: 20 },
       ] },
       { name: "Mains", items: [
         { name: "Mutton Rogan Josh", price: 420, description: "Kashmiri-style lamb curry.", veg: false },
+        { name: "Butter Chicken", price: 320, description: "Tandoori chicken in makhani gravy.", veg: false, popular: true },
       ] },
     ],
   },
   {
-    name: "Taco Tierra",
-    description: "Street-style tacos, burritos and loaded nachos.",
-    cuisines: ["Mexican", "Fast Food"],
-    rating: 3.9, ratingCount: 330, deliveryTimeMin: 20, deliveryTimeMax: 30, priceForTwo: 280,
-    offsetLat: -0.035, offsetLng: -0.01,
+    name: "Chai Point",
+    description: "Cutting chai, filter coffee and quick snacks all day.",
+    street: "Trikuta Nagar, Canal Road",
+    cuisines: ["Cafe", "Snacks"],
+    rating: 4.1, ratingCount: 800, deliveryTimeMin: 15, deliveryTimeMax: 25, priceForTwo: 150, isPureVeg: true,
+    offsetLat: 0.018, offsetLng: -0.022,
     categories: [
-      { name: "Tacos", items: [
-        { name: "Chicken Al Pastor Taco", price: 180, description: "Spit-roasted chicken, pineapple salsa.", veg: false, popular: true },
-        { name: "Veggie Taco", price: 150, description: "Black beans, corn salsa, avocado.", veg: true },
+      { name: "Chai & Coffee", items: [
+        { name: "Cutting Chai", price: 20, description: "Half-glass, full strength.", veg: true, popular: true, prepTime: 5 },
+        { name: "Masala Chai", price: 30, description: "Ginger and cardamom spiced.", veg: true, prepTime: 5 },
+        { name: "Filter Coffee", price: 60, description: "South Indian style, frothy.", veg: true, prepTime: 6 },
+        { name: "Cappuccino", price: 120, description: "Double shot, velvety foam.", veg: true, prepTime: 6 },
       ] },
-      { name: "Burritos", items: [
-        { name: "Bean & Rice Burrito", price: 240, description: "Wrapped, grilled and hearty.", veg: true },
+      { name: "Snacks", items: [
+        { name: "Veg Maggi", price: 70, description: "Masala noodles, desi style.", veg: true, popular: true, prepTime: 8 },
+        { name: "Cheese Toast", price: 90, description: "Grilled, golden and gooey.", veg: true, prepTime: 8 },
+        { name: "Samosa (2 pc)", price: 40, description: "Crisp, potato-stuffed.", veg: true, prepTime: 5 },
+        { name: "Bun Maska", price: 50, description: "Buttered bun with chai.", veg: true, prepTime: 5 },
       ] },
     ],
   },
   {
-    name: "Thai Orchid",
-    description: "Fragrant Thai curries, noodles and street snacks.",
-    cuisines: ["Thai", "Asian"],
-    rating: 4.2, ratingCount: 470, deliveryTimeMin: 40, deliveryTimeMax: 55, priceForTwo: 550, isOpen: false,
-    offsetLat: 0.045, offsetLng: -0.03,
+    name: "Momos & More",
+    description: "Steamed, fried and tandoori momos with fiery chutneys.",
+    street: "Shastri Nagar, Jammu Bazaar",
+    cuisines: ["Chinese", "Tibetan"],
+    rating: 4.5, ratingCount: 1300, deliveryTimeMin: 25, deliveryTimeMax: 35, priceForTwo: 250,
+    offsetLat: -0.028, offsetLng: 0.02,
     categories: [
-      { name: "Curries", items: [
-        { name: "Green Chicken Curry", price: 340, description: "Coconut, basil, bamboo shoots.", veg: false, popular: true },
-        { name: "Veg Red Curry", price: 290, description: "Coconut and Thai eggplant.", veg: true },
+      { name: "Momos", items: [
+        { name: "Steamed Chicken Momos (8)", price: 160, description: "Juicy chicken dumplings.", veg: false, popular: true, prepTime: 12 },
+        { name: "Veg Cheese Momos (8)", price: 150, description: "Melted cheese and vegetables.", veg: true, prepTime: 12 },
+        { name: "Tandoori Momos (8)", price: 190, description: "Smoky char-grilled momos.", veg: false, popular: true, prepTime: 15 },
+        { name: "Fried Momos (8)", price: 170, description: "Golden, crisp and crunchy.", veg: false, prepTime: 12 },
       ] },
-      { name: "Noodles", items: [
-        { name: "Pad Thai", price: 310, description: "Rice noodles, tamarind, peanuts.", veg: false },
+      { name: "Soups & Sides", items: [
+        { name: "Chicken Noodle Soup", price: 180, description: "Clear broth with noodles.", veg: false, prepTime: 10 },
+        { name: "Veg Manchurian", price: 160, description: "Crisp veg balls in garlic sauce.", veg: true, prepTime: 12 },
+        { name: "Hakka Noodles", price: 170, description: "Wok-tossed with vegetables.", veg: true, prepTime: 10 },
+      ] },
+    ],
+  },
+  {
+    name: "Dogri Dham",
+    description: "Home-style Dogra thalis — maa ki dal, khadi and local favourites.",
+    street: "Bahu Plaza, Satwari",
+    cuisines: ["Dogri", "North Indian"],
+    rating: 4.9, ratingCount: 650, deliveryTimeMin: 30, deliveryTimeMax: 40, priceForTwo: 300,
+    offsetLat: 0.09, offsetLng: 0.05,
+    categories: [
+      { name: "Dogra Thalis", items: [
+        { name: "Maa ki Dal Thali", price: 220, description: "Urad dal, rice, salad and pickle.", veg: true, popular: true, recommended: true, prepTime: 20 },
+        { name: "Dham Special Thali", price: 320, description: "Festive spread — dal, khadi, rice, rajma and sweet.", veg: true, prepTime: 25 },
+        { name: "Khadi Chawal", price: 140, description: "Tangy gram-flour curry with rice.", veg: true, prepTime: 12 },
+      ] },
+      { name: "Local Specials", items: [
+        { name: "Dogri Rajma", price: 160, description: "Kidney beans cooked with local spices.", veg: true, prepTime: 15 },
+        { name: "Gheewar", price: 180, description: "Traditional Dogra sweet, saffron and ghee.", veg: true, prepTime: 10 },
+      ] },
+    ],
+  },
+  {
+    name: "The Sandwich Co",
+    description: "Grilled sandwiches, loaded fries and cold coffees.",
+    street: "Channi Himmat, Rohtak Chowk",
+    cuisines: ["Continental", "Fast Food"],
+    rating: 3.9, ratingCount: 420, deliveryTimeMin: 20, deliveryTimeMax: 30, priceForTwo: 250, isOpen: false,
+    offsetLat: -0.1, offsetLng: 0.08,
+    categories: [
+      { name: "Sandwiches", items: [
+        { name: "Grilled Veg Sandwich", price: 120, description: "Layered veg, mint chutney, grilled.", veg: true, popular: true, prepTime: 8 },
+        { name: "Chicken Tikka Sandwich", price: 180, description: "Smoky tikka with mayo and lettuce.", veg: false, prepTime: 10 },
+        { name: "Club Sandwich", price: 220, description: "Triple-decker with fries.", veg: false, recommended: true, prepTime: 10 },
+      ] },
+      { name: "Beverages", items: [
+        { name: "Cold Coffee", price: 130, description: "Frothy and chilled.", veg: true, prepTime: 5 },
+        { name: "Oreo Shake", price: 150, description: "Thick shake loaded with Oreo.", veg: true, popular: true, prepTime: 6 },
+        { name: "Fresh Lime Soda", price: 90, description: "Sweet, salty or mixed.", veg: true, prepTime: 4 },
       ] },
     ],
   },
@@ -270,55 +362,43 @@ const RESTAURANTS: SeedRestaurant[] = [
 const CUISINE_CATEGORIES = [
   { name: "Biryani", slug: "biryani", emoji: "🍛" },
   { name: "Pizza", slug: "pizza", emoji: "🍕" },
-  { name: "Burgers", slug: "burgers", emoji: "🍔" },
+  { name: "Kashmiri", slug: "kashmiri", emoji: "🍲" },
   { name: "North Indian", slug: "north-indian", emoji: "🍛" },
-  { name: "Chinese", slug: "chinese", emoji: "🥡" },
+  { name: "Punjabi", slug: "punjabi", emoji: "🫓" },
+  { name: "Dhaba", slug: "dhaba", emoji: "🍲" },
   { name: "Healthy", slug: "healthy", emoji: "🥗" },
   { name: "Desserts", slug: "desserts", emoji: "🍰" },
   { name: "Cafe", slug: "cafe", emoji: "☕" },
-  { name: "South Indian", slug: "south-indian", emoji: "🥞" },
-  { name: "Mexican", slug: "mexican", emoji: "🌮" },
-  { name: "Thai", slug: "thai", emoji: "🍜" },
+  { name: "Chinese", slug: "chinese", emoji: "🥡" },
+  { name: "Tibetan", slug: "tibetan", emoji: "🥟" },
+  { name: "Dogri", slug: "dogri", emoji: "🍛" },
+  { name: "Fast Food", slug: "fast-food", emoji: "🍔" },
 ];
 
-export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/ramnagar-eats") {
-  await mongoose.connect(mongoUri);
+const STREET_POOL = [
+  "Gol Market, Ramnagar", "Residency Road, Gandhi Nagar", "Trikuta Nagar, Canal Road",
+  "Jammu Bazaar, Shastri Nagar", "Channi Himmat, Rohtak Chowk", "Bahu Plaza, Satwari",
+];
 
+/** Create the restaurant catalog (restaurants + menu + coupons + categories). Shared by full seed and --restaurants-only. */
+async function seedCatalog(demoOwnerId?: mongoose.Types.ObjectId) {
   await Promise.all([
-    User.deleteMany({}), Restaurant.deleteMany({}), MenuCategory.deleteMany({}), MenuItem.deleteMany({}),
-    Category.deleteMany({}), Address.deleteMany({}), Coupon.deleteMany({}), Order.deleteMany({}), ServiceArea.deleteMany({}),
+    Restaurant.deleteMany({}), MenuCategory.deleteMany({}), MenuItem.deleteMany({}),
+    Category.deleteMany({}), Coupon.deleteMany({}),
   ]);
 
-  // V2: email-OTP / Google accounts — passwords are random and never used for login.
-  const admin = await User.create({ name: "Platform Admin", phone: "+919876500002", email: "admin@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("admin123"), role: "ADMIN" });
-  const demoCustomer = await User.create({ name: "Demo Customer", phone: "+919876500000", email: "demo@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("customer123"), role: "CUSTOMER" });
-  const demoOwner = await User.create({ name: "Demo Restaurant Owner", phone: "+919876500001", email: "kitchen@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" });
-
-  // Admin-controlled delivery area (default 10 km, editable from the admin panel).
-  await ServiceArea.create({
-    key: "default",
-    lat: CENTER.lat,
-    lng: CENTER.lng,
-    address: "Ramnagar Eats Hub, Mumbai",
-    pincode: "400001",
-    radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 10),
-  });
-
   await Category.insertMany(CUISINE_CATEGORIES);
-
-  const foodKeyword = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "food";
-  const imageUrl = (keyword: string, width: number, height: number) => `https://loremflickr.com/${width}/${height}/${encodeURIComponent(foodKeyword(keyword))}`;
 
   const restaurants = [];
   for (const [index, seed] of RESTAURANTS.entries()) {
     const restaurant = await Restaurant.create({
-      ownerId: index === 0 ? demoOwner.id : undefined,
+      ownerId: index === 0 ? demoOwnerId : undefined,
       name: seed.name,
       description: seed.description,
       phone: `+9198765${String(10000 + index)}`,
-      address: `${seed.name} Kitchen, Sector ${index + 1}, Ramnagar Eats Hub`,
+      address: `${seed.street || STREET_POOL[index % STREET_POOL.length]}, Jammu`,
       location: { type: "Point", coordinates: [CENTER.lng + seed.offsetLng, CENTER.lat + seed.offsetLat] },
-      coverImage: imageUrl(seed.cuisines[0], 800, 450),
+      coverImage: imageFor(seed.cuisines[0]),
       cuisines: seed.cuisines,
       rating: seed.rating,
       ratingCount: seed.ratingCount,
@@ -343,7 +423,7 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
           name: item.name,
           description: item.description ?? "",
           price: item.price,
-          image: item.image ?? imageUrl(item.name, 400, 300),
+          image: item.image ?? imageFor(item.name),
           isVeg: item.veg ?? false,
           isAvailable: !item.unavailable,
           isPopular: item.popular ?? false,
@@ -365,28 +445,76 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
   const pizzaRoma = restaurants.find((restaurant) => restaurant.name === "Pizza Roma");
   if (pizzaRoma) await Coupon.updateOne({ code: "PIZZA10" }, { $set: { restaurantIds: [pizzaRoma.id] } });
 
-  await Address.create({
-    userId: demoCustomer.id,
-    label: "Home",
-    formattedAddress: "12 Palm Grove, Bandra West, Mumbai",
-    pincode: "400050",
-    city: "Mumbai",
-    state: "Maharashtra",
-    locality: "Bandra West",
-    latitude: CENTER.lat,
-    longitude: CENTER.lng,
-    isDefault: true,
-  });
+  return restaurants;
+}
+
+export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/ramnagar-eats") {
+  await mongoose.connect(mongoUri);
+  const restaurantsOnly = process.argv.includes("--restaurants-only");
+
+  if (!restaurantsOnly) {
+    await Promise.all([User.deleteMany({}), Address.deleteMany({}), Order.deleteMany({}), ServiceArea.deleteMany({})]);
+  }
+
+  let admin!: mongoose.HydratedDocument<any>;
+  let demoCustomer!: mongoose.HydratedDocument<any>;
+  let demoOwner!: mongoose.HydratedDocument<any>;
+  if (restaurantsOnly) {
+    // Production reseed: never touch users. Resolve (or create) the demo owner so
+    // the first restaurant keeps its owner link, and skip admin/demo customer.
+    demoOwner = (await User.findOneAndUpdate(
+      { email: "kitchen@ramnagareats.test" },
+      { $setOnInsert: { name: "Demo Restaurant Owner", phone: "+919876500001", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" } },
+      { upsert: true, returnDocument: "after" },
+    )) as any;
+    // Place restaurants around the *existing* live service area, whatever it is.
+    const area = await ServiceArea.findOne({ key: "default" }).lean();
+    if (area) {
+      CENTER.lat = area.lat;
+      CENTER.lng = area.lng;
+    }
+  } else {
+    // V2: email-OTP / Google accounts — passwords are random and never used for login.
+    admin = await User.create({ name: "Platform Admin", phone: "+919876500002", email: "admin@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("admin123"), role: "ADMIN" });
+    demoCustomer = await User.create({ name: "Demo Customer", phone: "+919876500000", email: "demo@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("customer123"), role: "CUSTOMER" });
+    demoOwner = await User.create({ name: "Demo Restaurant Owner", phone: "+919876500001", email: "kitchen@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" });
+  }
+
+  if (!restaurantsOnly) {
+    // Admin-controlled delivery area — Ramnagar, Jammu (editable from the admin panel).
+    await ServiceArea.create({
+      key: "default",
+      lat: CENTER.lat,
+      lng: CENTER.lng,
+      address: "Ramnagar Eats Central Hub, Ramnagar, Jammu",
+      pincode: "182122",
+      radiusKm: RADIUS_KM,
+    });
+
+    await Address.create({
+      userId: demoCustomer.id,
+      label: "Home",
+      formattedAddress: "1 Canal Road, Ramnagar, Jammu",
+      pincode: "182122",
+      city: "Jammu",
+      state: "Jammu & Kashmir",
+      locality: "Ramnagar",
+      latitude: CENTER.lat,
+      longitude: CENTER.lng,
+      isDefault: true,
+    });
+  }
+
+  const restaurants = await seedCatalog(demoOwner.id);
 
   console.info(
-    `Seeded: admin (admin@ramnagareats.test), demo customer (demo@ramnagareats.test), demo owner (kitchen@ramnagareats.test), ` +
-      `${CUISINE_CATEGORIES.length} categories, ${restaurants.length} restaurants, delivery area ${Number(process.env.SERVICE_RADIUS_KM ?? 10)} km. ` +
-      `Log in with email + OTP (dev codes appear in the API log or via /auth/dev-otp?email=...).`,
+    `Seeded: ${restaurantsOnly ? "restaurant catalog only (users/orders/service-area untouched)" : `admin (admin@ramnagareats.test), demo customer (demo@ramnagareats.test), demo owner (kitchen@ramnagareats.test)`}, ` +
+      `${CUISINE_CATEGORIES.length} categories, ${restaurants.length} restaurants around ${CENTER.lat.toFixed(4)}, ${CENTER.lng.toFixed(4)} (${restaurantsOnly ? "existing service area" : `${RADIUS_KM} km radius`}).`,
   );
   return { admin, demoCustomer, demoOwner, restaurants };
 }
 
-// Run directly: npm run seed
+// Run directly: npm run seed   (add -- --restaurants-only to reseed just the catalog)
 if (process.argv[1]?.endsWith("seed.ts") || process.argv[1]?.endsWith("seed.js")) {
   seedDatabase()
     .then(() => process.exit(0))

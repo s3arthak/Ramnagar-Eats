@@ -9,6 +9,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/seed.ts",
+    "backup": "tsx scripts/backup-atlas.ts",
+    "verify": "tsx scripts/verify-atlas.ts",
     "test:api": "cross-env NODE_ENV=test tsx scripts/api-test.ts"
   },
   "dependencies": {

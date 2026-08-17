@@ -262,18 +262,18 @@ async function main() {
   // ---------- Restaurants ----------
   console.log("\nRestaurants (data comes from the database)");
   {
-    const list = await request(base, "/api/v1/restaurants?lat=19.076&lng=72.8777&limit=50");
+    const list = await request(base, "/api/v1/restaurants?lat=32.80674&lng=75.314854&limit=50");
     check("list returns restaurants from DB", list.status === 200 && list.body.restaurants.length >= 10, `got ${list.body.restaurants?.length}`);
     const firstRestaurant = list.body.restaurants[0];
     check("restaurant DTO exposes phone + location", Boolean(firstRestaurant?.phone) && firstRestaurant?.location?.lat != null && firstRestaurant?.location?.lng != null, JSON.stringify(firstRestaurant ?? null));
     check("every restaurant has display fields", list.body.restaurants.every((r: any) => r.name && r.rating !== undefined && r.deliveryTimeMin && r.priceForTwo && r.cuisines.length));
     check("distance computed for nearby query", list.body.restaurants.every((r: any) => r.distanceKm !== undefined));
 
-    const outOfArea = await request(base, "/api/v1/restaurants?lat=19.5&lng=72.8777&limit=50");
+    const outOfArea = await request(base, "/api/v1/restaurants?lat=31.5&lng=75.3&limit=50");
     check("out-of-area location hides far restaurants", outOfArea.body.restaurants.length === 0);
 
     const search = await request(base, "/api/v1/restaurants?q=biryani&limit=50");
-    check("search filters by name/cuisine", search.status === 200 && search.body.restaurants.some((r: any) => r.name === "Biryani Blues") && search.body.restaurants.every((r: any) => (r.name + r.cuisines.join(" ")).toLowerCase().includes("biryani")));
+    check("search filters by name/cuisine", search.status === 200 && search.body.restaurants.some((r: any) => r.name === "Royal Biryani House") && search.body.restaurants.every((r: any) => (r.name + r.cuisines.join(" ")).toLowerCase().includes("biryani")));
 
     const cuisine = await request(base, "/api/v1/restaurants?cuisines=Pizza&limit=50");
     check("cuisine filter works", cuisine.body.restaurants.length === 1 && cuisine.body.restaurants[0].name === "Pizza Roma");
@@ -298,7 +298,7 @@ async function main() {
     const times = sortTime.body.restaurants.map((r: any) => r.deliveryTimeMin);
     check("sort by delivery time works", times.every((value: number, index: number) => index === 0 || times[index - 1] <= value));
 
-    const paged = await request(base, "/api/v1/restaurants?page=1&limit=5&lat=19.076&lng=72.8777");
+    const paged = await request(base, "/api/v1/restaurants?page=1&limit=5&lat=32.80674&lng=75.314854");
     check("pagination returns limited page", paged.body.restaurants.length === 5 && paged.body.hasMore === true && paged.body.total > 5);
   }
 
@@ -334,10 +334,10 @@ async function main() {
   // ---------- Locations ----------
   console.log("\nLocations");
   {
-    const inside = await request(base, "/api/v1/locations/serviceability?lat=19.076&lng=72.8777");
+    const inside = await request(base, "/api/v1/locations/serviceability?lat=32.80674&lng=75.314854");
     check("serviceable location accepted", inside.status === 200 && inside.body.serviceable === true);
 
-    const outside = await request(base, "/api/v1/locations/serviceability?lat=19.6&lng=72.8777");
+    const outside = await request(base, "/api/v1/locations/serviceability?lat=31.5&lng=75.3");
     check("out-of-area location rejected", outside.status === 200 && outside.body.serviceable === false && typeof outside.body.distanceKm === "number");
 
     const missing = await request(base, "/api/v1/locations/serviceability");
@@ -345,23 +345,23 @@ async function main() {
 
     // Boundary: exactly at the radius is still serviceable; just beyond is not.
     // Seeded radius is 5 km; 1 degree of latitude ≈ 111.32 km.
-    const boundaryLat = (19.076 + 5 / 111.32).toFixed(6);
-    const atBoundary = await request(base, `/api/v1/locations/serviceability?lat=${boundaryLat}&lng=72.8777`);
+    const boundaryLat = (32.80674 + 5 / 111.32).toFixed(6);
+    const atBoundary = await request(base, `/api/v1/locations/serviceability?lat=${boundaryLat}&lng=75.314854`);
     check("exactly at the radius is serviceable", atBoundary.status === 200 && atBoundary.body.serviceable === true && atBoundary.body.distanceKm <= 5, JSON.stringify(atBoundary.body));
-    const justBeyond = await request(base, `/api/v1/locations/serviceability?lat=${(19.076 + 0.06).toFixed(6)}&lng=72.8777`);
+    const justBeyond = await request(base, `/api/v1/locations/serviceability?lat=${(32.80674 + 0.06).toFixed(6)}&lng=75.314854`);
     check("just beyond the radius is rejected", justBeyond.status === 200 && justBeyond.body.serviceable === false);
 
-    const invalidCoords = await request(base, "/api/v1/locations/serviceability?lat=999&lng=72.8777");
+    const invalidCoords = await request(base, "/api/v1/locations/serviceability?lat=999&lng=75.314854");
     check("invalid coordinates rejected", invalidCoords.status === 400);
 
     // Reverse geocoding: bad input rejected without touching the geocoder.
-    const badReverse = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 999, lng: 72.8777 }) });
+    const badReverse = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 999, lng: 75.314854 }) });
     check("reverse-geocode rejects invalid coordinates", badReverse.status === 400 && badReverse.body.code === "VALIDATION_ERROR");
 
     // Geocoder outage: the endpoint degrades to a clear 502 instead of a 500.
     const previousBase = process.env.GEOCODER_BASE_URL;
     process.env.GEOCODER_BASE_URL = "http://127.0.0.1:1"; // unreachable — fails fast
-    const geocoderDown = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 19.076, lng: 72.8777 }) });
+    const geocoderDown = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 32.80674, lng: 75.314854 }) });
     if (previousBase === undefined) delete process.env.GEOCODER_BASE_URL;
     else process.env.GEOCODER_BASE_URL = previousBase;
     check("reverse-geocode fails gracefully when the geocoder is unreachable", geocoderDown.status === 502 && geocoderDown.body.code === "GEOCODE_FAILED", JSON.stringify(geocoderDown.body));
@@ -383,15 +383,15 @@ async function main() {
 
     // Widen the area to 50 km: a far point becomes serviceable, proving the
     // admin setting (not env) is what the backend enforces.
-    const widen = await request(base, "/api/v1/admin/service-area", { method: "PATCH", body: JSON.stringify({ lat: 19.076, lng: 72.8777, radiusKm: 50, address: "Mumbai", pincode: "400001" }) }, admin.body.token);
+    const widen = await request(base, "/api/v1/admin/service-area", { method: "PATCH", body: JSON.stringify({ lat: 32.80674, lng: 75.314854, radiusKm: 50, address: "Ramnagar, Jammu", pincode: "182122" }) }, admin.body.token);
     check("admin can update service area", widen.status === 200 && widen.body.serviceArea.radiusKm === 50);
-    const nowInside = await request(base, "/api/v1/locations/serviceability?lat=19.3&lng=72.8777"); // ~25 km: inside 50, outside 5
+    const nowInside = await request(base, "/api/v1/locations/serviceability?lat=33.05674&lng=75.314854"); // ~28 km: inside 50, outside 5
     check("radius change takes effect immediately", nowInside.status === 200 && nowInside.body.serviceable === true, JSON.stringify(nowInside.body));
 
     // Out-of-range order is rejected by the backend — direct API bypass attempt.
     const farAddress = await request(base, "/api/v1/users/addresses", {
       method: "POST",
-      body: JSON.stringify({ label: "Home", formattedAddress: "Far away colony", pincode: "400999", latitude: 21.5, longitude: 72.8777 }),
+      body: JSON.stringify({ label: "Home", formattedAddress: "Far away colony", pincode: "182999", latitude: 31.5, longitude: 75.3 }),
     }, customer.body.token);
     const menu = await request(base, "/api/v1/restaurants?limit=1");
     const farMenu = await request(base, `/api/v1/restaurants/${menu.body.restaurants[0].id}/menu`);
@@ -403,7 +403,7 @@ async function main() {
     check("order to an out-of-area address is rejected by the backend", bypass.status === 409 && bypass.body.code === "OUT_OF_SERVICE_AREA", JSON.stringify(bypass.body));
 
     // Restore the original radius for the rest of the suite.
-    const restore = await request(base, "/api/v1/admin/service-area", { method: "PATCH", body: JSON.stringify({ lat: 19.076, lng: 72.8777, radiusKm: 5 }) }, admin.body.token);
+    const restore = await request(base, "/api/v1/admin/service-area", { method: "PATCH", body: JSON.stringify({ lat: 32.80674, lng: 75.314854, radiusKm: 5 }) }, admin.body.token);
     check("service area restored", restore.status === 200 && restore.body.serviceArea.radiusKm === 5);
   }
 
@@ -519,7 +519,7 @@ async function main() {
 
     const addr = await request(base, "/api/v1/users/addresses", {
       method: "POST",
-      body: JSON.stringify({ label: "Home", formattedAddress: "14 Marina Road, Ramnagar Eats Hub", pincode: "400001", latitude: 19.076, longitude: 72.8777 }),
+      body: JSON.stringify({ label: "Home", formattedAddress: "1 Canal Road, Ramnagar, Jammu", pincode: "182122", latitude: 32.80674, longitude: 75.314854 }),
     }, token);
     check("address creation works", addr.status === 201 && addr.body.address.id);
     const addressId = addr.body.address.id;
@@ -527,11 +527,11 @@ async function main() {
     const other = await registerUser("Other User", "otheruser@customer.test");
     const otherAddr = await request(base, "/api/v1/users/addresses", {
       method: "POST",
-      body: JSON.stringify({ label: "Work", formattedAddress: "9 Office Lane, Ramnagar Eats Hub", pincode: "400002", latitude: 19.078, longitude: 72.88 }),
+      body: JSON.stringify({ label: "Work", formattedAddress: "9 Office Lane, Ramnagar Eats Hub", pincode: "182125", latitude: 32.80874, longitude: 75.317854 }),
     }, other.body.token);
 
     // Pick an open restaurant + two available items.
-    const list = await request(base, "/api/v1/restaurants?lat=19.076&lng=72.8777&limit=50");
+    const list = await request(base, "/api/v1/restaurants?lat=32.80674&lng=75.314854&limit=50");
     const restaurant = list.body.restaurants.find((r: any) => r.isOpen);
     const menu = await request(base, `/api/v1/restaurants/${restaurant.id}/menu`);
     const items = menu.body.categories.flatMap((c: any) => c.items).filter((i: any) => i.isAvailable);
@@ -575,7 +575,7 @@ async function main() {
     check("order creation succeeds", order.status === 201 && order.body.order.status === "PLACED" && order.body.order.orderNumber.startsWith("RE-"));
     check("server computes authoritative totals", order.body.order.subtotal === expectedSubtotal && order.body.order.deliveryFee === expectedFee && order.body.order.discount === expectedDiscount && order.body.order.total === expectedTotal, JSON.stringify(order.body.order));
     check("order items are snapshotted with names", order.body.order.items.length === 2 && order.body.order.items[0].name === itemA.name && order.body.order.items[0].price === itemA.price);
-    check("delivery address snapshotted", order.body.order.deliveryAddress.pincode === "400001");
+    check("delivery address snapshotted", order.body.order.deliveryAddress.pincode === "182122");
     check("COD payment is pending", order.body.order.paymentMethod === "COD" && order.body.order.paymentStatus === "PENDING");
     check("estimated delivery set", Boolean(order.body.order.estimatedDeliveryAt));
     const orderId = order.body.order.id;
@@ -745,20 +745,20 @@ async function main() {
   // ---------- Restaurant operations + admin (Chunk 3) ----------
   console.log("\nRestaurant operations & admin");
   {
-    // Owner login (seeded demo owner owns Biryani Blues).
+    // Owner login (seeded demo owner owns Royal Biryani House).
     const ownerLogin = await loginUser("kitchen@ramnagareats.test");
     check("restaurant owner can log in with email OTP", ownerLogin.status === 200 && ownerLogin.body.user.role === "RESTAURANT");
     const ownerToken = ownerLogin.body.token;
 
     const list = await request(base, "/api/v1/restaurants?limit=50");
-    const biryani = list.body.restaurants.find((r: any) => r.name === "Biryani Blues");
-    const other = list.body.restaurants.find((r: any) => r.name !== "Biryani Blues" && r.isOpen);
+    const biryani = list.body.restaurants.find((r: any) => r.name === "Royal Biryani House");
+    const other = list.body.restaurants.find((r: any) => r.name !== "Royal Biryani House" && r.isOpen);
 
-    // A customer places an order at Biryani Blues.
+    // A customer places an order at Royal Biryani House.
     const customer = await registerUser("Flow Customer", "flow@customer.test");
     const addr = await request(base, "/api/v1/users/addresses", {
       method: "POST",
-      body: JSON.stringify({ label: "Home", formattedAddress: "5 Garden Road, Ramnagar Eats Hub", pincode: "400003", latitude: 19.076, longitude: 72.8777 }),
+      body: JSON.stringify({ label: "Home", formattedAddress: "5 Garden Road, Ramnagar, Jammu", pincode: "182123", latitude: 32.80674, longitude: 75.314854 }),
     }, customer.body.token);
     const menu = await request(base, `/api/v1/restaurants/${biryani.id}/menu`);
     const biryaniItem = menu.body.categories.flatMap((c: any) => c.items).find((i: any) => i.isAvailable);
@@ -915,7 +915,7 @@ async function main() {
     // Owner persists cover image + logo on the restaurant profile.
     const ownerLogin = await loginUser("kitchen@ramnagareats.test");
     const list = await request(base, "/api/v1/restaurants?limit=50");
-    const biryani = list.body.restaurants.find((r: any) => r.name === "Biryani Blues");
+    const biryani = list.body.restaurants.find((r: any) => r.name === "Royal Biryani House");
     const profileUpdate = await request(base, "/api/v1/restaurants/me", {
       method: "PUT",
       body: JSON.stringify({ name: biryani.name, coverImage: uploaded.body.image.url, logo: uploaded.body.image.url }),
@@ -942,11 +942,11 @@ async function main() {
     const customerToken = reg.body.token;
     const addr = await request(base, "/api/v1/users/addresses", {
       method: "POST",
-      body: JSON.stringify({ label: "Home", formattedAddress: "2 Socket Street, Ramnagar Eats Hub", pincode: "400004", latitude: 19.076, longitude: 72.8777 }),
+      body: JSON.stringify({ label: "Home", formattedAddress: "2 Socket Street, Ramnagar, Jammu", pincode: "182124", latitude: 32.80674, longitude: 75.314854 }),
     }, customerToken);
     const ownerLogin = await loginUser("kitchen@ramnagareats.test");
     const list = await request(base, "/api/v1/restaurants?limit=50");
-    const biryani = list.body.restaurants.find((r: any) => r.name === "Biryani Blues");
+    const biryani = list.body.restaurants.find((r: any) => r.name === "Royal Biryani House");
     const menu = await request(base, `/api/v1/restaurants/${biryani.id}/menu`);
     const item = menu.body.categories.flatMap((c: any) => c.items).find((i: any) => i.isAvailable);
 
