@@ -66,6 +66,7 @@ router.get(
     const parsed = listSchema.safeParse(request.query);
     if (!parsed.success) throw badRequest(parsed.error.issues[0].message, "VALIDATION_ERROR");
     const { lat, lng, q, cuisines, rating, veg, deliveryTime, price, sort, page, limit } = parsed.data;
+    const start = (page - 1) * limit;
 
     const filter: Record<string, unknown> = { isActive: true };
     if (q) filter.$or = [{ name: { $regex: q, $options: "i" } }, { cuisines: { $regex: q, $options: "i" } }, { description: { $regex: q, $options: "i" } }];
@@ -75,26 +76,48 @@ router.get(
     if (deliveryTime !== undefined) filter.deliveryTimeMax = { $lte: deliveryTime };
     if (price !== undefined) filter.priceForTwo = { $lte: price };
 
-    const [total, documents] = await Promise.all([Restaurant.countDocuments(filter), Restaurant.find(filter).lean()]);
-    const withDistance = documents.map((restaurant) => ({
-      ...restaurant,
-      distanceKm: lat !== undefined && lng !== undefined && restaurant.location?.coordinates
-        ? Math.round(haversineKm(lat, lng, restaurant.location.coordinates[1], restaurant.location.coordinates[0]) * 10) / 10
-        : undefined,
-    }));
-
-    // Hyperlocal rule: with a location, only show restaurants inside the service area.
-    if (lat !== undefined && lng !== undefined) {
-      const radius = (await getServiceArea()).radiusKm;
-      withDistance.splice(0, withDistance.length, ...withDistance.filter((restaurant) => restaurant.distanceKm !== undefined && restaurant.distanceKm <= radius));
+    // Hyperlocal rule, enforced in the database: with a location, only restaurants
+    // inside the delivery area are candidates. $geoWithin uses the 2dsphere index,
+    // so the radius filter never scans the whole collection. Restaurants without a
+    // location are naturally excluded (they can't be distance-gated anyway).
+    const radiusKm = lat !== undefined && lng !== undefined ? (await getServiceArea()).radiusKm : null;
+    if (radiusKm !== null) {
+      filter.location = { $geoWithin: { $centerSphere: [[lng, lat], radiusKm / 6371] } };
     }
 
-    if (sort === "rating") withDistance.sort((a, b) => b.rating - a.rating || b.ratingCount - a.ratingCount);
-    else if (sort === "delivery_time") withDistance.sort((a, b) => a.deliveryTimeMin - b.deliveryTimeMin);
-    else withDistance.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999) || a.name.localeCompare(b.name));
+    // Only the fields the DTO actually exposes — avoids dragging full documents
+    // (including large offer/description text) through the hot list path.
+    const projection = {
+      name: 1, description: 1, address: 1, phone: 1, location: 1, logo: 1, coverImage: 1,
+      cuisines: 1, isOpen: 1, isPureVeg: 1, isAcceptingOrders: 1, openingTime: 1, closingTime: 1,
+      rating: 1, ratingCount: 1, deliveryTimeMin: 1, deliveryTimeMax: 1, priceForTwo: 1, minOrder: 1, offers: 1,
+    };
 
-    const start = (page - 1) * limit;
-    const restaurants = withDistance.slice(start, start + limit).map((restaurant) => restaurantDto(restaurant, lat, lng));
+    const [total, restaurants] = await (async () => {
+      // Index-backed sorts: the DB orders + paginates, so only one page is ever loaded.
+      if (sort !== "relevance") {
+        const query = Restaurant.find(filter, projection);
+        if (sort === "rating") query.sort({ rating: -1, ratingCount: -1 });
+        else if (sort === "delivery_time") query.sort({ deliveryTimeMin: 1, deliveryTimeMax: 1 });
+        const [count, documents] = await Promise.all([
+          Restaurant.countDocuments(filter),
+          query.skip(start).limit(limit).lean(),
+        ]);
+        return [count, documents.map((restaurant) => restaurantDto(restaurant, lat, lng))] as const;
+      }
+      // Default "relevance" sort is distance — distance must be computed before
+      // sorting, so fetch the (radius-bounded) candidate set, then order in JS.
+      const reference = lat !== undefined && lng !== undefined ? { lat, lng } : null;
+      const [count, documents] = await Promise.all([Restaurant.countDocuments(filter), Restaurant.find(filter, projection).lean()]);
+      documents.sort((a, b) => {
+        if (!reference) return a.name.localeCompare(b.name);
+        const aKm = a.location?.coordinates ? haversineKm(reference.lat, reference.lng, a.location.coordinates[1], a.location.coordinates[0]) : 999;
+        const bKm = b.location?.coordinates ? haversineKm(reference.lat, reference.lng, b.location.coordinates[1], b.location.coordinates[0]) : 999;
+        return aKm - bKm || a.name.localeCompare(b.name);
+      });
+      return [count, documents.slice(start, start + limit).map((restaurant) => restaurantDto(restaurant, lat, lng))] as const;
+    })();
+
     return ok(response, { restaurants, total, page, limit, hasMore: start + restaurants.length < total });
   }),
 );
@@ -283,9 +306,10 @@ router.get(
 
     const [feedbacks, aggregate] = await Promise.all([
       Feedback.find({ restaurantId: restaurant._id }).sort({ createdAt: -1 }).limit(20).lean(),
+      // Grouped per star in the DB — the summary never pulls every rating into memory.
       Feedback.aggregate([
         { $match: { restaurantId: restaurant._id } },
-        { $group: { _id: null, avg: { $avg: "$rating" }, total: { $sum: 1 }, stars: { $push: "$rating" } } },
+        { $group: { _id: "$rating", count: { $sum: 1 } } },
       ]),
     ]);
 
@@ -301,13 +325,14 @@ router.get(
       createdAt: entry.createdAt,
     }));
 
-    const summary = aggregate[0]
-      ? {
-          average: Math.round(aggregate[0].avg * 10) / 10,
-          count: aggregate[0].total,
-          breakdown: [5, 4, 3, 2, 1].map((star) => ({ star, count: aggregate[0].stars.filter((rating: number) => rating === star).length })),
-        }
-      : { average: 0, count: 0, breakdown: [5, 4, 3, 2, 1].map((star) => ({ star, count: 0 })) };
+    const total = aggregate.reduce((sum, row) => sum + row.count, 0);
+    const weighted = aggregate.reduce((sum, row) => sum + row._id * row.count, 0);
+    const byStar = new Map(aggregate.map((row) => [row._id, row.count]));
+    const summary = {
+      average: total ? Math.round((weighted / total) * 10) / 10 : 0,
+      count: total,
+      breakdown: [5, 4, 3, 2, 1].map((star) => ({ star, count: byStar.get(star) ?? 0 })),
+    };
 
     return ok(response, { reviews, summary });
   }),
@@ -334,25 +359,31 @@ router.get(
       MenuCategory.find({ restaurantId: restaurant._id }).sort({ sortOrder: 1, name: 1 }).lean(),
       MenuItem.find({ restaurantId: restaurant._id }).sort({ createdAt: 1 }).lean(),
     ]);
+    // Single pass to bucket items by category instead of filtering per category.
+    const itemsByCategory = new Map<string, typeof items>();
+    for (const item of items) {
+      const key = item.categoryId.toString();
+      const bucket = itemsByCategory.get(key);
+      if (bucket) bucket.push(item);
+      else itemsByCategory.set(key, [item]);
+    }
     const grouped = categories.map((category) => ({
       id: category._id.toString(),
       name: category.name,
       sortOrder: category.sortOrder,
-      items: items
-        .filter((item) => item.categoryId.toString() === category._id.toString())
-        .map((item) => ({
-          id: item._id.toString(),
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          image: item.image,
-          isVeg: item.isVeg,
-          isAvailable: item.isAvailable,
-          isPopular: item.isPopular,
-          isRecommended: item.isRecommended ?? false,
-          prepTime: item.prepTime ?? 15,
-          customizations: item.customizations ?? [],
-        })),
+      items: (itemsByCategory.get(category._id.toString()) ?? []).map((item) => ({
+        id: item._id.toString(),
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        image: item.image,
+        isVeg: item.isVeg,
+        isAvailable: item.isAvailable,
+        isPopular: item.isPopular,
+        isRecommended: item.isRecommended ?? false,
+        prepTime: item.prepTime ?? 15,
+        customizations: item.customizations ?? [],
+      })),
     }));
     return ok(response, { restaurant: restaurantDto(restaurant), categories: grouped });
   }),
