@@ -174,6 +174,8 @@ class BrevoEmailProvider implements EmailService {
         textContent: message.text,
         htmlContent: message.html,
       }),
+      // Fail fast (15 s) instead of hanging the OTP request for minutes.
+      signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
@@ -209,6 +211,11 @@ class SmtpEmailProvider implements EmailService {
       user: process.env.SMTP_USER ?? "",
       pass: process.env.SMTP_PASS ?? "",
     },
+    // Bounded timeouts: an unreachable relay must fail in seconds, not the
+    // NodeMailer default of 2 minutes, so OTP requests never hang.
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 15_000,
   });
 
   private async send(message: EmailMessage) {

@@ -89,7 +89,7 @@ router.get(
     // (including large offer/description text) through the hot list path.
     const projection = {
       name: 1, description: 1, address: 1, phone: 1, location: 1, logo: 1, coverImage: 1,
-      cuisines: 1, isOpen: 1, isPureVeg: 1, isAcceptingOrders: 1, openingTime: 1, closingTime: 1,
+      cuisines: 1, isActive: 1, isOpen: 1, isPureVeg: 1, isAcceptingOrders: 1, openingTime: 1, closingTime: 1,
       rating: 1, ratingCount: 1, deliveryTimeMin: 1, deliveryTimeMax: 1, priceForTwo: 1, minOrder: 1, offers: 1,
     };
 
