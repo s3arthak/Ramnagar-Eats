@@ -15,7 +15,7 @@ process.env.DELIVERY_FEE_FREE_ABOVE = "99999";
 process.env.BASE_DELIVERY_FEE = "20";
 process.env.SERVICE_RADIUS_KM = "5";
 process.env.JWT_SECRET = "test-secret";
-process.env.OTP_PROVIDER = "test";
+process.env.OTP_DELIVERY = "console";
 // Keep the resend cooldown short so consecutive OTP flows in the suite are not blocked.
 process.env.OTP_RESEND_COOLDOWN_MS = "100";
 
@@ -353,6 +353,18 @@ async function main() {
 
     const invalidCoords = await request(base, "/api/v1/locations/serviceability?lat=999&lng=72.8777");
     check("invalid coordinates rejected", invalidCoords.status === 400);
+
+    // Reverse geocoding: bad input rejected without touching the geocoder.
+    const badReverse = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 999, lng: 72.8777 }) });
+    check("reverse-geocode rejects invalid coordinates", badReverse.status === 400 && badReverse.body.code === "VALIDATION_ERROR");
+
+    // Geocoder outage: the endpoint degrades to a clear 502 instead of a 500.
+    const previousBase = process.env.GEOCODER_BASE_URL;
+    process.env.GEOCODER_BASE_URL = "http://127.0.0.1:1"; // unreachable — fails fast
+    const geocoderDown = await request(base, "/api/v1/locations/reverse-geocode", { method: "POST", body: JSON.stringify({ lat: 19.076, lng: 72.8777 }) });
+    if (previousBase === undefined) delete process.env.GEOCODER_BASE_URL;
+    else process.env.GEOCODER_BASE_URL = previousBase;
+    check("reverse-geocode fails gracefully when the geocoder is unreachable", geocoderDown.status === 502 && geocoderDown.body.code === "GEOCODE_FAILED", JSON.stringify(geocoderDown.body));
   }
 
   // ---------- Location service area (admin-controlled, backend authority) ----------

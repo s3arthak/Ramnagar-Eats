@@ -44,6 +44,24 @@ function fromParts(): { name: string; email: string } {
   return match ? { name: match[1].trim(), email: match[2] } : { name: config.brandName, email: FROM };
 }
 
+/** Reserved TLDs (RFC 2606) and common placeholder domains that can never receive mail. */
+const PLACEHOLDER_DOMAINS = ["yourdomain.com", "your-domain.com", "example.com", "example.org", "example.net", "domain.com", "email.com"];
+
+function fromDomainLooksPlaceholder(): boolean {
+  const domain = fromParts().email.split("@")[1]?.toLowerCase() ?? "";
+  const tld = domain.split(".").pop() ?? "";
+  return PLACEHOLDER_DOMAINS.includes(domain) || ["test", "example", "invalid", "localhost"].includes(tld);
+}
+
+function warnIfPlaceholderSender() {
+  if (fromDomainLooksPlaceholder()) {
+    console.warn(
+      `[email] EMAIL_FROM is set to a non-deliverable placeholder (${FROM}). ` +
+        `Real emails will fail to reach recipients — use a sender address on a domain verified with the email provider.`,
+    );
+  }
+}
+
 /** Human-friendly OTP validity window derived from the configured TTL. */
 function otpValidityCopy(): string {
   const minutes = Math.round(config.otp.ttlMs / 60_000);
@@ -246,9 +264,13 @@ function provider(): EmailService {
   if (delivery === "console") return new ConsoleEmailProvider();
   // Explicit SMTP request, or auto-detect when SMTP is configured (no API key).
   if (delivery === "smtp" || (delivery !== "brevo" && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)) {
+    warnIfPlaceholderSender();
     return new SmtpEmailProvider();
   }
-  if (delivery === "brevo" || process.env.BREVO_API_KEY) return new BrevoEmailProvider();
+  if (delivery === "brevo" || process.env.BREVO_API_KEY) {
+    warnIfPlaceholderSender();
+    return new BrevoEmailProvider();
+  }
   return new ConsoleEmailProvider();
 }
 

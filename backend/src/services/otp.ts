@@ -3,7 +3,7 @@ import { config, isProduction } from "../config.js";
 import { Otp } from "../models/Otp.js";
 import { emailService } from "./email.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
-import { badRequest } from "../utils/errors.js";
+import { ApiError, badRequest } from "../utils/errors.js";
 
 /** Dev/E2E record of the last code per email (never populated in production). */
 class DevCodeStore {
@@ -39,12 +39,23 @@ export async function sendOtpEmail(email: string) {
   const code = generateOtpCode();
   await Otp.deleteMany({ email });
   await Otp.create({ email, codeHash: hashPassword(code), attempts: 0, expiresAt: new Date(Date.now() + ttlMs()) });
-  await emailService.sendOtpEmail(email, code);
+
   if (!isProduction) {
-    devCodeStore.record(email, code);
     // Dev convenience: the code is always visible in the log (and via /dev-otp),
     // even when a real email provider is configured and the address is a fake .test inbox.
+    // Recorded before the send so local development never depends on the provider being healthy.
+    devCodeStore.record(email, code);
     console.info(`[dev-otp] ${email}: ${code}`);
+  }
+
+  try {
+    await emailService.sendOtpEmail(email, code);
+  } catch (error) {
+    // A failed send must not leave a phantom record behind: without this, the
+    // resend cooldown would lock the user out even though no code ever reached them.
+    await Otp.deleteMany({ email }).catch(() => {});
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(502, "Could not send the verification email. Please check your details and try again.", "EMAIL_SEND_FAILED");
   }
 }
 
