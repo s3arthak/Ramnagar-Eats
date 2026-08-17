@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, MapPin, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -78,7 +78,9 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
           </button>
         </div>
       </header>
-      <main>{children}</main>
+      <main>
+        <Suspense fallback={<div className="loading" style={{ margin: "48px auto", maxWidth: 520 }}>Loading…</div>}>{children}</Suspense>
+      </main>
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-brand">

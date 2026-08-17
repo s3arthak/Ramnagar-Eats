@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./App.css";
 import "./App-extra.css";
@@ -12,13 +12,23 @@ import { ToastProvider } from "./context/ToastContext";
 import { api } from "./lib/api";
 import type { RestaurantProfile } from "./lib/types";
 import { Shell } from "./components/Shell";
-import { LoginPage } from "./pages/LoginPage";
-import { OAuthCallbackPage } from "./pages/OAuthCallbackPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { OrdersPage } from "./pages/OrdersPage";
-import { MenuPage } from "./pages/MenuPage";
-import { RestaurantPage } from "./pages/RestaurantPage";
-import { AdminPage } from "./pages/AdminPage";
+
+// Code-split the pages so the initial bundle stays small on mobile connections.
+const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const OAuthCallbackPage = lazy(() => import("./pages/OAuthCallbackPage").then((m) => ({ default: m.OAuthCallbackPage })));
+const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const OrdersPage = lazy(() => import("./pages/OrdersPage").then((m) => ({ default: m.OrdersPage })));
+const MenuPage = lazy(() => import("./pages/MenuPage").then((m) => ({ default: m.MenuPage })));
+const RestaurantPage = lazy(() => import("./pages/RestaurantPage").then((m) => ({ default: m.RestaurantPage })));
+const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })));
+
+function PageFallback() {
+  return (
+    <div style={{ padding: "48px 24px", textAlign: "center", color: "#6a7b75" }}>
+      Loading…
+    </div>
+  );
+}
 
 function Workspace() {
   const { user, loading } = useAuth();
@@ -82,11 +92,13 @@ function Workspace() {
 
 function Root() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-      <Route path="/*" element={<Workspace />} />
-    </Routes>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/*" element={<Workspace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

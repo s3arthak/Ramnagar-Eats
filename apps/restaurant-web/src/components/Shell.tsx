@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getSocket } from "../lib/socket";
@@ -75,7 +75,9 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
           </button>
         </div>
       </aside>
-      <main>{children}</main>
+      <main>
+        <Suspense fallback={<div style={{ padding: "48px 24px", textAlign: "center", color: "#6a7b75" }}>Loading…</div>}>{children}</Suspense>
+      </main>
     </div>
   );
 }

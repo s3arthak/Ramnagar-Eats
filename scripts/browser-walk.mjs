@@ -421,6 +421,12 @@ try {
     { waitUntil: "domcontentloaded" }
   );
   await customer.waitForURL(/\/oauth\/callback/, { timeout: 10000 });
+  // The callback page mounts asynchronously (code-split chunk) — wait until it
+  // settles on the phone step or redirects away before deciding what to do next.
+  await customer.waitForFunction(
+    () => document.querySelector(".oauth-phone-form") !== null || !location.pathname.startsWith("/oauth"),
+    { timeout: 15000 },
+  );
   // New Google users get an optional phone step — complete it to reach the profile.
   const phoneStep = await customer.locator(".oauth-phone-form").count();
   if (phoneStep > 0) {
