@@ -66,5 +66,8 @@ orderSchema.index({ customerId: 1, idempotencyKey: 1 }, { unique: true, partialF
 // Dashboard / queue queries: pending orders for a restaurant, newest first.
 orderSchema.index({ restaurantId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
+// My-orders list (newest first) and restaurant queue / dashboard "recent orders".
+orderSchema.index({ customerId: 1, createdAt: -1 });
+orderSchema.index({ restaurantId: 1, createdAt: -1 });
 
 export const Order = model("Order", orderSchema);
