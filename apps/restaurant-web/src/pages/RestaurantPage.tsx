@@ -1,7 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { api } from "../lib/api";
 import type { RestaurantProfile } from "../lib/types";
 import { ImageUploader } from "../components/ui/ImageUploader";
+
+// The location picker (and its Leaflet map chunk) loads only when this page mounts.
+const LocationPicker = lazy(() => import("../components/LocationPicker"));
 
 export function RestaurantPage({ restaurant, onChange }: { restaurant: RestaurantProfile | null; onChange: (restaurant: RestaurantProfile) => void }) {
   const [form, setForm] = useState<RestaurantProfile>(() =>
@@ -143,14 +146,21 @@ export function RestaurantPage({ restaurant, onChange }: { restaurant: Restauran
             Delivery time max (min)
             <input type="number" min={5} value={form.deliveryTimeMax} onChange={(event) => update("deliveryTimeMax", Number(event.target.value))} />
           </label>
-          <label>
-            Latitude
-            <input type="number" step="0.0001" value={form.location?.lat ?? ""} onChange={(event) => update("location", { lat: Number(event.target.value), lng: form.location?.lng ?? 0 })} />
-          </label>
-          <label>
-            Longitude
-            <input type="number" step="0.0001" value={form.location?.lng ?? ""} onChange={(event) => update("location", { lat: form.location?.lat ?? 0, lng: Number(event.target.value) })} />
-          </label>
+          <div className="wide location-field">
+            <span className="field-label">Kitchen location</span>
+            <Suspense fallback={<div className="map" style={{ display: "grid", placeItems: "center", color: "#657a72", fontSize: 14 }}>Loading map…</div>}>
+              <LocationPicker
+                lat={form.location?.lat}
+                lng={form.location?.lng}
+                onChange={(latitude, longitude) => update("location", { lat: latitude, lng: longitude })}
+              />
+            </Suspense>
+            {form.location ? (
+              <p className="field-hint">
+                Saved coordinates: {form.location.lat.toFixed(5)}, {form.location.lng.toFixed(5)}
+              </p>
+            ) : null}
+          </div>
           <label>
             Opening time (24h, optional)
             <input type="time" value={form.openingTime} onChange={(event) => update("openingTime", event.target.value)} />

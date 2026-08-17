@@ -125,3 +125,12 @@ aside nav a:hover{color:#fff}
 @keyframes toast-in{from{transform:translateY(-8px);opacity:0}}
 @media(max-width:800px){.menu-layout{grid-template-columns:1fr}.login-page{grid-template-columns:1fr}.login-panel{padding:70px 30px}.login-form{padding:50px 28px}.item-row{grid-template-columns:auto 1fr auto;}.item-category{display:none}.order-tile-foot{flex-direction:column;gap:10px;align-items:stretch}.order-tile-actions{justify-content:flex-end}}
 @media(max-width:520px){.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.admin-tabs{width:100%}.admin-tabs button{flex:1}}
+
+/* --- Restaurant location picker --- */
+.location-picker .gps{border:1px solid #a8c0b3;background:#f2f7ef;color:#133c35;border-radius:8px;padding:11px 13px;font-weight:800;display:flex;gap:8px;align-items:center;margin:0 0 14px;cursor:pointer}
+.location-picker .gps:disabled{opacity:.6;cursor:progress}
+.location-picker .map{height:260px;border-radius:11px;overflow:hidden;border:1px solid #cad8ce}
+.location-picker .map .leaflet-container{height:100%;width:100%}
+.location-picker .hint{font-size:12px;color:#657a72;margin:10px 0 0}
+.notice--success{background:#e5f5df;color:#2f6b2c}
+.notice--error{background:#fdeaea;color:#a33b2c}
