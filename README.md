@@ -86,7 +86,7 @@ GET  /api/v1/admin/metrics | restaurants | users | orders · GET/PATCH /api/v1/a
 
 `docker compose up --build` builds and runs MongoDB, the API, and both web apps as production containers (each web app is served by nginx; the API runs with `NODE_ENV=production`).
 
-Required: set `JWT_SECRET` (generate with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) — compose fails fast if it is missing. Set `OTP_PROVIDER=console` in production (the `test` provider and `/auth/dev-otp` endpoint are compile-time disabled when `NODE_ENV=production`). See `.env.production.example` for the full production variable set.
+Required: set `JWT_SECRET` (generate with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) — compose fails fast if it is missing. For real email delivery set `OTP_DELIVERY=smtp` (or `brevo`) with a **verified** `EMAIL_FROM` sender — the `/auth/dev-otp` endpoint is compile-time disabled when `NODE_ENV=production`. See `.env.production.example` for the full production variable set.
 
 ```bash
 cp .env.production.example .env.production

@@ -221,7 +221,7 @@ npm run dev:customer            # :3000
 npm run dev:restaurant          # :3001
 ```
 
-Dev OTPs: set `OTP_PROVIDER=console` in `backend/.env` to see codes in the API log, or `OTP_PROVIDER=test` + `GET /auth/dev-otp?phone=...` for automated flows.
+Dev OTPs: set `OTP_DELIVERY=console` in `backend/.env` to see codes in the API log, or leave it unset (defaults to console). The code is also readable from `GET /auth/dev-otp?email=...` (dev/E2E only).
 
 ---
 
@@ -236,7 +236,7 @@ Dev OTPs: set `OTP_PROVIDER=console` in `backend/.env` to see codes in the API l
 | `SERVICE_RADIUS_KM` | 10 | Initial delivery radius (seeded; admin-editable) |
 | `BASE_DELIVERY_FEE` | 20 | Delivery fee |
 | `DELIVERY_FEE_FREE_ABOVE` | 499 | Free delivery above this subtotal |
-| `OTP_PROVIDER` | console | `console` (log) or `test` (E2E; never in production) |
+| `OTP_DELIVERY` | console | `console` (log only) · `smtp` (NodeMailer relay) · `brevo` (REST API) |
 | `OTP_TTL_MS` / `OTP_MAX_ATTEMPTS` / `OTP_RESEND_COOLDOWN_MS` | 300000 / 5 / 60000 | OTP expiry, lockout, resend cooldown |
 | `CORS_ORIGINS` | localhost:3000,3001 | Allowed browser origins |
 | `RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_MAX` | 300 / 10 | API / auth rate limits |

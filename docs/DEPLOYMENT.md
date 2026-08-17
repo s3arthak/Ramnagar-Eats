@@ -65,7 +65,7 @@ Already running (cluster `cluster0`, db `ramnagar-eats`). Two things to confirm:
 | `MONGODB_URI` | `mongodb+srv://kharkasarthak_db_user:<password>@cluster0.dsfzkf3.mongodb.net/ramnagar-eats` |
 | `JWT_SECRET` | generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
 | `CORS_ORIGINS` | `https://<customer-domain>.vercel.app,https://<restaurant-domain>.vercel.app` (comma-separated, no spaces) |
-| `OTP_PROVIDER` | `brevo` (or `smtp`) — the dev-otp endpoint is compile-time disabled in production |
+| `OTP_DELIVERY` | `brevo` (or `smtp`) — the dev-otp endpoint is compile-time disabled in production |
 | `EMAIL_FROM` | a **verified sender** in Brevo (unverified `.test` senders get spam-filtered) |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Brevo SMTP relay creds (`smtp-relay.brevo.com:587`) |
 | `MAPBOX_ACCESS_TOKEN` | optional — public token for real road routes; without it the geodesic fallback is used |
