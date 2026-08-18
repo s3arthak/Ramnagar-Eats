@@ -29,3 +29,33 @@ export function SkeletonGrid({ count = 6 }: { count?: number }) {
     </div>
   );
 }
+
+export function SkeletonMenuItem() {
+  return (
+    <div className="menu-item skeleton-menu-item" aria-hidden="true">
+      <div className="menu-item-copy">
+        <div className="skeleton-block skeleton-line" style={{ width: "60%" }} />
+        <div className="skeleton-block skeleton-line tiny" style={{ width: "80%" }} />
+        <div className="skeleton-block skeleton-line tiny" style={{ width: "30%" }} />
+      </div>
+      <div className="menu-item-art">
+        <div className="skeleton-block" style={{ width: 88, height: 88, borderRadius: 12 }} />
+        <div className="skeleton-block" style={{ width: 70, height: 32, borderRadius: 9 }} />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonOrderCard() {
+  return (
+    <div className="order-card skeleton-order" aria-hidden="true">
+      <div className="skeleton-block skeleton-line" style={{ width: "40%" }} />
+      <div className="skeleton-block skeleton-line tiny" style={{ width: "60%" }} />
+      <div className="skeleton-block skeleton-line tiny" style={{ width: "80%" }} />
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div className="skeleton-block" style={{ width: 80, height: 28, borderRadius: 999 }} />
+        <div className="skeleton-block" style={{ width: 100, height: 28, borderRadius: 999 }} />
+      </div>
+    </div>
+  );
+}

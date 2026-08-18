@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { CheckCircle, Info, AlertTriangle } from "lucide-react";
 
 interface Toast {
   id: number;
@@ -13,6 +14,12 @@ interface ToastState {
 
 const ToastContext = createContext<ToastState | null>(null);
 let nextId = 1;
+
+const toneIcons = {
+  success: <CheckCircle size={16} className="toast-icon toast-icon--success" />,
+  info: <Info size={16} className="toast-icon toast-icon--info" />,
+  danger: <AlertTriangle size={16} className="toast-icon toast-icon--danger" />,
+};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -29,8 +36,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div className="toast-stack" aria-live="polite" role="status">
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast toast--${toast.tone}`}>
-            <strong>{toast.title}</strong>
-            {toast.body && <p>{toast.body}</p>}
+            {toneIcons[toast.tone]}
+            <div>
+              <strong>{toast.title}</strong>
+              {toast.body && <p>{toast.body}</p>}
+            </div>
           </div>
         ))}
       </div>
