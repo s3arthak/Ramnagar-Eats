@@ -5,7 +5,16 @@
 #   2. In Render: New + -> Blueprint -> pick this repo.
 #   3. Render prompts for the env vars marked "sync: false" below
 #      (MONGODB_URI, JWT_SECRET, CORS_ORIGINS, SMTP/email, Google OAuth...).
-# See docs/DEPLOYMENT.md for the full cutover checklist.
+#
+# CRITICAL: "sync: false" vars are NEVER auto-provisioned — they must be
+# entered in the dashboard (Service -> Environment). JWT_SECRET is REQUIRED:
+# the API refuses to boot without it in production ("JWT_SECRET must be
+# configured in production"). Generate one with:
+#   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+#
+# The service area (SERVICE_CENTER_*, SERVICE_RADIUS_KM) is intentionally NOT
+# in the Render env: the runtime reads the delivery area from MongoDB
+# (admin-editable) and the code defaults are Ramnagar, Jammu. See docs/PROJECT.md.
 
 services:
   - type: web
@@ -52,20 +61,12 @@ services:
         sync: false
       - key: RESTAURANT_WEB_URL
         sync: false
-      - key: GOOGLE_REDIRECT_URI
-        sync: false
       - key: IMAGEKIT_PUBLIC_KEY
         sync: false
       - key: IMAGEKIT_PRIVATE_KEY
         sync: false
       - key: IMAGEKIT_URL_ENDPOINT
         sync: false
-      - key: SERVICE_CENTER_LAT
-        value: "19.076"
-      - key: SERVICE_CENTER_LNG
-        value: "72.8777"
-      - key: SERVICE_RADIUS_KM
-        value: "5"
       - key: BRAND_NAME
         value: Ramnagar Eats
       - key: CURRENCY_SYMBOL
