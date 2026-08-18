@@ -240,6 +240,11 @@ export function CheckoutPage() {
               {error}
             </p>
           )}
+          <div className="trust-badges">
+            <span>🍲 Fresh food</span>
+            <span>✓ Verified kitchen</span>
+            <span>📍 Live tracking</span>
+          </div>
           <button className="confirm" disabled={!selectedAddress || placing} onClick={() => void placeOrder()}>
             {placing ? "Placing order…" : `Place order · ${inr(total)}`}
           </button>
