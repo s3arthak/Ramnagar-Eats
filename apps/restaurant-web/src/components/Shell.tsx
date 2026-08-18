@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getSocket } from "../lib/socket";
 import type { Order, RestaurantProfile } from "../lib/types";
@@ -9,6 +10,7 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [newOrders, setNewOrders] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (isAdmin) return;
@@ -50,7 +52,18 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
 
   return (
     <div className="app-shell">
-      <aside>
+      {/* Mobile hamburger */}
+      <button className="mobile-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open navigation menu">
+        <Menu size={22} />
+      </button>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={sidebarOpen ? "open" : ""}>
+        <button className="sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close navigation">
+          <X size={22} />
+        </button>
         <a className="brand" href="/" aria-label="Ramnagar Eats home">
           <span className="brand-mark" aria-hidden="true">🍛</span>
           <span className="brand-name">RAMNAGAR <b>EATS</b></span>
@@ -58,7 +71,7 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
         <p className="restaurant-name">{restaurant?.name ?? "Set up your restaurant"}</p>
         <nav>
           {links.map(([path, icon, label]) => (
-            <NavLink key={path} to={path} className={({ isActive }) => (isActive ? "active" : "")}>
+            <NavLink key={path} to={path} className={({ isActive }) => (isActive ? "active" : "")} onClick={() => setSidebarOpen(false)}>
               {icon} {label}
               {path === "/orders" && newOrders > 0 && <em>{newOrders}</em>}
             </NavLink>
