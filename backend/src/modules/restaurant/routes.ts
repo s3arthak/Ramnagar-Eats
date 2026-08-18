@@ -5,6 +5,7 @@ import { Order, ORDER_STATUSES, type OrderStatus } from "../../models/Order.js";
 import { Restaurant } from "../../models/Restaurant.js";
 import { User } from "../../models/User.js";
 import { emailService } from "../../services/email.js";
+import { sendPushToUser } from "../../services/push.js";
 import { assertTransition, RESTAURANT_TRANSITIONS } from "../../services/order-status.js";
 import { emitOrder, getIo } from "../../sockets/index.js";
 import { orderDto } from "../../utils/order-dto.js";
@@ -53,10 +54,17 @@ router.patch(
     order.status = parsed.data.status as OrderStatus;
     order.statusHistory.push({ status: order.status, at: new Date() });
     await order.save();
-    const customer = await User.findById(order.customerId).select("email");
+    const customer = await User.findById(order.customerId).select("email name");
     if (customer?.email) {
       void emailService.sendOrderStatus(customer.email, { orderNumber: order.orderNumber, orderId: order.id.toString(), status: order.status }).catch(() => undefined);
     }
+    // Push notification to the customer (fire-and-forget).
+    void sendPushToUser(order.customerId.toString(), {
+      title: `Order ${order.orderNumber}`,
+      body: `Your order is now: ${order.status.toLowerCase().replace(/_/g, " ")}`,
+      url: `/orders/${order.id}`,
+      tag: `order-${order.id}`,
+    }).catch(() => undefined);
     try {
       emitOrder(getIo(), order, "order:updated");
     } catch {

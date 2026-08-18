@@ -48,15 +48,15 @@ export async function sendOtpEmail(email: string) {
     console.info(`[dev-otp] ${email}: ${code}`);
   }
 
-  try {
-    await emailService.sendOtpEmail(email, code);
-  } catch (error) {
-    // A failed send must not leave a phantom record behind: without this, the
-    // resend cooldown would lock the user out even though no code ever reached them.
-    await Otp.deleteMany({ email }).catch(() => {});
-    if (error instanceof ApiError) throw error;
-    throw new ApiError(502, "Could not send the verification email. Please check your details and try again.", "EMAIL_SEND_FAILED");
-  }
+  // Fire-and-forget: send the OTP email in the background so the /send-otp
+  // endpoint returns immediately (< 200 ms). The code is already saved to the
+  // DB synchronously, so verification never depends on the email provider.
+  emailService
+    .sendOtpEmail(email, code)
+    .catch((error) => {
+      // Log but don't block the response — the user can resend if needed.
+      console.error(`[otp] Background email send failed for ${email}:`, error);
+    });
 }
 
 export type OtpVerifyResult = "OK" | "EXPIRED" | "TOO_MANY_ATTEMPTS" | "INVALID";

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { config } from "../../config.js";
 import { emailService } from "../../services/email.js";
+import { sendPushToUser } from "../../services/push.js";
 import { authenticate, authorize, type AuthRequest } from "../../middleware/auth.js";
 import { Address } from "../../models/Address.js";
 import { MenuItem } from "../../models/Menu.js";
@@ -168,6 +169,15 @@ router.post(
     const customer = await User.findById(userId).select("email name");
     if (customer?.email) {
       void emailService.sendOrderConfirmation(customer.email, { orderNumber, restaurantName: restaurant.name, total, orderId: order.id.toString() }).catch(() => undefined);
+    }
+    // Push notification to the restaurant owner (fire-and-forget).
+    if (restaurant.ownerId) {
+      void sendPushToUser(restaurant.ownerId.toString(), {
+        title: "New order!",
+        body: `${orderNumber} — ${orderItems.length} item(s) · ${config.currency}${total}`,
+        url: "/orders",
+        tag: `order-${order.id}`,
+      }).catch(() => undefined);
     }
 
     try {

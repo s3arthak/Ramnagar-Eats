@@ -1,4 +1,5 @@
 import path from "node:path";
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
@@ -16,6 +17,7 @@ import orderRoutes from "./modules/orders/routes.js";
 import restaurantRoutes from "./modules/restaurants/routes.js";
 import restaurantOwnerRoutes from "./modules/restaurant/routes.js";
 import uploadRoutes from "./modules/uploads/routes.js";
+import pushRoutes from "./modules/push/routes.js";
 import userRoutes from "./modules/users/routes.js";
 import { errorHandler } from "./utils/errors.js";
 import { requestLogger } from "./utils/logger.js";
@@ -26,6 +28,7 @@ export const app = express();
 app.set("trust proxy", config.env === "production" ? 1 : false);
 
 app.use(helmet());
+app.use(compression());
 app.use(
   cors({
     origin: config.corsOrigins,
@@ -77,6 +80,7 @@ app.use("/api/v1/restaurants", restaurantRoutes);
 app.use("/api/v1/uploads", uploadRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/locations", locationRoutes);
+app.use("/api/v1/push", pushRoutes);
 app.use("/api/v1/users", userRoutes);
 
 app.get("/api/v1/health", (_request, response) => {

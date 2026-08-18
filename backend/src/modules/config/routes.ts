@@ -10,6 +10,7 @@ router.get(
   "/",
   asyncHandler(async (_request, response) => {
     const area = await getServiceArea();
+    response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=30");
     return ok(response, {
       config: {
         brandName: config.brandName,

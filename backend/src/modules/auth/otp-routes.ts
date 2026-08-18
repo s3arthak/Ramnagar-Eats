@@ -66,6 +66,23 @@ router.post(
   },
 );
 
+// Dev/E2E: check OTP delivery status for an email (was the code actually created?).
+if (!isProduction) {
+  router.get(
+    "/otp-status",
+    async (request, response, next) => {
+      try {
+        const email = String(request.query.email ?? "").trim().toLowerCase();
+        if (!email.includes("@")) throw badRequest("email is required", "VALIDATION_ERROR");
+        const code = devCodeStore.lastCode(email);
+        return ok(response, { email, status: code ? "sent" : "not_sent" });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+}
+
 router.post(
   "/verify-otp",
   async (request, response, next) => {
@@ -125,7 +142,7 @@ router.post(
         passwordHash: hashPassword(randomBytes(24).toString("hex")),
         role,
       });
-      await emailService.sendWelcome(email, user.name);
+      void emailService.sendWelcome(email, user.name).catch(() => undefined);
       return ok(response, { token: signAccessToken(user.id, user.role), user: publicUser(user), message: "Account created" }, 201);
     } catch (error) {
       next(error);
