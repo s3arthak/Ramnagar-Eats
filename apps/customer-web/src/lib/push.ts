@@ -61,7 +61,7 @@ export async function subscribeToPush(): Promise<boolean> {
   // Subscribe.
   const subscription = await reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey,
+    applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
   });
 
   const sub = subscription.toJSON();
