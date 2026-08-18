@@ -13,12 +13,13 @@ const CACHE_TTL_MS = 30_000;
 
 /** Env defaults are only a fallback for first boot before the admin config exists. */
 function envDefaults(): ServiceAreaConfig {
+  // Ramnagar, Jammu — the platform's real delivery area (matches seed + docs).
   return {
-    lat: Number(process.env.SERVICE_CENTER_LAT ?? 19.076),
-    lng: Number(process.env.SERVICE_CENTER_LNG ?? 72.8777),
-    address: "",
-    pincode: "",
-    radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 10),
+    lat: Number(process.env.SERVICE_CENTER_LAT ?? 32.80674),
+    lng: Number(process.env.SERVICE_CENTER_LNG ?? 75.314854),
+    address: "Ramnagar Eats Central Hub, Ramnagar, Jammu",
+    pincode: "182122",
+    radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 15),
   };
 }
 

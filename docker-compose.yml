@@ -23,9 +23,9 @@ services:
       # Set MONGODB_URI in .env.production to use MongoDB Atlas; defaults to the bundled Mongo.
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/ramnagar-eats}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in production}
-      SERVICE_CENTER_LAT: ${SERVICE_CENTER_LAT:-19.076}
-      SERVICE_CENTER_LNG: ${SERVICE_CENTER_LNG:-72.8777}
-      SERVICE_RADIUS_KM: ${SERVICE_RADIUS_KM:-5}
+      SERVICE_CENTER_LAT: ${SERVICE_CENTER_LAT:-32.80674}
+      SERVICE_CENTER_LNG: ${SERVICE_CENTER_LNG:-75.314854}
+      SERVICE_RADIUS_KM: ${SERVICE_RADIUS_KM:-15}
       BASE_DELIVERY_FEE: ${BASE_DELIVERY_FEE:-20}
       DELIVERY_FEE_FREE_ABOVE: ${DELIVERY_FEE_FREE_ABOVE:-499}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
@@ -80,9 +80,9 @@ services:
     environment:
       NODE_ENV: production
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/ramnagar-eats}
-      SERVICE_CENTER_LAT: ${SERVICE_CENTER_LAT:-19.076}
-      SERVICE_CENTER_LNG: ${SERVICE_CENTER_LNG:-72.8777}
-      SERVICE_RADIUS_KM: ${SERVICE_RADIUS_KM:-5}
+      SERVICE_CENTER_LAT: ${SERVICE_CENTER_LAT:-32.80674}
+      SERVICE_CENTER_LNG: ${SERVICE_CENTER_LNG:-75.314854}
+      SERVICE_RADIUS_KM: ${SERVICE_RADIUS_KM:-15}
     command: ["node", "dist/seed.js"]
     depends_on:
       mongodb:

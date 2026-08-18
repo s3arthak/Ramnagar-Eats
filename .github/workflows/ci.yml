@@ -58,7 +58,7 @@ jobs:
 
       - name: Smoke-test the API
         run: |
-          curl -sf "http://localhost:5000/api/v1/restaurants?lat=19.076&lng=72.8777" -o /dev/null && echo "API responds"
+          curl -sf "http://localhost:5000/api/v1/restaurants?lat=32.80674&lng=75.314854" -o /dev/null && echo "API responds"
 
       - name: Tear down the stack
         if: always()
