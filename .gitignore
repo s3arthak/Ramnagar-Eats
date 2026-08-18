@@ -45,3 +45,6 @@ coverage/
 
 .vercel
 .env*
+
+# Agent notes — contains deploy tokens; keep local only
+CLAUDE.md
