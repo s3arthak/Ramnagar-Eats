@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, MapPin, Package } from "lucide-react";
+import { PushBell } from "../components/ui/PushBell";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { ImageUploader } from "../components/ui/ImageUploader";
@@ -89,6 +90,7 @@ export function ProfilePage() {
         <Link to="/addresses">
           <MapPin size={18} /> My addresses
         </Link>
+        <PushBell className="profile-push-bell" />
         <button
           onClick={() => {
             void logout().then(() => navigate("/"));
