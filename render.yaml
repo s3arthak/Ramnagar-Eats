@@ -15,6 +15,11 @@
 # The service area (SERVICE_CENTER_*, SERVICE_RADIUS_KM) is intentionally NOT
 # in the Render env: the runtime reads the delivery area from MongoDB
 # (admin-editable) and the code defaults are Ramnagar, Jammu. See docs/PROJECT.md.
+#
+# Render caps env vars at 20 per service. Vars with code defaults (BRAND_NAME,
+# CURRENCY_SYMBOL, ORDER_PREFIX, PHONE_COUNTRY_CODE, BASE_DELIVERY_FEE,
+# DELIVERY_FEE_FREE_ABOVE, OTP_DELIVERY, SMTP_PORT) are intentionally omitted
+# here — the code falls back to sensible defaults automatically.
 
 services:
   - type: web
@@ -35,13 +40,9 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      - key: OTP_DELIVERY
-        value: smtp
       - key: EMAIL_FROM
         sync: false
       - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
         sync: false
       - key: SMTP_USER
         sync: false
@@ -67,15 +68,3 @@ services:
         sync: false
       - key: IMAGEKIT_URL_ENDPOINT
         sync: false
-      - key: BRAND_NAME
-        value: Ramnagar Eats
-      - key: CURRENCY_SYMBOL
-        value: "₹"
-      - key: ORDER_PREFIX
-        value: RE-
-      - key: PHONE_COUNTRY_CODE
-        value: "91"
-      - key: BASE_DELIVERY_FEE
-        value: "20"
-      - key: DELIVERY_FEE_FREE_ABOVE
-        value: "499"

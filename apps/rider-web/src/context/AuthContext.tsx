@@ -1,0 +1,76 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { api, getToken, setToken } from "../lib/api";
+import { disconnectSocket } from "../lib/socket";
+import type { User } from "../lib/types";
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  verifyOtp: (email: string, code: string) => Promise<{ token?: string; user?: User; regToken?: string; isNew: boolean }>;
+  register: (data: { email: string; regToken: string; name: string; phone?: string }) => Promise<User>;
+  setSession: (token: string, user: User) => void;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function hydrate() {
+      const token = getToken();
+      if (!token) { setLoading(false); return; }
+      try {
+        const data = await api.get<{ user: User }>("/riders/me");
+        if (active) setUser(data.user);
+      } catch {
+        setToken(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void hydrate();
+    return () => { active = false; };
+  }, []);
+
+  const verifyOtp = async (email: string, code: string) => {
+    const data = await api.post<{ token?: string; user?: User; regToken?: string; isNew: boolean }>(
+      "/auth/verify-otp", { email, code, role: "RIDER" },
+    );
+    if (data.token && data.user) {
+      setToken(data.token);
+      setUser(data.user as User);
+    }
+    return data;
+  };
+
+  const register = async (values: { email: string; regToken: string; name: string; phone?: string }) => {
+    const data = await api.post<{ token: string; user: User }>("/auth/register", { ...values, role: "RIDER" });
+    setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const setSession = (token: string, user: User) => {
+    setToken(token);
+    setUser(user);
+  };
+
+  const logout = async () => {
+    try { await api.post("/auth/logout"); } catch { /* discard */ }
+    setToken(null);
+    setUser(null);
+    disconnectSocket();
+  };
+
+  return <AuthContext.Provider value={{ user, loading, verifyOtp, register, setSession, logout }}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthState {
+  const value = useContext(AuthContext);
+  if (!value) throw new Error("useAuth must be used inside AuthProvider");
+  return value;
+}
