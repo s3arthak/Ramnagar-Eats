@@ -14,6 +14,7 @@ Hyperlocal food delivery for one configured service area: **Ramnagar, Jammu** (c
 | --- | --- | --- |
 | Customer Web | http://localhost:3000 | https://ramnagar-eats-customer.vercel.app |
 | Restaurant Web | http://localhost:3001 | https://ramnagar-eats-restaurant.vercel.app |
+| Rider Web | http://localhost:3002 | https://ramnagar-eats-rider.vercel.app |
 | API | http://localhost:5000/api/v1 | https://ramnagar-eats-api.onrender.com/api/v1 |
 
 ## Local development
@@ -26,6 +27,7 @@ Hyperlocal food delivery for one configured service area: **Ramnagar, Jammu** (c
    - `npm run dev:backend`
    - `npm run dev:customer`
    - `npm run dev:restaurant`
+   - `npm run dev:rider`
 
 ## Demo accounts (seeded)
 
@@ -52,16 +54,18 @@ npm run build
 
 The API test suite covers the full customer flow (OTP register → login → browse → menu → coupon → order), every documented failure case (out-of-stock, invalid/expired coupon, wrong address, closed restaurant, price tampering, duplicate submissions, cross-restaurant cart), restaurant status transitions, owner authorization boundaries, admin operations, real-time Socket.IO events, the complete OTP security matrix (wrong/expired/reused codes, attempt lockout, resend cooldown, duplicate phones, role spoofing), and the service-area rules (inside/exactly-at/outside radius, admin radius changes taking effect immediately, out-of-area orders rejected server-side).
 
-The API test suite currently passes **164/164** checks. With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end — including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads), the live tracking map with route + dynamic ETA, and the Google OAuth round-trip (currently **76/76** checks):
+The API test suite currently passes **211/211** checks (including rider delivery flow, cross-role auth, and admin rider management). With the apps running locally, a real-browser walkthrough (Playwright driving Edge) verifies the whole flow end to end — including the real-time order flow (restaurant receives the new-order toast/tile live, both sides update without reloads), the live tracking map with route + dynamic ETA, and the Google OAuth round-trip (currently **76/76** checks):
 
 ```bash
 node scripts/browser-walk.mjs   # needs Edge, MongoDB, and the three apps running
+node scripts/e2e-browser-walk.ts  # HTTP-only e2e (needs running server on :5000)
 ```
 
 ## Feature summary
 
 - **Customer**: homepage with search + cuisine categories + restaurant sections, filterable/sortable restaurant listing (`/restaurants`), restaurant detail with menu search, sticky categories and item customizations (`/restaurant/:id`), **email + Google OTP auth** (no passwords; OTP with expiry, resend timer, attempt lockout and reuse prevention), service-area validation with map + pincode, cart with single-restaurant rule, free-delivery progress and coupon rack (drawer + `/cart`), address book with city/state/locality (`/addresses`), checkout with backend-validated coupons, out-of-area address blocking and COD/mock payment (`/checkout`), order confirmation (`/order/:id/success`), order history + real-time tracking timeline (`/orders`, `/orders/:id`) with a **live route map** (restaurant 🍴 → home 🏠 markers, road-route polyline, auto-fit bounds, dynamic ETA countdown), **in-app status-change toasts**, and **Call restaurant / Get directions** actions on the tracking page, reorder, profile (`/profile`). Restaurant pages show the **phone (Call button), live location mini-map + directions link, and a dynamic reviews section** (star breakdown + recent reviews) — nothing hardcoded.
-- **Restaurant**: dashboard with live stats, order queue with accept/reject/prepare/ready/out-for-delivery/delivered actions and real-time new-order toasts (Socket.IO), **customer phone with a tap-to-call link on every order tile**, open/close toggle, full menu management (categories + items, availability, pricing, veg/popular flags), profile management.
+- **Restaurant**: dashboard with live stats, order queue with accept/reject/prepare/ready/rider-assigned/rider-accepted/picked-up/out-for-delivery/delivered actions and real-time new-order toasts (Socket.IO), **customer phone with a tap-to-call link on every order tile**, open/close toggle, full menu management (categories + items, availability, pricing, veg/popular flags), profile management.
+- **Rider**: dashboard with online/offline toggle, active delivery view with navigation, delivery lifecycle (accept → arrive at restaurant → pickup with OTP → start delivery → deliver with OTP verification), location updates, delivery history, earnings stats.
 - **Admin** (in the restaurant app at `/admin`): platform metrics, restaurant approve/disable, users, all orders.
 - **Backend**: role-based auth (`CUSTOMER` / `RESTAURANT` / `ADMIN`) via OTP only, hashed OTP storage (scrypt), consistent `{ success, message, code }` error responses, server-authoritative order pricing (menu prices and coupons are re-verified from the DB at order time — client totals are never trusted), order item snapshots, idempotent order creation, replaceable payment layer (`CODPayment` / `MockPayment`), **routing service** (`GET /orders/:id/route` — Mapbox Directions when `MAPBOX_ACCESS_TOKEN` is set, geodesic fallback otherwise; route cached per order, ETA dynamic), public **reviews endpoint** (`GET /restaurants/:id/reviews` with star breakdown), transactional `EmailService` abstraction (console provider in dev; Brevo SMTP live — wired to welcome, OTP, **order confirmation, order status, and cancellation** emails with branded HTML templates; dev OTP codes are printed to the server log), admin-controlled service area (lat/lng/address/pincode/radius in MongoDB — serviceability is re-checked at checkout and enforced at order creation, so the radius rule cannot be bypassed via the API).
 
@@ -78,7 +82,11 @@ GET  /api/v1/restaurants/:id/reviews
 GET  /api/v1/users/addresses · POST | PATCH | DELETE /api/v1/users/addresses[/:id]
 GET  /api/v1/restaurant/orders · PATCH /api/v1/restaurant/orders/:id/status · PATCH /api/v1/restaurant/status · GET /api/v1/restaurant/dashboard
 GET  /api/v1/restaurants/me ... (owner profile, categories, menu items)
-GET  /api/v1/admin/metrics | restaurants | users | orders · GET/PATCH /api/v1/admin/service-area · PATCH /api/v1/admin/restaurants/:id
+GET  /api/v1/admin/metrics | restaurants | users | orders | riders · GET/PATCH /api/v1/admin/service-area · PATCH /api/v1/admin/restaurants/:id · PATCH /api/v1/admin/riders/:id
+POST /api/v1/riders/setup · POST /api/v1/riders/status · POST /api/v1/riders/location · GET /api/v1/riders/me · PATCH /api/v1/riders/me
+GET  /api/v1/riders/delivery/active · GET /api/v1/riders/delivery/route · GET /api/v1/riders/deliveries
+POST /api/v1/riders/delivery/:orderId/accept | reject | arrived | pickup | start-delivery | deliver
+GET  /api/v1/riders/nearby
 ```
 
 ## Production stack
