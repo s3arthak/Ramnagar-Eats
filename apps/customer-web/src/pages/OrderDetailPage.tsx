@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
-import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, Wallet } from "lucide-react";
+import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, User, Wallet } from "lucide-react";
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
@@ -17,7 +17,9 @@ import { useToast } from "../context/ToastContext";
 const STATUS_NOTIFY: Partial<Record<string, { title: string; body?: string }>> = {
   CONFIRMED: { title: "✅ Restaurant accepted your order", body: "The kitchen is getting ready for you." },
   PREPARING: { title: "👨‍🍳 Your food is being prepared" },
-  READY: { title: "📦 Your order is ready" },
+  READY: { title: "📦 Your order is ready — waiting for rider" },
+  RIDER_ASSIGNED: { title: "🛵 A rider has been assigned" },
+  RIDER_ACCEPTED: { title: "🛵 Rider is heading to the restaurant" },
   PICKED_UP: { title: "🛵 Your order is out for delivery" },
   OUT_FOR_DELIVERY: { title: "🛵 Your rider is on the way" },
   DELIVERED: { title: "🎉 Order delivered — enjoy!" },
@@ -30,6 +32,8 @@ const STAGE_ICONS: Record<string, React.ReactNode> = {
   CONFIRMED: <Check size={14} />,
   PREPARING: <ChefHat size={14} />,
   READY: <Package size={14} />,
+  RIDER_ASSIGNED: <Bike size={14} />,
+  RIDER_ACCEPTED: <Bike size={14} />,
   PICKED_UP: <Bike size={14} />,
   OUT_FOR_DELIVERY: <Bike size={14} />,
   DELIVERED: <Check size={14} />,
@@ -66,17 +70,20 @@ function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
 }
 
 /** Clean live map: restaurant → home route polyline with both endpoints visible. */
-function RouteMap({ routeInfo }: { routeInfo: OrderRoute }) {
+function RouteMap({ routeInfo, riderLocation }: { routeInfo: OrderRoute; riderLocation?: { lat: number; lng: number } | null }) {
   if (!routeInfo.route || !routeInfo.restaurant?.location || !routeInfo.delivery.location) return null;
   const from = routeInfo.restaurant.location;
   const to = routeInfo.delivery.location;
-  const bounds = L.latLngBounds([from, to].map((point) => [point.lat, point.lng] as [number, number]));
+  const points: [number, number][] = [[from.lat, from.lng], [to.lat, to.lng]];
+  if (riderLocation) points.push([riderLocation.lat, riderLocation.lng]);
+  const bounds = L.latLngBounds(points);
   return (
     <MapContainer center={from} zoom={13} scrollWheelZoom={false}>
       <TileLayer attribution='© OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <Polyline positions={routeInfo.route.polyline} pathOptions={{ color: "#ff6b45", weight: 4, opacity: 0.9 }} />
       <Marker position={[from.lat, from.lng]} icon={emojiIcon("🍴")} />
       <Marker position={[to.lat, to.lng]} icon={emojiIcon("🏠")} />
+      {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={emojiIcon("🛵")} />}
       <FitBounds bounds={bounds} />
     </MapContainer>
   );
@@ -88,6 +95,7 @@ export function OrderDetailPage() {
   const [feedback, setFeedback] = useState<{ rating: number; comment: string } | null>(null);
   const [routeInfo, setRouteInfo] = useState<OrderRoute | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [riderLocation, setRiderLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -128,13 +136,18 @@ export function OrderDetailPage() {
       }
       setOrder(payload.order);
     };
-    getSocket().on("order:updated", handleUpdate);
+    const socket = getSocket();
+    socket.on("order:updated", handleUpdate);
+    socket.on("rider:location", (payload: { latitude: number; longitude: number }) => {
+      setRiderLocation({ lat: payload.latitude, lng: payload.longitude });
+    });
     const timer = setInterval(() => {
       if (!isActive(order?.status ?? "PLACED")) return;
       void load();
     }, 8000);
     return () => {
-      getSocket().off("order:updated", handleUpdate);
+      socket.off("order:updated", handleUpdate);
+      socket.off("rider:location");
       clearInterval(timer);
     };
   }, [load, order?.status, id]);
@@ -263,7 +276,7 @@ export function OrderDetailPage() {
         ) : routeInfo?.route && routeInfo.restaurant && routeInfo.delivery.location ? (
           <>
             <div className="tracking-map">
-              <RouteMap routeInfo={routeInfo} />
+              <RouteMap routeInfo={routeInfo} riderLocation={riderLocation} />
             </div>
             <div className="route-facts">
               <span>🍴 {routeInfo.restaurant.name}</span>

@@ -103,7 +103,7 @@ export interface Address {
   isDefault: boolean;
 }
 
-export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "RIDER_ASSIGNED" | "RIDER_ACCEPTED" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED" | "DELIVERY_FAILED";
 
 export interface OrderItem {
   itemId: string;
@@ -128,6 +128,8 @@ export interface Order {
   paymentStatus: "PENDING" | "PAID";
   status: OrderStatus;
   statusHistory: { status: OrderStatus; at: string }[];
+  riderId?: string;
+  deliveryVerified?: boolean;
   couponCode?: string;
   estimatedDeliveryAt?: string;
   createdAt: string;

@@ -9,6 +9,7 @@
   "scripts": {
     "dev:customer": "npm run dev --workspace=customer-web",
     "dev:restaurant": "npm run dev --workspace=restaurant-web",
+    "dev:rider": "npm run dev --workspace=rider-web",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspaces --if-present"
   },
