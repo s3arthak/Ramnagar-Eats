@@ -1,7 +1,25 @@
+const FOOD_EMOJIS = ["🍛", "🍕", "🍔", "🍜", "🥘", "🍲", "🍰", "🥗"];
+
+function FoodSpinner() {
+  return (
+    <div className="food-spinner" aria-hidden="true">
+      {FOOD_EMOJIS.map((emoji, i) => (
+        <span
+          key={i}
+          className="food-spinner-emoji"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Spinner({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="state-view" role="status">
-      <span className="spinner" aria-hidden="true" />
+      <FoodSpinner />
       <p>{label}</p>
     </div>
   );

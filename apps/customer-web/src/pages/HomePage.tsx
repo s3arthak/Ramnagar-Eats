@@ -60,10 +60,8 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
       <section className="hero">
         <div className="hero-copy">
           <p className="eyebrow">{brandName.toUpperCase()} · FRESH &amp; FAST</p>
-          <h1>
-            Your neighbourhood
-            <br />
-            <i>food</i>, delivered.
+          <h1 className="hero-title">
+            Your neighbourhood <i>food</i>, delivered.
           </h1>
           <p>Independent kitchens, your familiar favourites, and fast delivery—all around the corner.</p>
           <form className="hero-search" onSubmit={submitSearch} role="search">

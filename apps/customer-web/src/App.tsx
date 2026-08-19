@@ -15,6 +15,7 @@ import { Layout } from "./components/Layout";
 import { LocationSheet } from "./components/LocationSheet";
 import { CartDrawer } from "./components/CartDrawer";
 import { RequireAuth } from "./components/RequireAuth";
+import { NotificationPrompt } from "./components/NotificationPrompt";
 
 // Routes are code-split so the initial bundle stays small on mobile connections
 // — each chunk loads on first navigation to that page.
@@ -33,8 +34,13 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ defa
 
 function PageFallback() {
   return (
-    <div className="loading" style={{ margin: "48px auto", maxWidth: 520 }}>
-      Loading…
+    <div className="state-view" role="status" style={{ margin: "48px auto", maxWidth: 520 }}>
+      <div className="food-spinner" aria-hidden="true">
+        {"🍛🍕🍔🍜🥘🍲🍰🥗".split("").filter(Boolean).map((emoji, i) => (
+          <span key={i} className="food-spinner-emoji" style={{ animationDelay: `${i * 0.15}s` }}>{emoji}</span>
+        ))}
+      </div>
+      <p>Loading…</p>
     </div>
   );
 }
@@ -152,6 +158,7 @@ function Shell() {
       </Suspense>
       {locationOpen && <LocationSheet onClose={() => setLocationOpen(false)} />}
       <CartDrawer />
+      <NotificationPrompt />
     </>
   );
 }

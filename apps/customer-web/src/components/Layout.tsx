@@ -68,7 +68,7 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
               </>
             ) : (
               <Link className="account" to="/login">
-                Sign in
+                <UserRound size={14} /> Sign in
               </Link>
             )}
           </div>
