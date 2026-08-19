@@ -179,6 +179,43 @@ router.delete(
 );
 
 router.get(
+  "/riders",
+  asyncHandler(async (_request, response) => {
+    const riders = await User.find({ role: "RIDER" }).sort({ createdAt: -1 });
+    return ok(response, {
+      riders: riders.map((r) => ({
+        id: r._id.toString(),
+        name: r.name,
+        phone: r.phone,
+        email: r.email,
+        riderStatus: r.riderStatus,
+        riderApproval: r.riderApproval,
+        vehicleType: r.vehicleType,
+        vehicleNumber: r.vehicleNumber,
+        deliveryArea: r.deliveryArea,
+        todayDeliveries: r.todayDeliveries,
+        createdAt: r.createdAt,
+      })),
+    });
+  }),
+);
+
+router.patch(
+  "/riders/:riderId",
+  asyncHandler(async (request, response) => {
+    const parsed = z.object({ riderApproval: z.enum(["APPROVED", "REJECTED"]) }).safeParse(request.body);
+    if (!parsed.success) throw badRequest("riderApproval must be APPROVED or REJECTED", "VALIDATION_ERROR");
+    const rider = await User.findOneAndUpdate(
+      { _id: request.params.riderId, role: "RIDER" },
+      { $set: { riderApproval: parsed.data.riderApproval } },
+      { returnDocument: "after" },
+    );
+    if (!rider) throw notFound("Rider not found", "NOT_FOUND");
+    return ok(response, { rider: { id: rider._id.toString(), name: rider.name, riderApproval: rider.riderApproval } });
+  }),
+);
+
+router.get(
   "/metrics",
   asyncHandler(async (_request, response) => {
     const todayStart = new Date();

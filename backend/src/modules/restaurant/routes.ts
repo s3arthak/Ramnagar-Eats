@@ -7,6 +7,7 @@ import { User } from "../../models/User.js";
 import { emailService } from "../../services/email.js";
 import { sendPushToUser } from "../../services/push.js";
 import { assertTransition, RESTAURANT_TRANSITIONS } from "../../services/order-status.js";
+import { assignRiderToOrder } from "../../services/rider-assignment.js";
 import { emitOrder, getIo } from "../../sockets/index.js";
 import { orderDto } from "../../utils/order-dto.js";
 import { asyncHandler, badRequest, notFound, ok } from "../../utils/errors.js";
@@ -69,6 +70,10 @@ router.patch(
       emitOrder(getIo(), order, "order:updated");
     } catch {
       /* sockets not initialized */
+    }
+    // When the order is ready, try to assign a rider automatically.
+    if (order.status === "READY") {
+      void assignRiderToOrder(order.id.toString());
     }
     return ok(response, { order: orderDto(order) });
   }),

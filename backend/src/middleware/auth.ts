@@ -7,6 +7,8 @@ export type AuthRequest = Request & { user?: { id: string; role: UserRole } };
 
 const secret = () => process.env.JWT_SECRET ?? "local-development-secret-change-me";
 
+const VALID_ROLES = ["CUSTOMER", "RESTAURANT", "ADMIN", "RIDER"];
+
 export function signAccessToken(id: string, role: UserRole) {
   return jwt.sign({ sub: id, role }, secret(), { expiresIn: "7d" });
 }
@@ -17,7 +19,7 @@ export function authenticate(request: AuthRequest, response: Response, next: Nex
   if (!token) return fail(response, 401, "Authentication required", "UNAUTHORIZED");
   try {
     const payload = jwt.verify(token, secret()) as jwt.JwtPayload;
-    if (!payload.sub || !["CUSTOMER", "RESTAURANT", "ADMIN"].includes(payload.role)) {
+    if (!payload.sub || !VALID_ROLES.includes(payload.role)) {
       throw new Error("Invalid token");
     }
     request.user = { id: payload.sub, role: payload.role };

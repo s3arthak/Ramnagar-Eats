@@ -7,13 +7,25 @@ import { normalizePhone } from "../../utils/phone.js";
 
 const router = Router();
 
-const publicUser = (user: { id: string; name: string; phone?: string | null; email?: string | null; role: UserRole; avatar?: string | null }) => ({
+const publicUser = (user: any) => ({
   id: user.id,
   name: user.name,
   phone: user.phone ?? undefined,
   email: user.email ?? undefined,
   role: user.role,
   avatar: user.avatar ?? undefined,
+  // Rider-specific fields (undefined when not a rider)
+  ...(user.role === "RIDER"
+    ? {
+        riderStatus: user.riderStatus,
+        riderApproval: user.riderApproval,
+        vehicleType: user.vehicleType,
+        vehicleNumber: user.vehicleNumber,
+        deliveryArea: user.deliveryArea,
+        todayDeliveries: user.todayDeliveries,
+        todayEarnings: user.todayEarnings,
+      }
+    : {}),
 });
 
 router.post("/logout", authenticate, asyncHandler(async (_request, response) => ok(response, { message: "Signed out" })));
@@ -22,7 +34,7 @@ router.get(
   "/me",
   authenticate,
   asyncHandler(async (request: AuthRequest, response) => {
-    const user = await User.findById(request.user!.id).select("name phone email role emailVerified avatar");
+    const user = await User.findById(request.user!.id).select("name phone email role emailVerified avatar riderStatus riderApproval vehicleType vehicleNumber deliveryArea todayDeliveries todayEarnings");
     if (!user) throw notFound("Account not found", "ACCOUNT_NOT_FOUND");
     return ok(response, { user: publicUser(user) });
   }),
@@ -53,8 +65,8 @@ router.patch(
         update.phone = undefined;
       }
       if (update.phone) {
-        const taken = await User.findOne({ phone: update.phone, _id: { $ne: request.user!.id } });
-        if (taken) throw conflict("That phone number is already in use", "PHONE_TAKEN");
+        const taken = await User.findOne({ phone: update.phone, role: request.user!.role, _id: { $ne: request.user!.id } });
+        if (taken) throw conflict("That phone number is already in use for this role", "PHONE_TAKEN");
       }
     }
     if (parsed.data.avatar !== undefined) update.avatar = parsed.data.avatar.trim() || undefined;

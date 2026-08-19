@@ -18,6 +18,7 @@ import restaurantRoutes from "./modules/restaurants/routes.js";
 import restaurantOwnerRoutes from "./modules/restaurant/routes.js";
 import uploadRoutes from "./modules/uploads/routes.js";
 import pushRoutes from "./modules/push/routes.js";
+import riderRoutes from "./modules/riders/routes.js";
 import userRoutes from "./modules/users/routes.js";
 import { errorHandler } from "./utils/errors.js";
 import { requestLogger } from "./utils/logger.js";
@@ -81,6 +82,7 @@ app.use("/api/v1/uploads", uploadRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/locations", locationRoutes);
 app.use("/api/v1/push", pushRoutes);
+app.use("/api/v1/riders", riderRoutes);
 app.use("/api/v1/users", userRoutes);
 
 app.get("/api/v1/health", (_request, response) => {

@@ -24,7 +24,7 @@ export interface SocketPayload {
  */
 export function setupSockets(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
-    cors: { origin: ["http://localhost:3000", "http://localhost:3001"] },
+    cors: { origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"] },
   });
 
   io.use((socket, next) => {
@@ -32,7 +32,7 @@ export function setupSockets(httpServer: HttpServer) {
     if (!token) return next(new Error("UNAUTHORIZED"));
     try {
       const payload = jwt.verify(token, secret()) as jwt.JwtPayload;
-      if (!payload.sub || !["CUSTOMER", "RESTAURANT", "ADMIN"].includes(payload.role)) return next(new Error("UNAUTHORIZED"));
+      if (!payload.sub || !["CUSTOMER", "RESTAURANT", "ADMIN", "RIDER"].includes(payload.role)) return next(new Error("UNAUTHORIZED"));
       (socket.data as SocketPayload).user = { id: payload.sub, role: payload.role };
       next();
     } catch {
@@ -55,6 +55,15 @@ export function setupSockets(httpServer: HttpServer) {
   return io;
 }
 
+/** Emit a raw event to a specific user room. */
+export function emitToUser(userId: string, event: string, data: unknown) {
+  try {
+    getIo().to(`user:${userId}`).emit(event, data);
+  } catch {
+    /* socket not initialized */
+  }
+}
+
 /** Notify the restaurant about a new order and the customer about updates. */
 export function emitOrder(io: SocketServer, order: any, event: "order:new" | "order:updated") {
   const payload = { order: orderDto(order) };
@@ -64,5 +73,9 @@ export function emitOrder(io: SocketServer, order: any, event: "order:new" | "or
   io.to(`user:${order.customerId.toString()}`).emit("order:updated", payload);
   if (event === "order:updated") {
     io.to(`restaurant:${order.restaurantId.toString()}`).emit("order:updated", payload);
+  }
+  // Emit to rider if assigned
+  if (order.riderId) {
+    io.to(`user:${order.riderId.toString()}`).emit("order:updated", payload);
   }
 }

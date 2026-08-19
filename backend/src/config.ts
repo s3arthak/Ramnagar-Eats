@@ -23,7 +23,7 @@ export const config = {
   /** Default country code (no +) for bare 10-digit phone numbers. */
   phoneCountryCode: process.env.PHONE_COUNTRY_CODE ?? "91",
   /** Comma-separated list of allowed browser origins. */
-  corsOrigins: csv(process.env.CORS_ORIGINS).length > 0 ? csv(process.env.CORS_ORIGINS) : ["http://localhost:3000", "http://localhost:3001"],
+  corsOrigins: csv(process.env.CORS_ORIGINS).length > 0 ? csv(process.env.CORS_ORIGINS) : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
   /** General API rate limit. */
   rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000),
   rateLimitMax: Number(process.env.RATE_LIMIT_MAX ?? 300),

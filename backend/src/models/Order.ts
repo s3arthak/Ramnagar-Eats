@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 
-export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
-export const ORDER_STATUSES: OrderStatus[] = ["PLACED", "CONFIRMED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"];
+export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "RIDER_ASSIGNED" | "RIDER_ACCEPTED" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED" | "DELIVERY_FAILED";
+export const ORDER_STATUSES: OrderStatus[] = ["PLACED", "CONFIRMED", "PREPARING", "READY", "RIDER_ASSIGNED", "RIDER_ACCEPTED", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED", "DELIVERY_FAILED"];
 
 const orderItemSchema = new Schema(
   {
@@ -46,6 +46,10 @@ const orderSchema = new Schema(
     statusHistory: { type: [{ status: { type: String, enum: ORDER_STATUSES }, at: Date }], default: [] },
     idempotencyKey: String,
     estimatedDeliveryAt: Date,
+    // --- Rider fields ---
+    riderId: { type: Schema.Types.ObjectId, ref: "User" },
+    deliveryOtp: { type: String },
+    deliveryVerified: { type: Boolean, default: false },
     /** Cached restaurant → delivery route (road route when configured, geodesic fallback). */
     route: {
       type: new Schema(
@@ -69,5 +73,6 @@ orderSchema.index({ status: 1, createdAt: -1 });
 // My-orders list (newest first) and restaurant queue / dashboard "recent orders".
 orderSchema.index({ customerId: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, createdAt: -1 });
+orderSchema.index({ riderId: 1, status: 1, createdAt: -1 });
 
 export const Order = model("Order", orderSchema);

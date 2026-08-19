@@ -17,14 +17,14 @@ const emailSchema = z.string().email("Enter a valid email").transform((value) =>
 const codeSchema = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
 
 const sendOtpSchema = z.object({ email: emailSchema });
-const verifyOtpSchema = z.object({ email: emailSchema, code: codeSchema });
+const verifyOtpSchema = z.object({ email: emailSchema, code: codeSchema, role: z.enum(["CUSTOMER", "RESTAURANT", "RIDER", "ADMIN"]).default("CUSTOMER") });
 const registerSchema = z.object({
   email: emailSchema,
   /** Short-lived token proving the email was verified by OTP. */
   regToken: z.string().min(10),
   name: z.string().trim().min(2, "Enter your name").max(80),
   phone: z.string().min(7).max(20).optional().or(z.literal("")),
-  role: z.enum(["CUSTOMER", "RESTAURANT"]).default("CUSTOMER"),
+  role: z.enum(["CUSTOMER", "RESTAURANT", "RIDER"]).default("CUSTOMER"),
 });
 
 const secret = () => process.env.JWT_SECRET ?? "local-development-secret-change-me";
@@ -96,7 +96,7 @@ router.post(
         throw new ApiError(error.status, error.message, error.code);
       }
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email, role: parsed.data.role });
       if (user) {
         return ok(response, { token: signAccessToken(user.id, user.role), user: publicUser(user), isNew: false, message: "Signed in" });
       }
@@ -130,8 +130,8 @@ router.post(
       }
       // Role is backend-controlled: the schema only accepts CUSTOMER/RESTAURANT,
       // so a client can never create an ADMIN account.
-      const existing = await User.findOne({ $or: [{ email }, ...(phone ? [{ phone }] : [])] });
-      if (existing) throw conflict(existing.email === email ? "That email is already registered. Sign in instead." : "That phone number is already in use.", "ACCOUNT_EXISTS");
+      const existing = await User.findOne({ $or: [{ email, role }, ...(phone ? [{ phone, role }] : [])] });
+      if (existing) throw conflict(existing.email === email ? `That email is already registered as ${role}. Sign in instead.` : "That phone number is already in use for this role.", "ACCOUNT_EXISTS");
 
       const user = await User.create({
         name,
@@ -156,7 +156,11 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
-const webUrlFor = (app: string) => (app === "restaurant" ? process.env.RESTAURANT_WEB_URL ?? "http://localhost:3001" : process.env.CUSTOMER_WEB_URL ?? "http://localhost:3000");
+const webUrlFor = (app: string) => {
+  if (app === "restaurant") return process.env.RESTAURANT_WEB_URL ?? "http://localhost:3001";
+  if (app === "rider") return process.env.RIDER_WEB_URL ?? "http://localhost:3002";
+  return process.env.CUSTOMER_WEB_URL ?? "http://localhost:3000";
+};
 
 const redirectUri = () => process.env.GOOGLE_REDIRECT_URI ?? `${process.env.PUBLIC_API_URL ?? "http://localhost:5000"}/api/v1/auth/google/callback`;
 
@@ -195,7 +199,10 @@ async function handleGoogleProfile(profile: GoogleProfile, app: string, response
     return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Google email is not verified`);
   }
   const email = profile.email.toLowerCase();
-  let user = await User.findOne({ $or: [{ googleId: profile.sub }, { email }] });
+  const roleMap: Record<string, string> = { restaurant: "RESTAURANT", rider: "RIDER" };
+  const role = (roleMap[app] as any) ?? "CUSTOMER";
+  // Look up by email+role so the same email can have separate customer/rider/restaurant accounts.
+  let user = await User.findOne({ email, role });
   const isNew = !user;
   if (!user) {
     user = await User.create({
@@ -204,7 +211,7 @@ async function handleGoogleProfile(profile: GoogleProfile, app: string, response
       googleId: profile.sub,
       emailVerified: true,
       passwordHash: hashPassword(randomBytes(24).toString("hex")),
-      role: app === "restaurant" ? "RESTAURANT" : "CUSTOMER",
+      role,
     });
   }
   const token = signAccessToken(user.id, user.role);
@@ -218,7 +225,7 @@ router.get(
   async (request, response, next) => {
     try {
       const app = String(request.query.app ?? "customer");
-      if (!["customer", "restaurant"].includes(app)) throw badRequest("Unknown app", "VALIDATION_ERROR");
+      if (!["customer", "restaurant", "rider"].includes(app)) throw badRequest("Unknown app", "VALIDATION_ERROR");
       if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
         throw new ApiError(503, "Google sign-in is not configured on this server", "GOOGLE_NOT_CONFIGURED");
       }

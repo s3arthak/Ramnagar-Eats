@@ -17,5 +17,7 @@ export const orderDto = (order: any) => ({
   status: order.status,
   statusHistory: order.statusHistory,
   estimatedDeliveryAt: order.estimatedDeliveryAt,
+  riderId: order.riderId?.toString?.() ?? order.riderId ?? undefined,
+  deliveryVerified: order.deliveryVerified ?? false,
   createdAt: order.createdAt,
 });
