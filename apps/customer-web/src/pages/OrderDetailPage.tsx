@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
-import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, User, Wallet } from "lucide-react";
+import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, Wallet } from "lucide-react";
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
