@@ -135,3 +135,14 @@ aside nav a:hover{color:#fff}
 .location-picker .hint{font-size:12px;color:#657a72;margin:10px 0 0}
 .notice--success{background:#e5f5df;color:#2f6b2c}
 .notice--error{background:#fdeaea;color:#a33b2c}
+
+/* ===== Notification prompt ===== */
+.notification-prompt{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:12px;background:#173b35;color:#fff;border-radius:14px;padding:14px 18px;max-width:420px;width:calc(100% - 32px);box-shadow:0 16px 40px rgba(0,0,0,.25);animation:notif-in .3s ease}
+@keyframes notif-in{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+.notification-prompt-icon{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:grid;place-items:center;flex:none;color:#d7f960}
+.notification-prompt-text{flex:1;min-width:0}
+.notification-prompt-text strong{font-size:13px;display:block}
+.notification-prompt-text p{font-size:12px;color:#c1d0c9;margin:2px 0 0}
+.notification-prompt-actions{display:flex;align-items:center;gap:8px;flex:none}
+.notification-prompt-allow{background:#d7f960;color:#173b35;border:none;border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer}
+.notification-prompt-dismiss{background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px}

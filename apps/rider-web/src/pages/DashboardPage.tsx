@@ -5,10 +5,10 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
 import type { ActiveDelivery, User } from "../lib/types";
-import { Clock, LogOut, Navigation, Package, Truck, Wallet } from "lucide-react";
+import { Navigation, Package, Truck, Wallet } from "lucide-react";
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [locationError, setLocationError] = useState("");
@@ -77,45 +77,30 @@ export function DashboardPage() {
   const isRejected = rider?.riderApproval === "REJECTED";
 
   return (
-    <div className="page" style={{ paddingTop: 16 }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700 }}>🚴 {rider?.name ?? "Rider"}</h1>
-          <p style={{ fontSize: 12, color: "var(--gray-400)" }}>{rider?.vehicleType} · {rider?.deliveryArea}</p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link to="/history" className="btn btn-outline" style={{ padding: "8px 12px", fontSize: 13 }}><Clock size={14} /></Link>
-          <Link to="/profile" className="btn btn-outline" style={{ padding: "8px 12px", fontSize: 13 }}>Profile</Link>
-          <button className="btn btn-outline" style={{ padding: "8px 12px" }} onClick={async () => { await logout(); navigate("/login"); }}>
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
-
+    <div>
       {/* Approval pending */}
       {isPending && (
-        <div className="card" style={{ background: "#fef3c7", border: "1px solid #fde68a", marginBottom: 16 }}>
-          <p style={{ fontWeight: 600, color: "#92400e" }}>⏳ Account Pending Approval</p>
-          <p style={{ fontSize: 13, color: "#a16207", marginTop: 4 }}>An admin will review your account shortly.</p>
+        <div className="banner banner-pending">
+          <p className="banner-title">⏳ Account Pending Approval</p>
+          <p className="banner-desc">An admin will review your account shortly.</p>
         </div>
       )}
       {isRejected && (
-        <div className="card" style={{ background: "#fee2e2", border: "1px solid #fecaca", marginBottom: 16 }}>
-          <p style={{ fontWeight: 600, color: "#991b1b" }}>❌ Account Rejected</p>
-          <p style={{ fontSize: 13, color: "#b91c1c", marginTop: 4 }}>Contact support for more information.</p>
+        <div className="banner banner-rejected">
+          <p className="banner-title">❌ Account Rejected</p>
+          <p className="banner-desc">Contact support for more information.</p>
         </div>
       )}
 
       {/* Online/Offline toggle */}
       {rider?.riderApproval === "APPROVED" && !activeOrder && (
-        <div className="card" style={{ marginBottom: 16, textAlign: "center" }}>
-          <p style={{ fontSize: 13, color: "var(--gray-500)", marginBottom: 8 }}>
-            You are {isOnline ? "🟢 Online" : "🔴 Offline"}
+        <div className="card status-card">
+          <p className="status-indicator">
+            <span className={`status-dot ${isOnline ? "online" : "offline"}`} />
+            You are {isOnline ? "Online" : "Offline"}
           </p>
           <button
-            className={`btn ${isOnline ? "btn-outline" : "btn-primary"}`}
-            style={{ width: "100%" }}
+            className={`btn ${isOnline ? "btn-outline" : "btn-primary"} btn-block`}
             onClick={() => statusMutation.mutate(isOnline ? "OFFLINE" : "ONLINE")}
             disabled={statusMutation.isPending}
           >
@@ -125,21 +110,21 @@ export function DashboardPage() {
       )}
 
       {locationError && (
-        <p style={{ fontSize: 12, color: "var(--red-500)", marginBottom: 8, textAlign: "center" }}>{locationError}</p>
+        <p className="error-text" style={{ textAlign: "center", marginBottom: 8 }}>{locationError}</p>
       )}
 
       {/* Active Delivery */}
       {activeOrder && (
-        <Link to={`/delivery/${activeOrder.id}`} className="card" style={{ display: "block", marginBottom: 16, borderLeft: "4px solid var(--green-500)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Link to={`/delivery/${activeOrder.id}`} className="card delivery-card">
+          <div className="delivery-header">
             <div>
-              <p style={{ fontSize: 12, color: "var(--gray-400)" }}>ACTIVE DELIVERY</p>
-              <p style={{ fontWeight: 700, fontSize: 16 }}>{activeOrder.orderNumber}</p>
-              <p style={{ fontSize: 13, color: "var(--gray-500)" }}>{activeOrder.restaurantName} · {activeOrder.items.length} item(s)</p>
+              <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, color: "var(--muted)", marginBottom: 4 }}>ACTIVE DELIVERY</p>
+              <p className="delivery-number">{activeOrder.orderNumber}</p>
+              <p className="delivery-meta">{activeOrder.restaurantName} · {activeOrder.items.length} item(s)</p>
             </div>
-            <Truck size={24} color="var(--green-500)" />
+            <Truck size={28} color="var(--green-500)" />
           </div>
-          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div className="delivery-footer">
             <span className="badge badge-green">{activeOrder.status.replace(/_/g, " ")}</span>
             <span className="badge badge-gray">₹{activeOrder.total}</span>
           </div>
@@ -147,24 +132,24 @@ export function DashboardPage() {
       )}
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-        <div className="card" style={{ textAlign: "center" }}>
-          <Package size={20} color="var(--green-500)" style={{ margin: "0 auto 4px" }} />
-          <p style={{ fontSize: 24, fontWeight: 700 }}>{rider?.todayDeliveries ?? 0}</p>
-          <p style={{ fontSize: 12, color: "var(--gray-400)" }}>Today's Deliveries</p>
+      <div className="stats-grid">
+        <div className="card stat-card">
+          <Package size={22} color="var(--green-500)" style={{ margin: "0 auto 6px" }} />
+          <p className="stat-value">{rider?.todayDeliveries ?? 0}</p>
+          <p className="stat-label">Today's Deliveries</p>
         </div>
-        <div className="card" style={{ textAlign: "center" }}>
-          <Wallet size={20} color="var(--green-500)" style={{ margin: "0 auto 4px" }} />
-          <p style={{ fontSize: 24, fontWeight: 700 }}>₹{rider?.todayEarnings ?? 0}</p>
-          <p style={{ fontSize: 12, color: "var(--gray-400)" }}>Today's Earnings</p>
+        <div className="card stat-card">
+          <Wallet size={22} color="var(--green-500)" style={{ margin: "0 auto 6px" }} />
+          <p className="stat-value">₹{rider?.todayEarnings ?? 0}</p>
+          <p className="stat-label">Today's Earnings</p>
         </div>
       </div>
 
       {/* No active delivery */}
       {!activeOrder && rider?.riderApproval === "APPROVED" && (
-        <div className="card" style={{ textAlign: "center", padding: 32 }}>
-          <Navigation size={32} color="var(--gray-300)" style={{ margin: "0 auto 8px" }} />
-          <p style={{ color: "var(--gray-400)", fontSize: 14 }}>
+        <div className="empty-state">
+          <Navigation size={36} className="empty-icon" />
+          <p style={{ fontWeight: 700, fontSize: 14 }}>
             {isOnline ? "Waiting for a delivery…" : "Go online to start receiving deliveries"}
           </p>
         </div>

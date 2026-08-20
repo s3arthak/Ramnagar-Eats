@@ -12,6 +12,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { api } from "./lib/api";
 import type { RestaurantProfile } from "./lib/types";
 import { Shell } from "./components/Shell";
+import { NotificationPrompt } from "./components/NotificationPrompt";
 
 // Code-split the pages so the initial bundle stays small on mobile connections.
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
@@ -108,6 +109,7 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <Root />
+          <NotificationPrompt />
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

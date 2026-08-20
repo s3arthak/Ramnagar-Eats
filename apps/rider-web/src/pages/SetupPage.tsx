@@ -31,9 +31,9 @@ export function SetupPage() {
   const valid = name.length >= 2 && vehicleType && vehicleNumber && deliveryArea;
 
   return (
-    <div className="page" style={{ paddingTop: 32 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Complete Your Profile</h1>
-      <p style={{ color: "var(--gray-500)", marginBottom: 24, fontSize: 14 }}>Tell us about your vehicle and delivery area</p>
+    <div className="setup-page" style={{ padding: "32px 16px" }}>
+      <h1 className="page-title">Complete Your Profile</h1>
+      <p style={{ color: "var(--muted)", marginBottom: 24, fontSize: 14 }}>Tell us about your vehicle and delivery area</p>
 
       <div className="field">
         <label className="label">Full Name</label>

@@ -30,8 +30,8 @@ function MapFollower({ position }: { position: [number, number] }) {
 
 export default function LocationPickerMap({ position, onMove }: { position: [number, number]; onMove: (value: [number, number]) => void }) {
   return (
-    <MapContainer center={position} zoom={15} scrollWheelZoom={false}>
-      <TileLayer attribution="© OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <MapContainer center={position} zoom={15} minZoom={5} maxZoom={19} scrollWheelZoom={false} zoomControl={true}>
+      <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} errorTileUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' fill='%23e8e4df'%3E%3Crect width='256' height='256'/%3E%3C/svg%3E" />
       <MapFollower position={position} />
       <DraggableMarker position={position} onMove={onMove} />
     </MapContainer>

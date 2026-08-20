@@ -16,10 +16,10 @@ import { ErrorState } from "../components/ui/StateViews";
 /** Emoji map marker — consistent with the tracking route map. */
 function emojiIcon(emoji: string) {
   return L.divIcon({
-    html: `<span style="font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">${emoji}</span>`,
+    html: `<span style="font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:#fff;border-radius:50%;box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 2.5px rgba(19,60,53,.25)">${emoji}</span>`,
     className: "",
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   });
 }
 
@@ -202,8 +202,8 @@ export function RestaurantPage() {
       {restaurant.location && (
         <section className="restaurant-map-card">
           <div className="restaurant-map">
-            <MapContainer center={[restaurant.location.lat, restaurant.location.lng]} zoom={15} scrollWheelZoom={false}>
-              <TileLayer attribution='© OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <MapContainer center={[restaurant.location.lat, restaurant.location.lng]} zoom={15} minZoom={5} maxZoom={19} scrollWheelZoom={false} zoomControl={true}>
+              <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} errorTileUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' fill='%23e8e4df'%3E%3Crect width='256' height='256'/%3E%3C/svg%3E" />
               <Marker position={[restaurant.location.lat, restaurant.location.lng]} icon={emojiIcon("🍴")} />
             </MapContainer>
           </div>

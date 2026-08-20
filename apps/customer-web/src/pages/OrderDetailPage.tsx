@@ -54,10 +54,10 @@ function useMinutesUntil(at?: string | null): number | null {
 /** Emoji map marker — avoids the Leaflet default-icon asset issue in Vite builds. */
 function emojiIcon(emoji: string) {
   return L.divIcon({
-    html: `<span style="font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">${emoji}</span>`,
+    html: `<span style="font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 2px rgba(0,0,0,.1)">${emoji}</span>`,
     className: "",
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
   });
 }
 
@@ -78,8 +78,8 @@ function RouteMap({ routeInfo, riderLocation }: { routeInfo: OrderRoute; riderLo
   if (riderLocation) points.push([riderLocation.lat, riderLocation.lng]);
   const bounds = L.latLngBounds(points);
   return (
-    <MapContainer center={from} zoom={13} scrollWheelZoom={false}>
-      <TileLayer attribution='© OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <MapContainer center={from} zoom={13} minZoom={5} maxZoom={19} scrollWheelZoom={false} zoomControl={true}>
+      <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} errorTileUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' fill='%23e8e4df'%3E%3Crect width='256' height='256'/%3E%3C/svg%3E" />
       <Polyline positions={routeInfo.route.polyline} pathOptions={{ color: "#ff6b45", weight: 4, opacity: 0.9 }} />
       <Marker position={[from.lat, from.lng]} icon={emojiIcon("🍴")} />
       <Marker position={[to.lat, to.lng]} icon={emojiIcon("🏠")} />

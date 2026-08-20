@@ -478,6 +478,12 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
     admin = await User.create({ name: "Platform Admin", phone: "+919876500002", email: "admin@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("admin123"), role: "ADMIN" });
     demoCustomer = await User.create({ name: "Demo Customer", phone: "+919876500000", email: "demo@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("customer123"), role: "CUSTOMER" });
     demoOwner = await User.create({ name: "Demo Restaurant Owner", phone: "+919876500001", email: "kitchen@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" });
+    // Additional restaurant owner: Sarthak Kharka — Royal Biryani House
+    await User.findOneAndUpdate(
+      { email: "kharkasarthak@gmail.com", role: "RESTAURANT" },
+      { $setOnInsert: { name: "Sarthak Kharka", phone: "+919876500003", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" } },
+      { upsert: true, new: true },
+    );
   }
 
   if (!restaurantsOnly) {
@@ -506,6 +512,32 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
   }
 
   const restaurants = await seedCatalog(demoOwner.id);
+
+  // Give Sarthak Kharka (kharkasarthak@gmail.com) their own restaurant
+  // so the demo owner's Royal Biryani House is untouched.
+  const kharkaOwner = await User.findOne({ email: "kharkasarthak@gmail.com", role: "RESTAURANT" });
+  if (kharkaOwner && !await Restaurant.findOne({ ownerId: kharkaOwner.id })) {
+    const kharkaRestaurant = await Restaurant.create({
+      ownerId: kharkaOwner.id,
+      name: "Sarthak's Kitchen",
+      description: "Authentic Indian cuisine from Sarthak's kitchen.",
+      phone: "+919876510099",
+      address: "Gol Market, Ramnagar, Jammu",
+      location: { type: "Point", coordinates: [CENTER.lng + 0.002, CENTER.lat + 0.001] },
+      coverImage: imageFor("Indian"),
+      cuisines: ["North Indian", "Indian"],
+      rating: 4.5, ratingCount: 50,
+      deliveryTimeMin: 25, deliveryTimeMax: 35, priceForTwo: 350,
+      isOpen: true, isAcceptingOrders: true,
+    });
+    const cat = await MenuCategory.create({ restaurantId: kharkaRestaurant.id, name: "Mains", sortOrder: 0 });
+    await MenuItem.insertMany([
+      { restaurantId: kharkaRestaurant.id, categoryId: cat.id, name: "Butter Chicken", description: "Classic tandoori chicken in creamy makhani gravy.", price: 320, image: imageFor("curry"), isVeg: false, isAvailable: true, isPopular: true, prepTime: 18, customizations: [] },
+      { restaurantId: kharkaRestaurant.id, categoryId: cat.id, name: "Paneer Tikka", description: "Grilled cottage cheese with peppers.", price: 260, image: imageFor("tandoori"), isVeg: true, isAvailable: true, isPopular: true, prepTime: 15, customizations: [] },
+      { restaurantId: kharkaRestaurant.id, categoryId: cat.id, name: "Chicken Biryani", description: "Fragrant basmati with spiced chicken.", price: 280, image: imageFor("biryani"), isVeg: false, isAvailable: true, recommended: true, prepTime: 22, customizations: [{ name: "Spice level", required: true, options: [{ name: "Mild", price: 0 }, { name: "Medium", price: 0 }, { name: "Extra spicy", price: 0 }] }] },
+      { restaurantId: kharkaRestaurant.id, categoryId: cat.id, name: "Dal Makhani", description: "Slow-simmered black lentils with butter.", price: 200, image: imageFor("curry"), isVeg: true, isAvailable: true, prepTime: 15, customizations: [] },
+    ]);
+  }
 
   console.info(
     `Seeded: ${restaurantsOnly ? "restaurant catalog only (users/orders/service-area untouched)" : `admin (admin@ramnagareats.test), demo customer (demo@ramnagareats.test), demo owner (kitchen@ramnagareats.test)`}, ` +

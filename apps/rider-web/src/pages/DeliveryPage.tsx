@@ -53,7 +53,7 @@ export function DeliveryPage() {
     onError: (e: any) => setOtpError(e.message || "Invalid OTP"),
   });
 
-  if (isLoading || !order) return <div className="loading">Loading delivery…</div>;
+  if (isLoading || !order) return <div className="page-status">Loading delivery…</div>;
 
   const status = order.status;
   const deliveryOtp = (order as any).deliveryOtp;
@@ -66,53 +66,50 @@ export function DeliveryPage() {
   ];
 
   return (
-    <div className="page" style={{ paddingTop: 8 }}>
+    <div className="delivery-page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <button onClick={() => navigate("/")} style={{ padding: 8 }}><ArrowLeft size={20} /></button>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <button onClick={() => navigate("/")} style={{ padding: 8, border: "none", background: "none", cursor: "pointer" }}>
+          <ArrowLeft size={20} color="var(--ink)" />
+        </button>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700 }}>{order.orderNumber}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 900, letterSpacing: -.6 }}>{order.orderNumber}</h1>
           <span className="badge badge-green">{status.replace(/_/g, " ")}</span>
         </div>
       </div>
 
       {/* Progress */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div className="progress-bar">
           {steps.map((s, i) => (
-            <div key={s.label} style={{ textAlign: "center", flex: 1 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 14, margin: "0 auto 4px",
-                background: s.done ? "var(--green-500)" : "var(--gray-200)",
-                color: s.done ? "#fff" : "var(--gray-400)", display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, fontWeight: 700,
-              }}>{i + 1}</div>
-              <p style={{ fontSize: 11, color: s.done ? "var(--green-600)" : "var(--gray-400)" }}>{s.label}</p>
+            <div key={s.label} className={`progress-step ${s.done ? "active" : ""}`}>
+              <div className={`step-circle ${s.done ? "active" : "inactive"}`}>{i + 1}</div>
+              <span className="step-label">{s.label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Restaurant */}
-      <div className="card" style={{ marginBottom: 12 }}>
-        <p style={{ fontSize: 12, color: "var(--gray-400)" }}>PICKUP FROM</p>
-        <p style={{ fontWeight: 600 }}>{order.restaurantName}</p>
+      <div className="card delivery-section">
+        <p className="section-eyebrow">PICKUP FROM</p>
+        <p className="section-title">{order.restaurantName}</p>
         {order.restaurantPhone && (
-          <a href={`tel:${order.restaurantPhone}`} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green-500)", fontSize: 13, marginTop: 4 }}>
+          <a href={`tel:${order.restaurantPhone}`} className="action-link">
             <Phone size={14} /> {order.restaurantPhone}
           </a>
         )}
       </div>
 
       {/* Delivery address */}
-      <div className="card" style={{ marginBottom: 12 }}>
-        <p style={{ fontSize: 12, color: "var(--gray-400)" }}>DELIVER TO</p>
-        <p style={{ fontWeight: 600 }}>{order.deliveryAddress.formattedAddress}</p>
+      <div className="card delivery-section">
+        <p className="section-eyebrow">DELIVER TO</p>
+        <p className="section-title">{order.deliveryAddress.formattedAddress}</p>
         {order.deliveryAddress.latitude && (
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${order.deliveryAddress.latitude},${order.deliveryAddress.longitude}`}
             target="_blank" rel="noopener noreferrer"
-            style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green-500)", fontSize: 13, marginTop: 4 }}
+            className="action-link"
           >
             <MapPin size={14} /> Open in Maps
           </a>
@@ -120,25 +117,25 @@ export function DeliveryPage() {
       </div>
 
       {/* Items */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 12, color: "var(--gray-400)", marginBottom: 8 }}>ORDER ITEMS</p>
+      <div className="card delivery-section">
+        <p className="section-eyebrow">ORDER ITEMS</p>
         {order.items.map((item, i) => (
           <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
             <span>{item.quantity}× {item.name}</span>
-            <span style={{ color: "var(--gray-500)" }}>₹{item.price * item.quantity}</span>
+            <span style={{ color: "var(--muted)" }}>₹{item.price * item.quantity}</span>
           </div>
         ))}
-        <div style={{ borderTop: "1px solid var(--gray-200)", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+        <div style={{ borderTop: "1px solid var(--gray-200)", marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
           <span>Total</span><span>₹{order.total}</span>
         </div>
       </div>
 
       {/* Delivery OTP display */}
       {status === "PICKED_UP" && deliveryOtp && (
-        <div className="card" style={{ marginBottom: 16, background: "#eff6ff", border: "1px solid #bfdbfe", textAlign: "center" }}>
-          <p style={{ fontSize: 12, color: "#1e40af" }}>DELIVERY OTP</p>
-          <p style={{ fontSize: 32, fontWeight: 700, color: "#1e3a8a", letterSpacing: 8 }}>{deliveryOtp}</p>
-          <p style={{ fontSize: 12, color: "#3b82f6" }}>Share this with the customer</p>
+        <div className="otp-display">
+          <p className="otp-label">DELIVERY OTP</p>
+          <p className="otp-value">{deliveryOtp}</p>
+          <p className="otp-hint">Share this with the customer</p>
         </div>
       )}
 
@@ -173,8 +170,8 @@ export function DeliveryPage() {
         )}
         {status === "DELIVERED" && (
           <div className="card" style={{ textAlign: "center", background: "#dcfce7" }}>
-            <CheckCircle2 size={32} color="var(--green-500)" style={{ margin: "0 auto 8px" }} />
-            <p style={{ fontWeight: 700 }}>Delivery Complete! 🎉</p>
+            <CheckCircle2 size={36} color="var(--green-500)" style={{ margin: "0 auto 8px" }} />
+            <p style={{ fontWeight: 900, fontSize: 16 }}>Delivery Complete! 🎉</p>
           </div>
         )}
       </div>
