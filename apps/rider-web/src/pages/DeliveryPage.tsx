@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
 import type { ActiveDelivery } from "../lib/types";
-import { ArrowLeft, Phone, MapPin, Package, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Phone, MapPin, CheckCircle2 } from "lucide-react";
 
 export function DeliveryPage() {
   const { orderId } = useParams<{ orderId: string }>();

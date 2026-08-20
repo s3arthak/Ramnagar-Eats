@@ -32,7 +32,8 @@ export interface DeliveryAddress {
 export interface RouteResult {
   distanceMeters: number;
   durationSeconds: number;
-  polyline: [number, number][}
+  polyline: [number, number][];
+}
 
 export interface Order {
   id: string;

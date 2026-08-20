@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import type { User } from "../lib/types";
 
 export function LoginPage() {
-  const { verifyOtp, register, setSession } = useAuth();
+  const { verifyOtp, register } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<"email" | "otp" | "register">("email");
   const [email, setEmail] = useState("");
