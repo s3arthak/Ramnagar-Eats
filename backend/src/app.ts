@@ -95,31 +95,6 @@ app.get("/api/v1/health", (_request, response) => {
   });
 });
 
-// Temporary diagnostic endpoint — remove after debugging.
-app.get("/api/v1/debug/email", async (_request, response) => {
-  const smtpHost = process.env.SMTP_HOST ?? "(not set)";
-  const smtpPort = process.env.SMTP_PORT ?? "(not set, default 587)";
-  const smtpUser = process.env.SMTP_USER ?? "(not set)";
-  const smtpPass = process.env.SMTP_PASS ? "SET" : "(not set)";
-  const emailFrom = process.env.EMAIL_FROM ?? "(not set)";
-  const otpDelivery = process.env.OTP_DELIVERY ?? "(not set)";
-  const brevoKey = process.env.BREVO_API_KEY ? "SET" : "(not set)";
-  const nodeEnv = process.env.NODE_ENV ?? "(not set)";
-
-  let testResult: string = "not tested";
-  try {
-    const { emailService } = await import("./services/email.js");
-    await emailService.sendOtpEmail("test@debug-check.test", "000000");
-    testResult = "OK — email provider accepted the message";
-  } catch (err: any) {
-    testResult = `FAILED — ${err.message}`;
-  }
-
-  response.json({
-    smtpHost, smtpPort, smtpUser, smtpPass, emailFrom, otpDelivery, brevoKey, nodeEnv,
-    testResult,
-  });
-});
 
 // 404 for unknown API routes, then the central error handler.
 // Locally stored uploads (dev provider) are served from /uploads.

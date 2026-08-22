@@ -318,6 +318,88 @@ async function main() {
     // 10. Customer login still works — regression check.
     const custReturn = await loginUser(crossEmail, "CUSTOMER");
     check("cross-role: customer login still works after rider/restaurant creation", custReturn.status === 200 && custReturn.body.user.role === "CUSTOMER" && custReturn.body.isNew === false);
+
+    // 11. No-role fallback: sign in WITHOUT sending role — frontends omit role.
+    // Admin user should be found even though frontends don't send role: "ADMIN".
+    const adminNoRoleLogin = await loginUser("admin@ramnagareats.test");
+    check("no-role: admin signs in without role param", adminNoRoleLogin.status === 200 && adminNoRoleLogin.body.isNew === false && adminNoRoleLogin.body.user.role === "ADMIN", JSON.stringify(adminNoRoleLogin.body));
+
+    // Restaurant user signs in without role.
+    const restNoRoleLogin = await loginUser("kitchen@ramnagareats.test");
+    check("no-role: restaurant owner signs in without role param", restNoRoleLogin.status === 200 && restNoRoleLogin.body.isNew === false && restNoRoleLogin.body.user.role === "RESTAURANT", JSON.stringify(restNoRoleLogin.body));
+
+    // Rider no-role test is added after the Rider section (rider1@test.test is registered there).
+
+    // Customer user signs in without role (the original/default case).
+    const custNoRoleLogin = await loginUser("test@customer.test");
+    check("no-role: customer signs in without role param", custNoRoleLogin.status === 200 && custNoRoleLogin.body.isNew === false && custNoRoleLogin.body.user.role === "CUSTOMER", JSON.stringify(custNoRoleLogin.body));
+
+    // Unknown email without role returns isNew (new user registration).
+    const unknownNoRole = await loginUser("brand-new-user@test.test");
+    check("no-role: unknown email returns isNew for registration", unknownNoRole.status === 200 && unknownNoRole.body.isNew === true && Boolean(unknownNoRole.body.regToken));
+  }
+
+  // ---------- 3-App sign-in scenarios (simulates real frontend behavior) ----------
+  console.log("\n3-App sign-in scenarios");
+  {
+    // Simulates: customer-web sends role: "CUSTOMER", restaurant-web sends no role, rider-web sends role: "RIDER"
+    const appEmail = `3app_${Date.now()}@test.test`;
+
+    // ── Step 1: Register as CUSTOMER on customer-web ──
+    const custSent = await sendOtp(appEmail);
+    if (custSent.status === 400 && custSent.body.code === "OTP_RESEND_TOO_SOON") {
+      await new Promise((r) => setTimeout(r, Number(process.env.OTP_RESEND_COOLDOWN_MS ?? 100) + 50));
+      await sendOtp(appEmail);
+    }
+    const custVerified = await verifyOtp(appEmail, await devCode(appEmail), "CUSTOMER");
+    check("3app: customer-web returns isNew for new email", custVerified.status === 200 && custVerified.body.isNew === true);
+    const custReg = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: appEmail, regToken: custVerified.body.regToken, name: "3-App User", role: "CUSTOMER" }),
+    });
+    check("3app: CUSTOMER registration succeeds", custReg.status === 201 && custReg.body.user.role === "CUSTOMER");
+
+    // ── Step 2: Sign in on customer-web (role: CUSTOMER) ──
+    const custLogin = await loginUser(appEmail, "CUSTOMER");
+    check("3app: customer-web sign-in finds CUSTOMER", custLogin.status === 200 && custLogin.body.isNew === false && custLogin.body.user.role === "CUSTOMER");
+
+    // ── Step 3: Sign in on restaurant-web (no role) — should find CUSTOMER ──
+    const restLogin = await loginUser(appEmail);
+    check("3app: restaurant-web sign-in finds CUSTOMER (no role)", restLogin.status === 200 && restLogin.body.isNew === false && restLogin.body.user.role === "CUSTOMER");
+
+    // ── Step 4: Sign in on rider-web (role: RIDER) — should return isNew ──
+    const riderLogin = await loginUser(appEmail, "RIDER");
+    check("3app: rider-web returns isNew (no RIDER account)", riderLogin.status === 200 && riderLogin.body.isNew === true && Boolean(riderLogin.body.regToken));
+
+    // ── Step 5: Register as RIDER on rider-web (same email) ──
+    const riderReg = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: appEmail, regToken: riderLogin.body.regToken, name: "3-App Rider", role: "RIDER" }),
+    });
+    check("3app: RIDER registration succeeds (same email)", riderReg.status === 201 && riderReg.body.user.role === "RIDER");
+
+    // ── Step 6: Sign in on all 3 apps — each finds its own role ──
+    const custReturn = await loginUser(appEmail, "CUSTOMER");
+    check("3app: customer-web still finds CUSTOMER", custReturn.status === 200 && custReturn.body.user.role === "CUSTOMER" && custReturn.body.isNew === false);
+
+    const riderReturn = await loginUser(appEmail, "RIDER");
+    check("3app: rider-web now finds RIDER", riderReturn.status === 200 && riderReturn.body.user.role === "RIDER" && riderReturn.body.isNew === false);
+
+    const restReturn = await loginUser(appEmail);
+    check("3app: restaurant-web finds first user (CUSTOMER)", restReturn.status === 200 && restReturn.body.isNew === false);
+
+    // ── Step 7: Try to register duplicate role — should fail ──
+    const dupCust = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: appEmail, regToken: custVerified.body.regToken, name: "Dup Customer", role: "CUSTOMER" }),
+    });
+    check("3app: duplicate CUSTOMER registration rejected", dupCust.status === 409 && dupCust.body.code === "ACCOUNT_EXISTS");
+
+    const dupRider = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: appEmail, regToken: riderLogin.body.regToken, name: "Dup Rider", role: "RIDER" }),
+    });
+    check("3app: duplicate RIDER registration rejected", dupRider.status === 409 && dupRider.body.code === "ACCOUNT_EXISTS");
   }
 
   // ---------- Restaurants ----------
@@ -1174,6 +1256,10 @@ async function main() {
     check("delivered order appears in history", history.body.deliveries.some((d: any) => d.orderNumber && d.deliveryFee > 0));
     const customerAsHistory = await request(base, "/api/v1/riders/deliveries", {}, customer.body.token);
     check("customer blocked from rider history", customerAsHistory.status === 403);
+
+    // No-role rider login (rider1@test.test was registered earlier in this section).
+    const riderNoRoleLogin = await loginUser("rider1@test.test");
+    check("no-role: rider signs in without role param", riderNoRoleLogin.status === 200 && riderNoRoleLogin.body.isNew === false && riderNoRoleLogin.body.user.role === "RIDER", JSON.stringify(riderNoRoleLogin.body));
   }
 
   // ---------- Real-time (Chunk 5) ----------
@@ -1231,6 +1317,69 @@ async function main() {
     } catch (error) {
       check("socket without token is rejected", error instanceof Error && error.message === "UNAUTHORIZED");
     }
+  }
+
+  // ========== sarthakkharka@gmail.com OTP flow across all 3 apps ==========
+  console.log("\nsarthakkharka@gmail.com OTP flow (all 3 apps)");
+  {
+    const testEmail = "sarthakkharka@gmail.com";
+
+    // ── customer-web: send OTP (role: CUSTOMER) ──
+    console.log("  [customer-web] Sending OTP...");
+    let sent = await sendOtp(testEmail);
+    if (sent.status === 400 && sent.body.code === "OTP_RESEND_TOO_SOON") {
+      await new Promise((r) => setTimeout(r, Number(process.env.OTP_RESEND_COOLDOWN_MS ?? 100) + 50));
+      sent = await sendOtp(testEmail);
+    }
+    check("sarthakkharka: customer-web send-otp succeeds", sent.status === 200, JSON.stringify(sent.body));
+
+    const custCode = await devCode(testEmail);
+    check("sarthakkharka: customer-web OTP code generated", Boolean(custCode), `code: ${custCode}`);
+    console.log(`  [customer-web] OTP code: ${custCode}`);
+
+    const custVerified = await verifyOtp(testEmail, custCode, "CUSTOMER");
+    check("sarthakkharka: customer-web verify-otp works", custVerified.status === 200, JSON.stringify(custVerified.body));
+    console.log(`  [customer-web] Result: ${custVerified.body.isNew ? "isNew (register)" : `logged in as ${custVerified.body.user?.role}`}`);
+
+    // ── restaurant-web: send OTP (no role) ──
+    console.log("\n  [restaurant-web] Sending OTP...");
+    sent = await sendOtp(testEmail);
+    if (sent.status === 400 && sent.body.code === "OTP_RESEND_TOO_SOON") {
+      await new Promise((r) => setTimeout(r, Number(process.env.OTP_RESEND_COOLDOWN_MS ?? 100) + 50));
+      sent = await sendOtp(testEmail);
+    }
+    check("sarthakkharka: restaurant-web send-otp succeeds", sent.status === 200, JSON.stringify(sent.body));
+
+    const restCode = await devCode(testEmail);
+    check("sarthakkharka: restaurant-web OTP code generated", Boolean(restCode), `code: ${restCode}`);
+    console.log(`  [restaurant-web] OTP code: ${restCode}`);
+
+    const restVerified = await verifyOtp(testEmail, restCode); // no role
+    check("sarthakkharka: restaurant-web verify-otp works", restVerified.status === 200, JSON.stringify(restVerified.body));
+    console.log(`  [restaurant-web] Result: ${restVerified.body.isNew ? "isNew (register)" : `logged in as ${restVerified.body.user?.role}`}`);
+
+    // ── rider-web: send OTP (role: RIDER) ──
+    console.log("\n  [rider-web] Sending OTP...");
+    sent = await sendOtp(testEmail);
+    if (sent.status === 400 && sent.body.code === "OTP_RESEND_TOO_SOON") {
+      await new Promise((r) => setTimeout(r, Number(process.env.OTP_RESEND_COOLDOWN_MS ?? 100) + 50));
+      sent = await sendOtp(testEmail);
+    }
+    check("sarthakkharka: rider-web send-otp succeeds", sent.status === 200, JSON.stringify(sent.body));
+
+    const riderCode = await devCode(testEmail);
+    check("sarthakkharka: rider-web OTP code generated", Boolean(riderCode), `code: ${riderCode}`);
+    console.log(`  [rider-web] OTP code: ${riderCode}`);
+
+    const riderVerified = await verifyOtp(testEmail, riderCode, "RIDER");
+    check("sarthakkharka: rider-web verify-otp works", riderVerified.status === 200, JSON.stringify(riderVerified.body));
+    console.log(`  [rider-web] Result: ${riderVerified.body.isNew ? "isNew (register)" : `logged in as ${riderVerified.body.user?.role}`}`);
+
+    // ── Summary of what exists for this email ──
+    console.log("\n  [Summary] Accounts for sarthakkharka@gmail.com:");
+    if (custVerified.body.user) console.log(`    - CUSTOMER: ${custVerified.body.user.name} (${custVerified.body.isNew ? "new" : "existing"})`);
+    if (restVerified.body.user) console.log(`    - Restaurant found: ${restVerified.body.user.name} (role: ${restVerified.body.user.role})`);
+    if (riderVerified.body.user) console.log(`    - RIDER: ${riderVerified.body.user.name} (${riderVerified.body.isNew ? "new" : "existing"})`);
   }
 
   io.close();

@@ -17,7 +17,7 @@ const emailSchema = z.string().email("Enter a valid email").transform((value) =>
 const codeSchema = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
 
 const sendOtpSchema = z.object({ email: emailSchema });
-const verifyOtpSchema = z.object({ email: emailSchema, code: codeSchema, role: z.enum(["CUSTOMER", "RESTAURANT", "RIDER", "ADMIN"]).default("CUSTOMER") });
+const verifyOtpSchema = z.object({ email: emailSchema, code: codeSchema, role: z.enum(["CUSTOMER", "RESTAURANT", "RIDER", "ADMIN"]).optional() });
 const registerSchema = z.object({
   email: emailSchema,
   /** Short-lived token proving the email was verified by OTP. */
@@ -96,7 +96,17 @@ router.post(
         throw new ApiError(error.status, error.message, error.code);
       }
 
-      const user = await User.findOne({ email, role: parsed.data.role });
+      let user: InstanceType<typeof User> | null = null;
+      if (parsed.data.role) {
+        // Role explicitly provided (e.g. cross-role tests, restaurant/rider apps):
+        // match by email + role strictly.
+        user = await User.findOne({ email, role: parsed.data.role });
+      } else {
+        // No role sent (customer-web default): find any user with this email.
+        // This lets ADMIN / RESTAURANT / RIDER users sign in through any portal
+        // without the frontend needing to know which role to send.
+        user = await User.findOne({ email });
+      }
       if (user) {
         return ok(response, { token: signAccessToken(user.id, user.role), user: publicUser(user), isNew: false, message: "Signed in" });
       }

@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verifyOtp = async (email: string, code: string) => {
-    const data = await api.post<{ token?: string; user?: User; regToken?: string; isNew: boolean }>("/auth/verify-otp", { email, code });
+    const data = await api.post<{ token?: string; user?: User; regToken?: string; isNew: boolean }>("/auth/verify-otp", { email, code, role: "CUSTOMER" });
     if (data.token && data.user) {
       setToken(data.token);
       setUser(data.user);
