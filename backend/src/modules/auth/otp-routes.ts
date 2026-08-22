@@ -143,15 +143,29 @@ router.post(
       const existing = await User.findOne({ $or: [{ email, role }, ...(phone ? [{ phone, role }] : [])] });
       if (existing) throw conflict(existing.email === email ? `That email is already registered as ${role}. Sign in instead.` : "That phone number is already in use for this role.", "ACCOUNT_EXISTS");
 
-      const user = await User.create({
-        name,
-        email,
-        phone,
-        emailVerified: true,
-        // No passwords in V2 — a random hash satisfies the schema and is never usable.
-        passwordHash: hashPassword(randomBytes(24).toString("hex")),
-        role,
-      });
+      let user: InstanceType<typeof User>;
+      try {
+        user = await User.create({
+          name,
+          email,
+          phone,
+          emailVerified: true,
+          // No passwords in V2 — a random hash satisfies the schema and is never usable.
+          passwordHash: hashPassword(randomBytes(24).toString("hex")),
+          role,
+        });
+      } catch (createError: any) {
+        // Handle the race condition where two concurrent registrations
+        // both pass the findOne check but the second hits the unique index.
+        if (createError?.code === 11000) {
+          const already = await User.findOne({ $or: [{ email, role }, ...(phone ? [{ phone, role }] : [])] });
+          if (already) {
+            // The account now exists — the user can sign in with it.
+            return ok(response, { token: signAccessToken(already.id, already.role), user: publicUser(already), message: "Account already exists — signed in" });
+          }
+        }
+        throw createError;
+      }
       void emailService.sendWelcome(email, user.name).catch(() => undefined);
       return ok(response, { token: signAccessToken(user.id, user.role), user: publicUser(user), message: "Account created" }, 201);
     } catch (error) {
@@ -203,31 +217,43 @@ async function fetchGoogleProfile(accessToken: string): Promise<GoogleProfile> {
   return (await response.json()) as GoogleProfile;
 }
 
-/** Shared post-OAuth handling: find or create the account, then redirect with a session. */
-async function handleGoogleProfile(profile: GoogleProfile, app: string, response: any) {
-  if (!profile.email || !profile.email_verified) {
-    return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Google email is not verified`);
+/** Shared post-OAuth handling: find or create the account, then redirect with a session. */  async function handleGoogleProfile(profile: GoogleProfile, app: string, response: any) {
+    if (!profile.email || !profile.email_verified) {
+      return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Google email is not verified`);
+    }
+    const email = profile.email.toLowerCase();
+    const roleMap: Record<string, string> = { restaurant: "RESTAURANT", rider: "RIDER" };
+    const role = (roleMap[app] as any) ?? "CUSTOMER";
+    // Look up by email+role so the same email can have separate customer/rider/restaurant accounts.
+    let user = await User.findOne({ email, role });
+    const isNew = !user;
+    if (!user) {
+      try {
+        user = await User.create({
+          name: profile.name || email.split("@")[0],
+          email,
+          googleId: profile.sub,
+          emailVerified: true,
+          passwordHash: hashPassword(randomBytes(24).toString("hex")),
+          role,
+        });
+      } catch (createError: any) {
+        // Handle race condition: another request created the same user between
+        // our findOne and create. Fall back to finding the existing account.
+        if (createError?.code === 11000) {
+          user = await User.findOne({ email, role });
+          if (!user) {
+            return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could not create account — try signing in with email instead`);
+          }
+        } else {
+          return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could not create account`);
+        }
+      }
+    }
+    const token = signAccessToken(user.id, user.role);
+    const payload = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, avatar: user.avatar }));
+    return response.redirect(`${webUrlFor(app)}/oauth/callback?token=${token}&user=${payload}&isNew=${isNew}`);
   }
-  const email = profile.email.toLowerCase();
-  const roleMap: Record<string, string> = { restaurant: "RESTAURANT", rider: "RIDER" };
-  const role = (roleMap[app] as any) ?? "CUSTOMER";
-  // Look up by email+role so the same email can have separate customer/rider/restaurant accounts.
-  let user = await User.findOne({ email, role });
-  const isNew = !user;
-  if (!user) {
-    user = await User.create({
-      name: profile.name || email.split("@")[0],
-      email,
-      googleId: profile.sub,
-      emailVerified: true,
-      passwordHash: hashPassword(randomBytes(24).toString("hex")),
-      role,
-    });
-  }
-  const token = signAccessToken(user.id, user.role);
-  const payload = encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, avatar: user.avatar }));
-  return response.redirect(`${webUrlFor(app)}/oauth/callback?token=${token}&user=${payload}&isNew=${isNew}`);
-}
 
 // Start the OAuth dance: redirect to Google with a state that encodes the target app.
 router.get(
