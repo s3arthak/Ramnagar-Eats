@@ -1,17 +1,8 @@
-const FOOD_EMOJIS = ["🍛", "🍕", "🍔", "🍜", "🥘", "🍲", "🍰", "🥗"];
-
+/** Single food emoji bouncing — consistent across all Ramnagar Eats apps. */
 function FoodSpinner() {
   return (
-    <div className="food-spinner" aria-hidden="true">
-      {FOOD_EMOJIS.map((emoji, i) => (
-        <span
-          key={i}
-          className="food-spinner-emoji"
-          style={{ animationDelay: `${i * 0.15}s` }}
-        >
-          {emoji}
-        </span>
-      ))}
+    <div className="food-spinner-wrap" role="status">
+      <span className="food-spinner-emoji" aria-hidden="true">🍛</span>
     </div>
   );
 }

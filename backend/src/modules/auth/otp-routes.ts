@@ -43,12 +43,17 @@ function verifyRegistrationToken(token: string, email: string): boolean {
   }
 }
 
-const publicUser = (user: { id: string; name: string; phone?: string | null; email?: string | null; role: UserRole }) => ({
+const publicUser = (user: any) => ({
   id: user.id,
   name: user.name,
   phone: user.phone ?? undefined,
   email: user.email ?? undefined,
   role: user.role,
+  vehicleType: user.vehicleType ?? undefined,
+  vehicleNumber: user.vehicleNumber ?? undefined,
+  deliveryArea: user.deliveryArea ?? undefined,
+  riderStatus: user.riderStatus ?? undefined,
+  riderApproval: user.riderApproval ?? undefined,
 });
 
 router.post(

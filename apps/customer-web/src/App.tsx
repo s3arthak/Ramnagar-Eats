@@ -35,10 +35,8 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ defa
 function PageFallback() {
   return (
     <div className="state-view" role="status" style={{ margin: "48px auto", maxWidth: 520 }}>
-      <div className="food-spinner" aria-hidden="true">
-        {"🍛🍕🍔🍜🥘🍲🍰🥗".split("").filter(Boolean).map((emoji, i) => (
-          <span key={i} className="food-spinner-emoji" style={{ animationDelay: `${i * 0.15}s` }}>{emoji}</span>
-        ))}
+      <div className="food-spinner-wrap">
+        <span className="food-spinner-emoji" aria-hidden="true">🍛</span>
       </div>
       <p>Loading…</p>
     </div>

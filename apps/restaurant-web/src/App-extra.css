@@ -117,6 +117,11 @@ aside nav a:hover{color:#fff}
 .auth-switch{font-size:13px;color:#657a72;margin-top:16px;text-align:center}
 .auth-switch button{border:0;background:none;color:#2e6a5d;font-weight:800;cursor:pointer;font:inherit}
 .boot-screen{min-height:100vh;display:grid;place-items:center;color:#657a72;font-weight:700}
+.food-spinner-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.food-spinner-emoji{font-size:48px;animation:food-bounce 1.2s ease-in-out infinite;display:inline-block}
+.food-spinner-label{font-size:14px;color:#657a72;margin:0}
+@keyframes food-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.1)}}
+@media(prefers-reduced-motion:reduce){.food-spinner-emoji{animation:none}}
 .toast-stack{position:fixed;top:18px;right:18px;z-index:60;display:grid;gap:10px;width:min(360px,calc(100vw - 36px))}
 .toast{background:#173b35;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 14px 40px #0f312a40;animation:toast-in .25s ease;border-left:4px solid #d7f960;display:flex;align-items:flex-start;gap:10px}.toast-icon{flex:none;margin-top:2px}.toast-icon--success{color:#7ee87e}.toast-icon--info{color:#a8c8ff}.toast-icon--danger{color:#ffb088}
 .toast strong{font-size:13.5px}

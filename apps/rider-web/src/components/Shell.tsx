@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { FoodSpinner } from "./FoodSpinner";
 import { History, Home, LogOut, Truck } from "lucide-react";
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -35,7 +36,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="rider-main">
-        <Suspense fallback={<div className="rider-loading">Loading…</div>}>
+        <Suspense fallback={<FoodSpinner />}>
           {children}
         </Suspense>
       </main>

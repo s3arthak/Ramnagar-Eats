@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { FoodSpinner } from "./FoodSpinner";
 import { getSocket } from "../lib/socket";
 import type { Order, RestaurantProfile } from "../lib/types";
 import { api } from "../lib/api";
@@ -89,7 +90,7 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
         </div>
       </aside>
       <main>
-        <Suspense fallback={<div style={{ padding: "48px 24px", textAlign: "center", color: "#6a7b75" }}>Loading…</div>}>{children}</Suspense>
+        <Suspense fallback={<FoodSpinner />}>{children}</Suspense>
       </main>
     </div>
   );

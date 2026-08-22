@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { Shell } from "./components/Shell";
+import { FoodSpinner } from "./components/FoodSpinner";
 import { NotificationPrompt } from "./components/NotificationPrompt";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -21,7 +22,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ defa
 const HistoryPage = lazy(() => import("./pages/HistoryPage").then((m) => ({ default: m.HistoryPage })));
 
 function Fallback() {
-  return <div className="rider-loading">Loading…</div>;
+  return <FoodSpinner />;
 }
 
 export default function App() {

@@ -12,6 +12,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { api } from "./lib/api";
 import type { RestaurantProfile } from "./lib/types";
 import { Shell } from "./components/Shell";
+import { FoodSpinner } from "./components/FoodSpinner";
 import { NotificationPrompt } from "./components/NotificationPrompt";
 
 // Code-split the pages so the initial bundle stays small on mobile connections.
@@ -24,11 +25,7 @@ const RestaurantPage = lazy(() => import("./pages/RestaurantPage").then((m) => (
 const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })));
 
 function PageFallback() {
-  return (
-    <div style={{ padding: "48px 24px", textAlign: "center", color: "#6a7b75" }}>
-      Loading…
-    </div>
-  );
+  return <FoodSpinner />;
 }
 
 function Workspace() {
@@ -51,7 +48,7 @@ function Workspace() {
   }, [user, loading, navigate]);
 
   if (loading) {
-    return <div className="boot-screen">Loading Ramnagar Eats…</div>;
+    return <div className="boot-screen"><FoodSpinner label="Loading…" /></div>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;

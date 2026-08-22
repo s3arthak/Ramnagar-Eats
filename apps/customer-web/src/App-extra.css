@@ -52,9 +52,10 @@
 .skeleton-line.tiny{width:40%;height:10px}
 .spinner{width:34px;height:34px;border:3px solid #d5e2d6;border-top-color:var(--brand-600);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.food-spinner{display:flex;gap:4px;justify-content:center;margin:0 auto 12px}
-.food-spinner-emoji{font-size:24px;animation:food-bounce 1.2s ease-in-out infinite;display:inline-block}
-@keyframes food-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.15)}}
+.food-spinner-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 12px}
+.food-spinner-emoji{font-size:48px;animation:food-bounce 1.2s ease-in-out infinite;display:inline-block}
+.food-spinner-label{font-size:14px;color:var(--muted);margin:0}
+@keyframes food-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.1)}}
 @media(prefers-reduced-motion:reduce){.food-spinner-emoji{animation:none}}
 .state-view{text-align:center;padding:60px 20px;color:var(--muted)}
 

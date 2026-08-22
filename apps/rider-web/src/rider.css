@@ -167,6 +167,32 @@ img { max-width: 100%; display: block; }
   font-size: 14px;
 }
 
+/* Unified food spinner — single bouncing emoji */
+.food-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 60px 24px;
+}
+.food-spinner-emoji {
+  font-size: 48px;
+  animation: food-bounce 1.2s ease-in-out infinite;
+  display: inline-block;
+}
+.food-spinner-label {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+@keyframes food-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .food-spinner-emoji { animation: none; }
+}
+
 /* ===== Bottom Navigation ===== */
 .rider-bottomnav {
   position: fixed;
