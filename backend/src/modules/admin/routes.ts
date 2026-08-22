@@ -73,7 +73,7 @@ router.get(
   asyncHandler(async (_request, response) => {
     const users = await User.find({ role: { $ne: "ADMIN" } }).sort({ createdAt: -1 }).limit(200);
     return ok(response, {
-      users: users.map((user) => ({ id: user._id.toString(), name: user.name, phone: user.phone, email: user.email, role: user.role, createdAt: user.createdAt })),
+      users: users.map((user) => ({ id: user._id.toString(), name: user.name, phone: user.phone, email: user.email, role: user.role, riderApproval: user.riderApproval, createdAt: user.createdAt })),
     });
   }),
 );

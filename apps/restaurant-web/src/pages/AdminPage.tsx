@@ -28,6 +28,7 @@ interface AdminUser {
   phone?: string;
   email?: string;
   role: string;
+  riderApproval?: string;
   createdAt: string;
 }
 interface AdminOrder {
@@ -196,6 +197,16 @@ export function AdminPage() {
     }
   }
 
+  async function approveRider(user: AdminUser, approval: "APPROVED" | "REJECTED") {
+    try {
+      await api.patch(`/admin/riders/${user.id}`, { riderApproval: approval });
+      push(`Rider ${user.name} ${approval.toLowerCase()}`, { tone: approval === "APPROVED" ? "success" : "danger" });
+      await load();
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "Could not update rider");
+    }
+  }
+
   return (
     <>
       <header>
@@ -266,6 +277,7 @@ export function AdminPage() {
             <span>PHONE</span>
             <span>EMAIL</span>
             <span>ROLE</span>
+            <span>STATUS</span>
             <span>JOINED</span>
           </div>
           {users.map((user) => (
@@ -274,7 +286,22 @@ export function AdminPage() {
               <span>{user.phone ?? "—"}</span>
               <span>{user.email ?? "—"}</span>
               <span className={`status ${user.role === "RESTAURANT" ? "preparing" : "new"}`}>{user.role}</span>
+              <span>
+                {user.role === "RIDER" ? (
+                  <span className={`status ${user.riderApproval === "APPROVED" ? "delivered" : user.riderApproval === "REJECTED" ? "cancelled" : "preparing"}`}>
+                    {user.riderApproval === "APPROVED" ? "Approved" : user.riderApproval === "REJECTED" ? "Rejected" : "Pending"}
+                  </span>
+                ) : (
+                  <span className="status delivered">Active</span>
+                )}
+              </span>
               <span className="muted">{timeAgo(user.createdAt)}</span>
+              {user.role === "RIDER" && user.riderApproval !== "APPROVED" && user.riderApproval !== "REJECTED" && (
+                <span className="row-actions">
+                  <button className="action accept" onClick={() => void approveRider(user, "APPROVED")}>Approve</button>
+                  <button className="action reject" onClick={() => void approveRider(user, "REJECTED")}>Reject</button>
+                </span>
+              )}
             </div>
           ))}
         </section>
