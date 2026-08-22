@@ -37,11 +37,18 @@
 .hero-search button{border:0;background:var(--lime);color:var(--ink);border-radius:9px;font-weight:900;padding:12px 20px;cursor:pointer}
 
 /* ===== Categories ===== */
-.categories a{display:block;border:1px solid #e1e9e1;background:#fff;border-radius:12px;padding:17px 6px 13px;color:var(--ink);font-weight:800;text-align:center;text-decoration:none;font-size:13px}
-.categories a:hover{border-color:#b9cdc3;transform:translateY(-2px);transition:.15s}
-.categories a span{display:block;font-size:35px;margin-bottom:8px}
-.categories--skeleton{grid-template-columns:repeat(8,1fr)}
-.categories--skeleton span{height:104px;border-radius:12px}
+/* ===== Category carousel ===== */
+.category-carousel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 0 16px;scrollbar-width:none}
+.category-carousel::-webkit-scrollbar{display:none}
+.category-card{flex:0 0 auto;width:110px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid #e1e9e1;background:#fff;border-radius:16px;padding:18px 8px 14px;color:var(--ink);font-weight:800;text-align:center;text-decoration:none;font-size:12px;transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;animation:card-enter .35s ease backwards;cursor:pointer}
+.category-card:active{transform:scale(.94);box-shadow:0 0 0 3px var(--lime),0 4px 16px rgba(0,0,0,.12);border-color:var(--lime)}
+.category-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(19,60,53,.12);border-color:#b9cdc3}
+.category-emoji{font-size:38px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.1));transition:transform .2s ease}
+.category-card:hover .category-emoji{transform:scale(1.15) rotate(-5deg)}
+.category-card:active .category-emoji{transform:scale(1.25)}
+.category-name{margin:0;line-height:1.2}
+@keyframes card-enter{from{opacity:0;transform:translateY(12px) scale(.9)}}
+@media(prefers-reduced-motion:reduce){.category-card{animation:none}}
 .see-all{font-weight:800;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--lime)}
 
 /* ===== Skeleton / spinner ===== */

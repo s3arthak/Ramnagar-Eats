@@ -89,18 +89,24 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
           </div>
         </div>
         {categories.length > 0 ? (
-          <div className="categories">
-            {categories.map((category) => (
-              <Link key={category.id} to={`/restaurants?cuisines=${encodeURIComponent(category.name)}`}>
-                <span>{category.emoji}</span>
-                {category.name}
+          <div className="category-carousel" role="list">
+            {categories.map((category, index) => (
+              <Link
+                key={category.id}
+                className="category-card"
+                to={`/restaurants?cuisines=${encodeURIComponent(category.name)}`}
+                role="listitem"
+                style={{ animationDelay: `${index * 0.06}s` }}
+              >
+                <span className="category-emoji">{category.emoji}</span>
+                <span className="category-name">{category.name}</span>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="categories categories--skeleton" aria-hidden="true">
+          <div className="category-carousel" aria-hidden="true">
             {Array.from({ length: 8 }, (_, index) => (
-              <span key={index} className="skeleton-block" />
+              <span key={index} className="category-card skeleton-block" style={{ height: 100, borderRadius: 16 }} />
             ))}
           </div>
         )}
