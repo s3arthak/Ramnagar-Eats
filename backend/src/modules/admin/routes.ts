@@ -182,20 +182,35 @@ router.get(
   "/riders",
   asyncHandler(async (_request, response) => {
     const riders = await User.find({ role: "RIDER" }).sort({ createdAt: -1 });
+
+    // Aggregate total deliveries and earnings per rider from delivered orders.
+    const riderIds = riders.map((r) => r._id);
+    const stats = await Order.aggregate([
+      { $match: { riderId: { $in: riderIds }, status: "DELIVERED" } },
+      { $group: { _id: "$riderId", totalDeliveries: { $sum: 1 }, totalEarnings: { $sum: "$deliveryFee" } } },
+    ]);
+    const statsByRider = new Map(stats.map((s) => [s._id.toString(), { totalDeliveries: s.totalDeliveries, totalEarnings: s.totalEarnings }]));
+
     return ok(response, {
-      riders: riders.map((r) => ({
-        id: r._id.toString(),
-        name: r.name,
-        phone: r.phone,
-        email: r.email,
-        riderStatus: r.riderStatus,
-        riderApproval: r.riderApproval,
-        vehicleType: r.vehicleType,
-        vehicleNumber: r.vehicleNumber,
-        deliveryArea: r.deliveryArea,
-        todayDeliveries: r.todayDeliveries,
-        createdAt: r.createdAt,
-      })),
+      riders: riders.map((r) => {
+        const riderStats = statsByRider.get(r._id.toString());
+        return {
+          id: r._id.toString(),
+          name: r.name,
+          phone: r.phone,
+          email: r.email,
+          riderStatus: r.riderStatus,
+          riderApproval: r.riderApproval,
+          vehicleType: r.vehicleType,
+          vehicleNumber: r.vehicleNumber,
+          deliveryArea: r.deliveryArea,
+          todayDeliveries: r.todayDeliveries,
+          todayEarnings: r.todayEarnings ?? 0,
+          totalDeliveries: riderStats?.totalDeliveries ?? 0,
+          totalEarnings: riderStats?.totalEarnings ?? 0,
+          createdAt: r.createdAt,
+        };
+      }),
     });
   }),
 );

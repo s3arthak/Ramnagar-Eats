@@ -71,6 +71,9 @@ interface AdminRider {
   vehicleNumber?: string;
   deliveryArea?: string;
   todayDeliveries: number;
+  todayEarnings: number;
+  totalDeliveries: number;
+  totalEarnings: number;
   createdAt: string;
 }
 
@@ -294,7 +297,9 @@ export function AdminPage() {
             <span>VEHICLE</span>
             <span>STATUS</span>
             <span>APPROVAL</span>
-            <span>DELIVERIES</span>
+            <span>TODAY</span>
+            <span>TOTAL</span>
+            <span>EARNINGS</span>
             <span>JOINED</span>
             <span />
           </div>
@@ -317,7 +322,9 @@ export function AdminPage() {
                   {rider.riderApproval === "APPROVED" ? "Approved" : rider.riderApproval === "REJECTED" ? "Rejected" : "Pending"}
                 </span>
               </span>
-              <span>{rider.todayDeliveries}</span>
+              <span>{rider.todayDeliveries} / {inr(rider.todayEarnings)}</span>
+              <span>{rider.totalDeliveries} / {inr(rider.totalEarnings)}</span>
+              <span><strong>{inr(rider.totalEarnings)}</strong></span>
               <span className="muted">{timeAgo(rider.createdAt)}</span>
               <span className="row-actions">
                 {rider.riderApproval === "PENDING" && (
