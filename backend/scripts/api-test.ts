@@ -342,7 +342,7 @@ async function main() {
   // ---------- 3-App sign-in scenarios (simulates real frontend behavior) ----------
   console.log("\n3-App sign-in scenarios");
   {
-    // Simulates: customer-web sends role: "CUSTOMER", restaurant-web sends no role, rider-web sends role: "RIDER"
+    // Simulates: all 3 frontends now send their role in verify-otp
     const appEmail = `3app_${Date.now()}@test.test`;
 
     // ── Step 1: Register as CUSTOMER on customer-web ──
@@ -363,9 +363,16 @@ async function main() {
     const custLogin = await loginUser(appEmail, "CUSTOMER");
     check("3app: customer-web sign-in finds CUSTOMER", custLogin.status === 200 && custLogin.body.isNew === false && custLogin.body.user.role === "CUSTOMER");
 
-    // ── Step 3: Sign in on restaurant-web (no role) — should find CUSTOMER ──
-    const restLogin = await loginUser(appEmail);
-    check("3app: restaurant-web sign-in finds CUSTOMER (no role)", restLogin.status === 200 && restLogin.body.isNew === false && restLogin.body.user.role === "CUSTOMER");
+    // ── Step 3: Sign in on restaurant-web (role: RESTAURANT) — should return isNew ──
+    const restLogin = await loginUser(appEmail, "RESTAURANT");
+    check("3app: restaurant-web returns isNew (no RESTAURANT account)", restLogin.status === 200 && restLogin.body.isNew === true && Boolean(restLogin.body.regToken));
+
+    // ── Step 3b: Register as RESTAURANT on restaurant-web (same email) ──
+    const restReg = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: appEmail, regToken: restLogin.body.regToken, name: "3-App Restaurant", role: "RESTAURANT" }),
+    });
+    check("3app: RESTAURANT registration succeeds (same email)", restReg.status === 201 && restReg.body.user.role === "RESTAURANT");
 
     // ── Step 4: Sign in on rider-web (role: RIDER) — should return isNew ──
     const riderLogin = await loginUser(appEmail, "RIDER");
@@ -385,8 +392,8 @@ async function main() {
     const riderReturn = await loginUser(appEmail, "RIDER");
     check("3app: rider-web now finds RIDER", riderReturn.status === 200 && riderReturn.body.user.role === "RIDER" && riderReturn.body.isNew === false);
 
-    const restReturn = await loginUser(appEmail);
-    check("3app: restaurant-web finds first user (CUSTOMER)", restReturn.status === 200 && restReturn.body.isNew === false);
+    const restReturn = await loginUser(appEmail, "RESTAURANT");
+    check("3app: restaurant-web now finds RESTAURANT", restReturn.status === 200 && restReturn.body.user.role === "RESTAURANT" && restReturn.body.isNew === false);
 
     // ── Step 7: Try to register duplicate role — should fail ──
     const dupCust = await request(base, "/api/v1/auth/register", {
