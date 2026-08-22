@@ -60,10 +60,23 @@ interface AdminCoupon {
   usedCount: number;
   isActive: boolean;
 }
+interface AdminRider {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  riderStatus: string;
+  riderApproval: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  deliveryArea?: string;
+  todayDeliveries: number;
+  createdAt: string;
+}
 
 const EMPTY_AREA: ServiceArea = { lat: 32.80674, lng: 75.314854, address: "", pincode: "", radiusKm: 15 };
 
-type Tab = "metrics" | "restaurants" | "users" | "orders" | "service" | "coupons";
+type Tab = "metrics" | "restaurants" | "riders" | "users" | "orders" | "service" | "coupons";
 
 interface CouponForm {
   code: string;
@@ -94,6 +107,7 @@ export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [serviceArea, setServiceArea] = useState<ServiceArea>(EMPTY_AREA);
+  const [riders, setRiders] = useState<AdminRider[]>([]);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [couponForm, setCouponForm] = useState<CouponForm>(EMPTY_COUPON);
   const [notice, setNotice] = useState("");
@@ -103,9 +117,10 @@ export function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      const [metricsData, restaurantData, userData, orderData, areaData, couponData] = await Promise.all([
+      const [metricsData, restaurantData, riderData, userData, orderData, areaData, couponData] = await Promise.all([
         api.get<{ metrics: Metrics }>("/admin/metrics"),
         api.get<{ restaurants: AdminRestaurant[] }>("/admin/restaurants"),
+        api.get<{ riders: AdminRider[] }>("/admin/riders"),
         api.get<{ users: AdminUser[] }>("/admin/users"),
         api.get<{ orders: AdminOrder[] }>("/admin/orders"),
         api.get<{ serviceArea: ServiceArea }>("/admin/service-area"),
@@ -113,6 +128,7 @@ export function AdminPage() {
       ]);
       setMetrics(metricsData.metrics);
       setRestaurants(restaurantData.restaurants);
+      setRiders(riderData.riders);
       setUsers(userData.users);
       setOrders(orderData.orders);
       setServiceArea(areaData.serviceArea);
@@ -197,10 +213,10 @@ export function AdminPage() {
     }
   }
 
-  async function approveRider(user: AdminUser, approval: "APPROVED" | "REJECTED") {
+  async function approveRider(riderId: string, riderName: string, approval: "APPROVED" | "REJECTED") {
     try {
-      await api.patch(`/admin/riders/${user.id}`, { riderApproval: approval });
-      push(`Rider ${user.name} ${approval.toLowerCase()}`, { tone: approval === "APPROVED" ? "success" : "danger" });
+      await api.patch(`/admin/riders/${riderId}`, { riderApproval: approval });
+      push(`Rider ${riderName} ${approval.toLowerCase()}`, { tone: approval === "APPROVED" ? "success" : "danger" });
       await load();
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : "Could not update rider");
@@ -217,7 +233,7 @@ export function AdminPage() {
       </header>
       {notice && <p className="notice">{notice}</p>}
       <div className="admin-tabs">
-        {(["metrics", "restaurants", "users", "orders", "service", "coupons"] as Tab[]).map((name) => (
+        {(["metrics", "restaurants", "riders", "users", "orders", "service", "coupons"] as Tab[]).map((name) => (
           <button key={name} className={tab === name ? "active" : ""} onClick={() => setTab(name)}>
             {name === "service" ? "Service area" : name[0].toUpperCase() + name.slice(1)}
           </button>
@@ -270,6 +286,58 @@ export function AdminPage() {
         </section>
       )}
 
+      {tab === "riders" && (
+        <section className="table">
+          <div className="table-header">
+            <span>NAME</span>
+            <span>PHONE</span>
+            <span>VEHICLE</span>
+            <span>STATUS</span>
+            <span>APPROVAL</span>
+            <span>DELIVERIES</span>
+            <span>JOINED</span>
+            <span />
+          </div>
+          {riders.length === 0 && <p className="muted">No riders registered yet.</p>}
+          {riders.map((rider) => (
+            <div className="table-row" key={rider.id}>
+              <strong>
+                {rider.name}
+                {rider.vehicleNumber && <span className="muted"> · {rider.vehicleNumber}</span>}
+              </strong>
+              <span>{rider.phone ?? "—"}</span>
+              <span>{rider.vehicleType ?? "—"}</span>
+              <span>
+                <span className={`status ${rider.riderStatus === "ONLINE" ? "delivered" : rider.riderStatus === "BUSY" ? "preparing" : rider.riderStatus === "SUSPENDED" ? "cancelled" : "new"}`}>
+                  {rider.riderStatus}
+                </span>
+              </span>
+              <span>
+                <span className={`status ${rider.riderApproval === "APPROVED" ? "delivered" : rider.riderApproval === "REJECTED" ? "cancelled" : "preparing"}`}>
+                  {rider.riderApproval === "APPROVED" ? "Approved" : rider.riderApproval === "REJECTED" ? "Rejected" : "Pending"}
+                </span>
+              </span>
+              <span>{rider.todayDeliveries}</span>
+              <span className="muted">{timeAgo(rider.createdAt)}</span>
+              <span className="row-actions">
+                {rider.riderApproval === "PENDING" && (
+                  <>
+                    <button className="action accept" onClick={() => void approveRider(rider.id, rider.name, "APPROVED")}>Approve</button>
+                    <button className="action reject" onClick={() => void approveRider(rider.id, rider.name, "REJECTED")}>Reject</button>
+                  </>
+                )}
+                {rider.riderApproval === "APPROVED" && (
+                  <button className="action reject" onClick={() => void approveRider(rider.id, rider.name, "REJECTED")}>Suspend</button>
+                )}
+                {rider.riderApproval === "REJECTED" && (
+                  <button className="action accept" onClick={() => void approveRider(rider.id, rider.name, "APPROVED")}>Re-approve</button>
+                )}
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+
       {tab === "users" && (
         <section className="table">
           <div className="table-header">
@@ -277,31 +345,15 @@ export function AdminPage() {
             <span>PHONE</span>
             <span>EMAIL</span>
             <span>ROLE</span>
-            <span>STATUS</span>
             <span>JOINED</span>
           </div>
-          {users.map((user) => (
+          {users.filter((u) => u.role !== "RIDER").map((user) => (
             <div className="table-row" key={user.id}>
               <strong>{user.name}</strong>
               <span>{user.phone ?? "—"}</span>
               <span>{user.email ?? "—"}</span>
               <span className={`status ${user.role === "RESTAURANT" ? "preparing" : "new"}`}>{user.role}</span>
-              <span>
-                {user.role === "RIDER" ? (
-                  <span className={`status ${user.riderApproval === "APPROVED" ? "delivered" : user.riderApproval === "REJECTED" ? "cancelled" : "preparing"}`}>
-                    {user.riderApproval === "APPROVED" ? "Approved" : user.riderApproval === "REJECTED" ? "Rejected" : "Pending"}
-                  </span>
-                ) : (
-                  <span className="status delivered">Active</span>
-                )}
-              </span>
               <span className="muted">{timeAgo(user.createdAt)}</span>
-              {user.role === "RIDER" && user.riderApproval !== "APPROVED" && user.riderApproval !== "REJECTED" && (
-                <span className="row-actions">
-                  <button className="action accept" onClick={() => void approveRider(user, "APPROVED")}>Approve</button>
-                  <button className="action reject" onClick={() => void approveRider(user, "REJECTED")}>Reject</button>
-                </span>
-              )}
             </div>
           ))}
         </section>
