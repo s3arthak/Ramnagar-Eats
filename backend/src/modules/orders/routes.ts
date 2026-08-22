@@ -197,7 +197,7 @@ router.get(
   authorize("CUSTOMER"),
   asyncHandler(async (request: AuthRequest, response) => {
     const orders = await Order.find({ customerId: request.user!.id }).sort({ createdAt: -1 }).limit(50);
-    return ok(response, { orders: orders.map(orderDto) });
+    return ok(response, { orders: orders.map((o) => orderDto(o)) });
   }),
 );
 

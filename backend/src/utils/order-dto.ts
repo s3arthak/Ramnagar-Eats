@@ -1,4 +1,4 @@
-export const orderDto = (order: any) => ({
+export const orderDto = (order: any, rider?: { name?: string; phone?: string } | null) => ({
   id: order._id.toString(),
   orderNumber: order.orderNumber,
   customerId: order.customerId.toString(),
@@ -18,6 +18,9 @@ export const orderDto = (order: any) => ({
   statusHistory: order.statusHistory,
   estimatedDeliveryAt: order.estimatedDeliveryAt,
   riderId: order.riderId?.toString?.() ?? order.riderId ?? undefined,
+  riderName: rider?.name ?? undefined,
+  riderPhone: rider?.phone ?? undefined,
+  deliveryOtp: order.deliveryOtp ?? undefined,
   deliveryVerified: order.deliveryVerified ?? false,
   createdAt: order.createdAt,
 });

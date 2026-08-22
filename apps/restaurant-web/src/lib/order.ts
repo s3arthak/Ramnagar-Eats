@@ -5,6 +5,8 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   CONFIRMED: "Accepted",
   PREPARING: "Preparing",
   READY: "Ready",
+  RIDER_ASSIGNED: "Rider assigned",
+  RIDER_ACCEPTED: "Rider on the way",
   PICKED_UP: "Picked up",
   OUT_FOR_DELIVERY: "Out for delivery",
   DELIVERED: "Delivered",
@@ -15,6 +17,7 @@ export function statusTone(status: OrderStatus): string {
   if (status === "CANCELLED") return "cancelled";
   if (status === "DELIVERED") return "delivered";
   if (status === "PLACED") return "new";
+  if (status === "RIDER_ASSIGNED" || status === "RIDER_ACCEPTED") return "preparing";
   return "preparing";
 }
 
@@ -28,11 +31,15 @@ export function nextAction(status: OrderStatus): { label: string; next: OrderSta
     case "PREPARING":
       return { label: "Mark ready", next: "READY" };
     case "READY":
-      return { label: "Mark picked up", next: "PICKED_UP" };
+      return null; // waiting for rider auto-assignment
+    case "RIDER_ASSIGNED":
+      return null; // waiting for rider to accept
+    case "RIDER_ACCEPTED":
+      return null; // rider is heading to restaurant
     case "PICKED_UP":
-      return { label: "Out for delivery", next: "OUT_FOR_DELIVERY" };
+      return null; // rider handles pickup + delivery
     case "OUT_FOR_DELIVERY":
-      return { label: "Mark delivered", next: "DELIVERED" };
+      return null; // rider handles delivery
     default:
       return null;
   }

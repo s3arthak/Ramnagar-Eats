@@ -260,6 +260,13 @@ export function OrderDetailPage() {
             {etaAt && <small>Estimated by {formatDateTime(etaAt)}</small>}
           </p>
         )}
+        {order.deliveryOtp && (order.status === "PICKED_UP" || order.status === "OUT_FOR_DELIVERY") && (
+          <div className="delivery-otp-card" style={{ marginTop: 16, padding: 16, background: "#f0fdf4", border: "2px solid #22c55e", borderRadius: 12, textAlign: "center" }}>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#16a34a" }}>🔒 Delivery Verification Code</p>
+            <p style={{ margin: "8px 0 4px", fontSize: 32, fontWeight: 900, letterSpacing: 8, color: "#15803d" }}>{order.deliveryOtp}</p>
+            <p style={{ margin: 0, fontSize: 13, color: "#666" }}>Share this code with the rider to confirm delivery</p>
+          </div>
+        )}
       </section>
 
       <section className="tracking-map-card">

@@ -51,7 +51,7 @@ export interface MenuItem {
   customizations: { name: string; required: boolean; options: { name: string; price: number }[] }[];
 }
 
-export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "PLACED" | "CONFIRMED" | "PREPARING" | "READY" | "RIDER_ASSIGNED" | "RIDER_ACCEPTED" | "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
 
 export interface Order {
   id: string;
@@ -69,6 +69,8 @@ export interface Order {
   status: OrderStatus;
   statusHistory: { status: OrderStatus; at: string }[];
   estimatedDeliveryAt?: string;
+  riderName?: string;
+  riderPhone?: string;
   createdAt: string;
 }
 

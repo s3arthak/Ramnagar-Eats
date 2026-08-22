@@ -27,12 +27,18 @@ router.get(
     if (!restaurant) throw badRequest("Complete your restaurant profile first", "RESTAURANT_PROFILE_REQUIRED");
     const orders = await Order.find({ restaurantId: restaurant.id }).sort({ createdAt: -1 }).limit(100);
     const customerIds = [...new Set(orders.map((order) => order.customerId.toString()))];
-    const customers = await User.find({ _id: { $in: customerIds } }).select("name phone");
+    const riderIds = [...new Set(orders.filter((order) => order.riderId).map((order) => order.riderId!.toString()))];
+    const [customers, riders] = await Promise.all([
+      User.find({ _id: { $in: customerIds } }).select("name phone"),
+      riderIds.length > 0 ? User.find({ _id: { $in: riderIds } }).select("name phone") : [],
+    ]);
     const nameBy = new Map(customers.map((customer) => [customer._id.toString(), customer.name]));
     const phoneBy = new Map(customers.map((customer) => [customer._id.toString(), customer.phone]));
+    const riderByName = new Map(riders.map((r) => [r._id.toString(), r.name]));
+    const riderPhoneBy = new Map(riders.map((r) => [r._id.toString(), r.phone]));
     return ok(response, {
       orders: orders.map((order) => ({
-        ...orderDto(order),
+        ...orderDto(order, order.riderId ? { name: riderByName.get(order.riderId.toString()) ?? "", phone: riderPhoneBy.get(order.riderId.toString()) ?? "" } : null),
         customerName: nameBy.get(order.customerId.toString()) ?? "Customer",
         customerPhone: phoneBy.get(order.customerId.toString()) ?? "",
       })),
@@ -121,7 +127,7 @@ router.get(
         todayRevenue: revenue[0]?.total ?? 0,
         totalOrders,
       },
-      recentOrders: recentOrders.map(orderDto),
+      recentOrders: recentOrders.map((o) => orderDto(o)),
     });
   }),
 );

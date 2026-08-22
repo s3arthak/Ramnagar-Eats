@@ -52,7 +52,10 @@ export function OrdersPage() {
   }
 
   const sorted = [...orders].sort((a, b) => {
-    const rank = (status: OrderStatus) => (status === "PLACED" ? 0 : status === "CONFIRMED" ? 1 : status === "PREPARING" ? 2 : status === "READY" ? 3 : status === "PICKED_UP" ? 4 : status === "OUT_FOR_DELIVERY" ? 5 : 6);
+    const rank = (status: OrderStatus) => {
+      const map: Record<string, number> = { PLACED: 0, CONFIRMED: 1, PREPARING: 2, READY: 3, RIDER_ASSIGNED: 4, RIDER_ACCEPTED: 5, PICKED_UP: 6, OUT_FOR_DELIVERY: 7, DELIVERED: 8, CANCELLED: 9 };
+      return map[status] ?? 5;
+    };
     return rank(a.status) - rank(b.status) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -91,6 +94,16 @@ export function OrdersPage() {
                     </a>
                   )}
                 </p>
+                {order.riderName && (
+                  <p className="order-tile-customer">
+                    🛵 {order.riderName}
+                    {order.riderPhone && (
+                      <a className="order-tile-call" href={`tel:${order.riderPhone}`}>
+                        📞 {order.riderPhone}
+                      </a>
+                    )}
+                  </p>
+                )}
                 <ul className="order-tile-items">
                   {order.items.map((item, index) => (
                     <li key={index}>
