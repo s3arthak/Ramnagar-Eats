@@ -316,6 +316,30 @@ router.get(
   },
 );
 
+// Dev-only: instant admin login — skips OTP entirely.
+// The admin email is baked into the seed and is the platform owner.
+if (!isProduction) {
+  const ADMIN_EMAIL = "ramnagareats@admin.com";
+
+  router.post(
+    "/admin-login",
+    async (request, response, next) => {
+      try {
+        const parsed = sendOtpSchema.safeParse(request.body);
+        if (!parsed.success) throw badRequest("Enter a valid email", "VALIDATION_ERROR");
+        if (parsed.data.email !== ADMIN_EMAIL) {
+          throw badRequest("Admin login is only available for the platform admin", "FORBIDDEN");
+        }
+        const user = await User.findOne({ email: parsed.data.email, role: "ADMIN" });
+        if (!user) throw notFound("Admin account not found. Run the seed script first.", "ACCOUNT_NOT_FOUND");
+        return ok(response, { token: signAccessToken(user.id, user.role), user: publicUser(user) });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+}
+
 // Development / E2E helper: simulate the Google callback without real Google.
 // Compiled out in production.
 if (!isProduction) {

@@ -11,7 +11,7 @@ const ADMIN_EMAIL = "ramnagareats@admin.com";
 type Stage = "choose" | "email" | "code" | "details";
 
 export function LoginPage() {
-  const { user, verifyOtp, register } = useAuth();
+  const { user, verifyOtp, register, setSession } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
 
@@ -61,6 +61,14 @@ export function LoginPage() {
     setMessage("");
     setSubmitting(true);
     try {
+      // Admin email: skip OTP entirely — go straight to admin dashboard.
+      if (email.trim().toLowerCase() === ADMIN_EMAIL && import.meta.env.DEV) {
+        const data = await api.post<{ token: string; user: { id: string; name: string; email: string; role: string } }>('/auth/admin-login', { email: email.trim() });
+        setSession(data.token, data.user as any);
+        push("Signed in as admin", { tone: "success" });
+        land(data.user.role);
+        return;
+      }
       await api.post("/auth/send-otp", { email: email.trim() });
       setStage("code");
       setCode("");
