@@ -1,1 +1,43 @@
-:root{--brand-950:#0c2c27;--brand-800:#17473f;--brand-600:#2e6a5d;--accent:#dafa57;--accent-strong:#c7ec3c;--surface:#ffffff;--canvas:#f8faf6;--line:#deebe1;--text:#163d35;--text-muted:#667a72;--danger:#d84e37;--radius-sm:8px;--radius-md:12px;--radius-lg:18px;--shadow-sm:0 2px 8px rgb(15 49 42 / .08);--shadow-lg:0 22px 64px rgb(10 42 35 / .16);--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px}
+:root {
+  /* ===== Warm Indian Color Palette ===== */
+  /* Primary brand — deep maroon (text, dark surfaces) */
+  --brand-950: #2A0E08;
+  --brand-800: #5C2010;
+  --brand-600: #8B3A1A;
+
+  /* Accent — turmeric gold (highlights, badges, brand marks) */
+  --accent: #D4A843;
+  --accent-strong: #C49A38;
+
+  /* Surfaces */
+  --surface: #FFFDF8;
+  --canvas: #FFF8EE;
+  --line: #E8D5C4;
+
+  /* Text */
+  --text: #3B1106;
+  --text-muted: #7A5C4A;
+
+  /* Semantic */
+  --danger: #C23D2B;
+  --success: #4A7C2E;
+
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 2px 8px rgb(59 17 6 / 0.08);
+  --shadow-lg: 0 22px 64px rgb(42 14 8 / 0.16);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ===== Cultural Pattern: Mandala SVG (inline as CSS) ===== */
+  --mandala-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='55' fill='none' stroke='%23ffffff08' stroke-width='1'/%3E%3Ccircle cx='60' cy='60' r='40' fill='none' stroke='%23ffffff06' stroke-width='0.8'/%3E%3Ccircle cx='60' cy='60' r='25' fill='none' stroke='%23ffffff05' stroke-width='0.6'/%3E%3Cpath d='M60 5 L60 115 M5 60 L115 60 M18 18 L102 102 M102 18 L18 102' stroke='%23ffffff04' stroke-width='0.5' fill='none'/%3E%3C/svg%3E");
+}
