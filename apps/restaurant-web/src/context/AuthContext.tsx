@@ -42,7 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verifyOtp = async (email: string, code: string) => {
-    const data = await api.post<{ token?: string; user?: User; regToken?: string; isNew: boolean }>("/auth/verify-otp", { email, code, role: "RESTAURANT" });
+    // No role sent — let the backend find any user by email. This allows
+    // the same email to sign in across apps, and the admin email
+    // (ramnagareats@admin.com) routes correctly via the login page's land().
+    const data = await api.post<{ token?: string; user?: User; regToken?: string; isNew: boolean }>("/auth/verify-otp", { email, code });
     if (data.token && data.user) {
       setToken(data.token);
       setUser(data.user);

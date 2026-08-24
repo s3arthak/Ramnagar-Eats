@@ -18,11 +18,10 @@ export function LoginPage() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
-  // Already signed in? Send them where they were headed instead of showing the form.
+  // Already signed in? Redirect.
   useEffect(() => {
     if (user) navigate(from, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [stage, setStage] = useState<Stage>("choose");
   const [email, setEmail] = useState("");
@@ -61,21 +60,15 @@ export function LoginPage() {
       setCode("");
       startResendCountdown(60);
       push("Code sent", { body: `We emailed a 6-digit code to ${email.trim()}`, tone: "info" });
-      // Local development only: surface the generated code so a human can sign in
-      // without a real email gateway. The dev-otp endpoint is compiled out in production.
       if (import.meta.env.DEV) {
         try {
           const data = await api.get<{ code: string }>(`/auth/dev-otp?email=${encodeURIComponent(email.trim())}`);
           setDevCode(data.code);
-        } catch {
-          setDevCode("");
-        }
+        } catch { setDevCode(""); }
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not send the code");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   async function verify(event: FormEvent) {
@@ -93,9 +86,7 @@ export function LoginPage() {
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not verify the code");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   async function completeRegistration(event: FormEvent) {
@@ -108,9 +99,7 @@ export function LoginPage() {
       navigate(from, { replace: true });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not create your account");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   function startGoogle() {
@@ -185,18 +174,12 @@ export function LoginPage() {
             <h2>Continue with Email</h2>
             <p className="auth-copy">Enter your email and we&apos;ll send you a 6-digit code.</p>
             <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" required />
-            {error && (
-              <p className="notice notice--error" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <p className="notice notice--error" role="alert">{error}</p>}
             <Button type="submit" loading={submitting} className="auth-submit">
               <Mail size={16} /> Send code
             </Button>
             <p className="auth-switch">
-              <button type="button" className="link-button" onClick={backToChoose}>
-                Back
-              </button>
+              <button type="button" className="link-button" onClick={backToChoose}>Back</button>
             </p>
           </form>
         )}
@@ -207,9 +190,7 @@ export function LoginPage() {
             <h2>Verify your email</h2>
             <p className="auth-copy">
               We emailed a 6-digit code to <strong>{email}</strong>.{" "}
-              <button type="button" className="link-button" onClick={() => setStage("email")}>
-                Change email
-              </button>
+              <button type="button" className="link-button" onClick={() => setStage("email")}>Change email</button>
             </p>
             <label className="otp-field">
               <span>6-digit code</span>
@@ -228,11 +209,7 @@ export function LoginPage() {
                 Development code: <b>{devCode}</b> — not shown in production.
               </p>
             )}
-            {error && (
-              <p className="notice notice--error" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <p className="notice notice--error" role="alert">{error}</p>}
             <Button type="submit" loading={submitting} className="auth-submit" disabled={code.length !== 6}>
               Verify &amp; continue
             </Button>
@@ -242,9 +219,7 @@ export function LoginPage() {
               ) : (
                 <>
                   Didn&apos;t get it?{" "}
-                  <button type="button" onClick={(event) => void sendOtp(event as unknown as FormEvent)}>
-                    Resend code
-                  </button>
+                  <button type="button" onClick={(event) => void sendOtp(event as unknown as FormEvent)}>Resend code</button>
                 </>
               )}
             </p>
@@ -260,18 +235,12 @@ export function LoginPage() {
             </p>
             <Input label="Your name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Priya Sharma" autoComplete="name" required />
             <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9876543210" autoComplete="tel" inputMode="tel" />
-            {error && (
-              <p className="notice notice--error" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <p className="notice notice--error" role="alert">{error}</p>}
             <Button type="submit" loading={submitting} className="auth-submit" disabled={name.trim().length < 2}>
               Create account
             </Button>
             <p className="auth-switch">
-              <button type="button" className="link-button" onClick={backToChoose}>
-                Use a different email
-              </button>
+              <button type="button" className="link-button" onClick={backToChoose}>Use a different email</button>
             </p>
           </form>
         )}

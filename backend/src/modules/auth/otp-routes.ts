@@ -230,7 +230,16 @@ async function fetchGoogleProfile(accessToken: string): Promise<GoogleProfile> {
     const roleMap: Record<string, string> = { restaurant: "RESTAURANT", rider: "RIDER" };
     const role = (roleMap[app] as any) ?? "CUSTOMER";
     // Look up by email+role so the same email can have separate customer/rider/restaurant accounts.
-    let user = await User.findOne({ email, role });
+    // For restaurant/rider apps, also check for ADMIN role — the admin email
+    // (ramnagareats@admin.com) should route to admin regardless of which app
+    // initiates Google OAuth. CUSTOMER-only matches are excluded to avoid
+    // returning the wrong account type.
+    let user: InstanceType<typeof User> | null = null;
+    if (app === "customer") {
+      user = await User.findOne({ email, role: "CUSTOMER" });
+    } else {
+      user = await User.findOne({ email, role }) ?? await User.findOne({ email, role: "ADMIN" });
+    }
     const isNew = !user;
     if (!user) {
       try {

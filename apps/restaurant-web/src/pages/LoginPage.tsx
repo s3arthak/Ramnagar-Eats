@@ -6,12 +6,22 @@ import { useToast } from "../context/ToastContext";
 import { api, API_BASE } from "../lib/api";
 import { GoogleIcon } from "../components/GoogleIcon";
 
+const ADMIN_EMAIL = "ramnagareats@admin.com";
+
 type Stage = "choose" | "email" | "code" | "details";
 
 export function LoginPage() {
-  const { verifyOtp, register } = useAuth();
+  const { user, verifyOtp, register } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      if (user.role === "ADMIN") navigate("/admin", { replace: true });
+      else if (user.role === "RESTAURANT") navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const [stage, setStage] = useState<Stage>("choose");
   const [email, setEmail] = useState("");
@@ -78,6 +88,9 @@ export function LoginPage() {
     setMessage("");
     setSubmitting(true);
     try {
+      // Don't send role — let the backend find any user by email.
+      // This allows the same email to sign in across apps, and the admin
+      // email (ramnagareats@admin.com) routes correctly via land().
       const data = await verifyOtp(email.trim(), code.trim());
       if (data.isNew && data.regToken) {
         setRegToken(data.regToken);

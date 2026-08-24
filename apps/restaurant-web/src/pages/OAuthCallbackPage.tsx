@@ -29,7 +29,9 @@ export function OAuthCallbackPage() {
       return;
     }
     setSession(token, user);
-    navigate(user.role === "ADMIN" ? "/admin" : "/dashboard", { replace: true });
+    if (user.role === "ADMIN") navigate("/admin", { replace: true });
+    else if (user.role === "RESTAURANT") navigate("/dashboard", { replace: true });
+    else navigate("/login", { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

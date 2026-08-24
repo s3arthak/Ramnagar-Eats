@@ -475,7 +475,7 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
     }
   } else {
     // V2: email-OTP / Google accounts — passwords are random and never used for login.
-    admin = await User.create({ name: "Platform Admin", phone: "+919876500002", email: "admin@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("admin123"), role: "ADMIN" });
+    admin = await User.create({ name: "Platform Admin", phone: "+919876500002", email: "ramnagareats@admin.com", emailVerified: true, passwordHash: hashPassword("admin123"), role: "ADMIN" });
     demoCustomer = await User.create({ name: "Demo Customer", phone: "+919876500000", email: "demo@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("customer123"), role: "CUSTOMER" });
     demoOwner = await User.create({ name: "Demo Restaurant Owner", phone: "+919876500001", email: "kitchen@ramnagareats.test", emailVerified: true, passwordHash: hashPassword("restaurant123"), role: "RESTAURANT" });
     // Additional restaurant owner: Sarthak Kharka — Royal Biryani House
@@ -540,7 +540,7 @@ export async function seedDatabase(mongoUri = process.env.MONGODB_URI ?? "mongod
   }
 
   console.info(
-    `Seeded: ${restaurantsOnly ? "restaurant catalog only (users/orders/service-area untouched)" : `admin (admin@ramnagareats.test), demo customer (demo@ramnagareats.test), demo owner (kitchen@ramnagareats.test)`}, ` +
+    `Seeded: ${restaurantsOnly ? "restaurant catalog only (users/orders/service-area untouched)" : `admin (ramnagareats@admin.com), demo customer (demo@ramnagareats.test), demo owner (kitchen@ramnagareats.test)`}, ` +
       `${CUISINE_CATEGORIES.length} categories, ${restaurants.length} restaurants around ${CENTER.lat.toFixed(4)}, ${CENTER.lng.toFixed(4)} (${restaurantsOnly ? "existing service area" : `${RADIUS_KM} km radius`}).`,
   );
   return { admin, demoCustomer, demoOwner, restaurants };
