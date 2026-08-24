@@ -252,15 +252,18 @@ async function fetchGoogleProfile(accessToken: string): Promise<GoogleProfile> {
           role,
         });
       } catch (createError: any) {
-        // Handle race condition: another request created the same user between
-        // our findOne and create. Fall back to finding the existing account.
+        // Handle race condition or index conflict (11000 = duplicate key).
+        // The same email may already exist under a different role (e.g. the
+        // seed creates kharkasarthak@gmail.com as RESTAURANT, but the
+        // rider app tries to create a RIDER account). Fall back to finding
+        // ANY existing account for this email so the user can at least sign in.
         if (createError?.code === 11000) {
-          user = await User.findOne({ email, role });
+          user = await User.findOne({ email, role }) ?? await User.findOne({ email });
           if (!user) {
-            return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could not create account — try signing in with email instead`);
+            return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could+not+create+account.+Please+sign+in+with+email+instead.`);
           }
         } else {
-          return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could not create account`);
+          return response.redirect(`${webUrlFor(app)}/oauth/callback?error=Could+not+create+account`);
         }
       }
     }
