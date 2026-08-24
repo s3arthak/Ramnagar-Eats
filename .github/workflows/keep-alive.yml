@@ -1,0 +1,23 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Every 14 minutes — Render free tier sleeps after 15 min of inactivity.
+    # This keeps the service awake 24/7.
+    - cron: "*/14 * * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API health endpoint
+        run: |
+          echo "Pinging https://ramnagar-eats-api.onrender.com/api/v1/health ..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://ramnagar-eats-api.onrender.com/api/v1/health)
+          echo "Status: $response"
+          if [ "$response" -ne 200 ]; then
+            echo "⚠️ Health check returned $response"
+            exit 1
+          fi
+          echo "✅ API is alive"
