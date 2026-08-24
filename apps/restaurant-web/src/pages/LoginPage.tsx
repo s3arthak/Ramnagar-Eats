@@ -62,12 +62,17 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       // Admin email: skip OTP entirely — go straight to admin dashboard.
-      if (email.trim().toLowerCase() === ADMIN_EMAIL && import.meta.env.DEV) {
-        const data = await api.post<{ token: string; user: { id: string; name: string; email: string; role: string } }>('/auth/admin-login', { email: email.trim() });
-        setSession(data.token, data.user as any);
-        push("Signed in as admin", { tone: "success" });
-        land(data.user.role);
-        return;
+      // If the admin-login endpoint is unavailable (e.g. production), fall through to normal OTP.
+      if (email.trim().toLowerCase() === ADMIN_EMAIL) {
+        try {
+          const data = await api.post<{ token: string; user: { id: string; name: string; email: string; role: string } }>('/auth/admin-login', { email: email.trim() });
+          setSession(data.token, data.user as any);
+          push("Signed in as admin", { tone: "success" });
+          land(data.user.role);
+          return;
+        } catch {
+          // Endpoint not available — fall through to normal OTP flow
+        }
       }
       await api.post("/auth/send-otp", { email: email.trim() });
       setStage("code");
@@ -96,9 +101,8 @@ export function LoginPage() {
     setMessage("");
     setSubmitting(true);
     try {
-      // Don't send role — let the backend find any user by email.
-      // This allows the same email to sign in across apps, and the admin
-      // email (ramnagareats@admin.com) routes correctly via land().
+      // verifyOtp sends role: RESTAURANT so only restaurant accounts match.
+      // If no restaurant account exists, isNew: true triggers registration.
       const data = await verifyOtp(email.trim(), code.trim());
       if (data.isNew && data.regToken) {
         setRegToken(data.regToken);
