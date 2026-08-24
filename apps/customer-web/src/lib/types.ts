@@ -129,6 +129,8 @@ export interface Order {
   status: OrderStatus;
   statusHistory: { status: OrderStatus; at: string }[];
   riderId?: string;
+  riderName?: string;
+  riderPhone?: string;
   deliveryOtp?: string;
   deliveryVerified?: boolean;
   couponCode?: string;

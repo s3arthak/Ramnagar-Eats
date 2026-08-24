@@ -60,6 +60,12 @@ export async function assignRiderToOrder(orderId: string): Promise<void> {
     order.statusHistory.push({ status: "RIDER_ASSIGNED", at: new Date() });
     await order.save();
 
+    // Also set currentOrderId on the rider so their dashboard
+    // immediately shows the delivery (instead of "Waiting for a delivery…")
+    await User.findByIdAndUpdate(selectedRider._id, {
+      $set: { currentOrderId: order._id, riderStatus: "BUSY" },
+    });
+
     // Notify the rider via push and socket
     void sendPushToUser(selectedRider._id.toString(), {
       title: "New delivery assigned",

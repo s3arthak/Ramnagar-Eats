@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
-import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, Wallet } from "lucide-react";
+import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, User, Wallet } from "lucide-react";
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
@@ -233,6 +233,24 @@ export function OrderDetailPage() {
           <button className="filter danger-btn" disabled={cancelling} onClick={() => void cancel()}>
             {cancelling ? "Cancelling…" : "Cancel order"}
           </button>
+        </div>
+      )}
+
+      {/* Rider info */}
+      {(order.riderName || order.riderPhone) && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--saffron, #E8663C)' }}>
+          <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, color: 'var(--muted)', marginBottom: 6 }}>YOUR RIDER</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <User size={18} color="var(--saffron, #E8663C)" />
+              <span style={{ fontWeight: 800, fontSize: 15 }}>{order.riderName}</span>
+            </div>
+            {order.riderPhone && (
+              <a href={`tel:${order.riderPhone}`} className="filter" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Phone size={14} /> {order.riderPhone}
+              </a>
+            )}
+          </div>
         </div>
       )}
 

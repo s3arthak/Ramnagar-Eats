@@ -197,7 +197,16 @@ router.get(
   authorize("CUSTOMER"),
   asyncHandler(async (request: AuthRequest, response) => {
     const orders = await Order.find({ customerId: request.user!.id }).sort({ createdAt: -1 }).limit(50);
-    return ok(response, { orders: orders.map((o) => orderDto(o)) });
+    // Batch-fetch rider info for orders that have an assigned rider
+    const riderIds = [...new Set(orders.filter((o) => o.riderId).map((o) => o.riderId!.toString()))];
+    const riders = riderIds.length > 0 ? await User.find({ _id: { $in: riderIds } }).select("name phone") : [];
+    const riderByName = new Map(riders.map((r) => [r._id.toString(), r.name]));
+    const riderPhoneBy = new Map(riders.map((r) => [r._id.toString(), r.phone]));
+    return ok(response, {
+      orders: orders.map((o) =>
+        orderDto(o, o.riderId ? { name: riderByName.get(o.riderId.toString()) ?? "", phone: riderPhoneBy.get(o.riderId.toString()) ?? "" } : null),
+      ),
+    });
   }),
 );
 
@@ -238,7 +247,13 @@ router.get(
     // show "You rated this order" instead of the form.
     const feedback =
       request.user!.role === "CUSTOMER" ? await Feedback.findOne({ orderId: order._id }).lean() : null;
-    return ok(response, { order: orderDto(order), feedback: feedback ? { id: feedback._id.toString(), rating: feedback.rating, comment: feedback.comment } : null });
+    // Include rider info so the customer can see who's delivering
+    let riderInfo: { name?: string; phone?: string } | null = null;
+    if (order.riderId) {
+      const rider = await User.findById(order.riderId).select("name phone");
+      if (rider) riderInfo = { name: rider.name, phone: rider.phone ?? undefined };
+    }
+    return ok(response, { order: orderDto(order, riderInfo), feedback: feedback ? { id: feedback._id.toString(), rating: feedback.rating, comment: feedback.comment } : null });
   }),
 );
 
