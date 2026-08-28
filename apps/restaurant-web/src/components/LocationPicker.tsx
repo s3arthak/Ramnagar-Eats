@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { LocateFixed } from "lucide-react";
 
-// Leaflet loads only when the picker mounts.
+// Map component loads only when the picker mounts.
 const LocationPickerMap = lazy(() => import("./LocationPickerMap"));
 
 /** Distinct, actionable GPS errors (plan §30) instead of a generic message. */

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, User, Wallet } from "lucide-react";
+import { GoogleMap, Marker, Polyline, FitBounds } from "../services/maps";
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
@@ -51,41 +50,36 @@ function useMinutesUntil(at?: string | null): number | null {
   return Math.max(0, Math.ceil((new Date(at).getTime() - now) / 60_000));
 }
 
-/** Emoji map marker — avoids the Leaflet default-icon asset issue in Vite builds. */
-function emojiIcon(emoji: string) {
-  return L.divIcon({
-    html: `<span style="font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 2px rgba(0,0,0,.1)">${emoji}</span>`,
-    className: "",
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-  });
-}
-
-function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
-  const map = useMap();
-  useEffect(() => {
-    map.fitBounds(bounds, { padding: [36, 36] });
-  }, [map, bounds]);
-  return null;
-}
-
 /** Clean live map: restaurant → home route polyline with both endpoints visible. */
 function RouteMap({ routeInfo, riderLocation }: { routeInfo: OrderRoute; riderLocation?: { lat: number; lng: number } | null }) {
   if (!routeInfo.route || !routeInfo.restaurant?.location || !routeInfo.delivery.location) return null;
   const from = routeInfo.restaurant.location;
   const to = routeInfo.delivery.location;
-  const points: [number, number][] = [[from.lat, from.lng], [to.lat, to.lng]];
-  if (riderLocation) points.push([riderLocation.lat, riderLocation.lng]);
-  const bounds = L.latLngBounds(points);
+
+  // Convert polyline to Coordinates format
+  const polylineCoords = routeInfo.route.polyline.map(([lat, lng]) => ({ lat, lng }));
+
+  // Build bounds for FitBounds
+  const bounds = [
+    { lat: from.lat, lng: from.lng },
+    { lat: to.lat, lng: to.lng },
+  ];
+  if (riderLocation) bounds.push({ lat: riderLocation.lat, lng: riderLocation.lng });
+
   return (
-    <MapContainer center={from} zoom={13} minZoom={5} maxZoom={19} scrollWheelZoom={false} zoomControl={true}>
-      <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} errorTileUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' fill='%23e8e4df'%3E%3Crect width='256' height='256'/%3E%3C/svg%3E" />
-      <Polyline positions={routeInfo.route.polyline} pathOptions={{ color: "#ff6b45", weight: 4, opacity: 0.9 }} />
-      <Marker position={[from.lat, from.lng]} icon={emojiIcon("🍴")} />
-      <Marker position={[to.lat, to.lng]} icon={emojiIcon("🏠")} />
-      {riderLocation && <Marker position={[riderLocation.lat, riderLocation.lng]} icon={emojiIcon("🛵")} />}
+    <GoogleMap
+      center={{ lat: from.lat, lng: from.lng }}
+      zoom={13}
+      scrollWheelZoom={false}
+      zoomControl={true}
+      style={{ height: "100%", width: "100%" }}
+    >
       <FitBounds bounds={bounds} />
-    </MapContainer>
+      <Polyline coordinates={polylineCoords} color="#ff6b45" weight={4} opacity={0.9} />
+      <Marker position={{ lat: from.lat, lng: from.lng }} emoji="🍴" size={36} />
+      <Marker position={{ lat: to.lat, lng: to.lng }} emoji="🏠" size={36} />
+      {riderLocation && <Marker position={{ lat: riderLocation.lat, lng: riderLocation.lng }} emoji="🛵" size={36} />}
+    </GoogleMap>
   );
 }
 
@@ -400,7 +394,7 @@ export function OrderDetailPage() {
                 {"★".repeat(feedback.rating)}
                 <span className="dim">{"★".repeat(5 - feedback.rating)}</span>
               </p>
-              {feedback.comment && <p className="feedback-comment">“{feedback.comment}”</p>}
+              {feedback.comment && <p className="feedback-comment">"{feedback.comment}"</p>}
             </div>
           )}
         </section>

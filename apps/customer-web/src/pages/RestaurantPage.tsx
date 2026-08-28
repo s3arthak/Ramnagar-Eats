@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import L from "leaflet";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { ArrowLeft, Clock3, MapPin, Navigation, Phone, Search, ShoppingBag, Wallet } from "lucide-react";
+import { GoogleMap, Marker } from "../services/maps";
 import { api } from "../lib/api";
 import type { MenuCategory, Restaurant, RestaurantReviews } from "../lib/types";
 import { useCart } from "../context/CartContext";
@@ -12,16 +11,6 @@ import { MenuItemCard } from "../components/ui/MenuItemCard";
 import { Rating, VegBadge } from "../components/ui/Badges";
 import { Spinner } from "../components/ui/Skeleton";
 import { ErrorState } from "../components/ui/StateViews";
-
-/** Emoji map marker — consistent with the tracking route map. */
-function emojiIcon(emoji: string) {
-  return L.divIcon({
-    html: `<span style="font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:#fff;border-radius:50%;box-shadow:0 3px 12px rgba(0,0,0,.4),0 0 0 2.5px rgba(19,60,53,.25)">${emoji}</span>`,
-    className: "",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-  });
-}
 
 /** Veg / Non-Veg / All filter tabs — filtering is dynamic over the DB menu. */
 type FoodFilter = "ALL" | "VEG" | "NON_VEG";
@@ -202,10 +191,19 @@ export function RestaurantPage() {
       {restaurant.location && (
         <section className="restaurant-map-card">
           <div className="restaurant-map">
-            <MapContainer center={[restaurant.location.lat, restaurant.location.lng]} zoom={15} minZoom={5} maxZoom={19} scrollWheelZoom={false} zoomControl={true}>
-              <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} errorTileUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' fill='%23e8e4df'%3E%3Crect width='256' height='256'/%3E%3C/svg%3E" />
-              <Marker position={[restaurant.location.lat, restaurant.location.lng]} icon={emojiIcon("🍴")} />
-            </MapContainer>
+            <GoogleMap
+              center={{ lat: restaurant.location.lat, lng: restaurant.location.lng }}
+              zoom={15}
+              scrollWheelZoom={false}
+              zoomControl={true}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <Marker
+                position={{ lat: restaurant.location.lat, lng: restaurant.location.lng }}
+                emoji="🍴"
+                size={40}
+              />
+            </GoogleMap>
           </div>
           <p className="restaurant-map-caption">
             <MapPin size={13} /> {restaurant.address || restaurant.name}
@@ -243,7 +241,7 @@ export function RestaurantPage() {
             All categories
           </button>
           {chipCategories.map((category) => (
-            <button key={category.id} className={activeCategory === category.id ? "active" : ""} onClick={() => setActiveCategory(category.id)}>
+            <button key={category.id} className={activeCategory === category.id ? "active" : ""} onClick={() => scrollToCategory(category.id)}>
               {category.name}
             </button>
           ))}

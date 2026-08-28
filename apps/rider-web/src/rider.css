@@ -816,8 +816,8 @@ select.input {
   margin-bottom: 12px;
 }
 
-/* ===== Map container fix ===== */
-.leaflet-container {
+/* ===== Map container fix (Google Maps) ===== */
+.gmap-container {
   height: 100%;
   width: 100%;
 }

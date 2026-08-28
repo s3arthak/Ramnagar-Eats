@@ -11,8 +11,8 @@ export const config = {
   env: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 5000),
   mongoUri: process.env.MONGODB_URI,
-  /** Mapbox Directions token — enables real road routes; absent falls back to a geodesic route. */
-  mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN,
+  /** Google Maps server key — enables road routes, geocoding, and place search; absent falls back to geodesic/geodesic. */
+  googleMapsServerKey: process.env.GOOGLE_MAPS_SERVER_KEY,
   jwtSecret: process.env.JWT_SECRET ?? "local-dev-secret-change-me",
   /** Display brand name used in transactional copy. */
   brandName: process.env.BRAND_NAME ?? "Ramnagar Eats",

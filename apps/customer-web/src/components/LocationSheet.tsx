@@ -6,7 +6,7 @@ import { useLocation, type Serviceability } from "../context/LocationContext";
 import { useToast } from "../context/ToastContext";
 import { distanceKm } from "../lib/format";
 
-// Leaflet (via the map chunk) is pulled in only when the picker actually opens.
+// Map component (via the map chunk) is pulled in only when the picker actually opens.
 const LocationMap = lazy(() => import("./LocationMap"));
 
 const PINCODE_PATTERN = /^\d{6}$/;

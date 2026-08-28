@@ -114,8 +114,8 @@ try {
   await waitFor(customer, ".menu-item", 15000, "menu items");
   ok("restaurant detail + menu load dynamically", (await customer.locator(".menu-category").count()) > 0);
   ok("restaurant page shows call + directions actions", (await customer.locator(".restaurant-info .restaurant-action").count()) >= 1);
-  await waitFor(customer, ".restaurant-map .leaflet-tile", 15000, "restaurant map tiles");
-  ok("restaurant location map renders", (await customer.locator(".restaurant-map .leaflet-tile").count()) > 0);
+  await waitFor(customer, ".restaurant-map div[style*="position: relative"]", 15000, "restaurant map tiles");
+  ok("restaurant location map renders", (await customer.locator(".restaurant-map div[style*="position: relative"]").count()) > 0);
   ok("reviews section present", (await customer.locator(".reviews-section").count()) === 1);
   await shot(customer, "3-restaurant");
   // Search within the restaurant.
@@ -264,9 +264,9 @@ try {
 
   console.log("\n[Customer] Track order with live route map");
   await customer.click(".success-actions .confirm");
-  await waitFor(customer, ".tracking-map .leaflet-tile", 20000, "route map tiles");
-  ok("tracking page shows live route map", (await customer.locator(".tracking-map .leaflet-tile").count()) > 0);
-  ok("route map shows restaurant + home markers", (await customer.locator(".tracking-map .leaflet-marker-icon").count()) >= 2);
+  await waitFor(customer, ".tracking-map div[style*="position: relative"]", 20000, "route map tiles");
+  ok("tracking page shows live route map", (await customer.locator(".tracking-map div[style*="position: relative"]").count()) > 0);
+  ok("route map shows restaurant + home markers", (await customer.locator(".tracking-map div[style*="border-radius: 50%"]").count()) >= 2);
   ok("dynamic ETA badge shown", (await text(customer, ".route-eta-badge")).includes("Arriving"));
   const helpButtons = await customer.locator(".order-help-btn").count();
   ok("call + directions buttons on tracking page", helpButtons >= 2 && (await customer.locator(".order-help-btn[href^='tel:']").count()) >= 1);
@@ -305,8 +305,8 @@ try {
   await customer.click(".order-card-actions a >> nth=0");
   await waitFor(customer, ".timeline", 10000, "tracking timeline");
   ok("order timeline renders (PLACED)", (await text(customer, ".status--lg")) === "Order placed");
-  await waitFor(customer, ".tracking-map .leaflet-tile", 15000, "route map tiles");
-  ok("tracking page route map renders", (await customer.locator(".tracking-map .leaflet-marker-icon").count()) >= 2);
+  await waitFor(customer, ".tracking-map div[style*="position: relative"]", 15000, "route map tiles");
+  ok("tracking page route map renders", (await customer.locator(".tracking-map div[style*="border-radius: 50%"]").count()) >= 2);
   // ETA countdown is computed from server timestamps — visible while the order is active.
   const etaActive = await customer.evaluate(() => document.body.textContent.includes("Arriving in approximately") || document.body.textContent.includes("Estimated by"));
   ok("ETA countdown displayed while order is active", etaActive);

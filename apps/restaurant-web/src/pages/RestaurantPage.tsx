@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import type { RestaurantProfile } from "../lib/types";
 import { ImageUploader } from "../components/ui/ImageUploader";
 
-// The location picker (and its Leaflet map chunk) loads only when this page mounts.
+// The location picker (and its map chunk) loads only when this page mounts.
 const LocationPicker = lazy(() => import("../components/LocationPicker"));
 
 export function RestaurantPage({ restaurant, onChange }: { restaurant: RestaurantProfile | null; onChange: (restaurant: RestaurantProfile) => void }) {
