@@ -50,6 +50,10 @@ services:
         sync: false
       - key: GOOGLE_MAPS_SERVER_KEY
         sync: false
+      - key: GOOGLE_MAPS_GEOCODING_KEY
+        sync: false
+      - key: GOOGLE_MAPS_PLACES_KEY
+        sync: false
       - key: MAPBOX_ACCESS_TOKEN
         sync: false
       - key: BREVO_API_KEY

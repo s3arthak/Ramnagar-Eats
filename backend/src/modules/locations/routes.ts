@@ -51,8 +51,8 @@ async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeR
   const hit = geocodeCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.result;
 
-  // Try Google Maps Geocoding API first
-  const googleKey = process.env.GOOGLE_MAPS_SERVER_KEY?.trim();
+  // Try Google Maps Geocoding API first (uses dedicated geocoding key)
+  const googleKey = (process.env.GOOGLE_MAPS_GEOCODING_KEY || process.env.GOOGLE_MAPS_SERVER_KEY)?.trim();
   if (googleKey) {
     try {
       const result = await googleReverseGeocode(lat, lng, googleKey);

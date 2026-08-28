@@ -11,8 +11,12 @@ export const config = {
   env: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 5000),
   mongoUri: process.env.MONGODB_URI,
-  /** Google Maps server key — enables road routes, geocoding, and place search; absent falls back to geodesic/geodesic. */
+  /** Google Maps server key — enables road routes; absent falls back to geodesic. */
   googleMapsServerKey: process.env.GOOGLE_MAPS_SERVER_KEY,
+  /** Google Maps geocoding key — enables reverse geocoding; absent falls back to Nominatim. */
+  googleMapsGeocodingKey: process.env.GOOGLE_MAPS_GEOCODING_KEY,
+  /** Google Maps places key — enables place search/autocomplete. */
+  googleMapsPlacesKey: process.env.GOOGLE_MAPS_PLACES_KEY,
   jwtSecret: process.env.JWT_SECRET ?? "local-dev-secret-change-me",
   /** Display brand name used in transactional copy. */
   brandName: process.env.BRAND_NAME ?? "Ramnagar Eats",
@@ -46,7 +50,7 @@ export const config = {
     return {
       radiusKm: Number(process.env.SERVICE_RADIUS_KM ?? 15),
       baseDeliveryFee: Number(process.env.BASE_DELIVERY_FEE ?? 20),
-      freeDeliveryAbove: Number(process.env.DELIVERY_FEE_FREE_ABOVE ?? 0),
+      freeDeliveryAbove: Number(process.env.DELIVERY_FEE_FREE_ABOVE ?? 499),
     };
   },
 };
