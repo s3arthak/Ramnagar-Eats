@@ -13,9 +13,8 @@ const addressSchema = z.object({
   city: z.string().trim().max(80).optional(),
   state: z.string().trim().max(80).optional(),
   locality: z.string().trim().max(80).optional(),
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
-  deliveryInstructions: z.string().max(200).optional(),
+  latitude: z.number().gte(-90).lte(90).optional(),
+  longitude: z.number().gte(-180).lte(180).optional(),
   isDefault: z.boolean().optional(),
 });
 
@@ -31,7 +30,6 @@ const addressDto = (address: any) => ({
   locality: address.locality ?? "",
   latitude: address.latitude,
   longitude: address.longitude,
-  deliveryInstructions: address.deliveryInstructions ?? "",
   isDefault: address.isDefault,
 });
 
