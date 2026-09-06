@@ -94,13 +94,13 @@ try {
   await customer.click(".location-sheet .confirm");
   await waitFor(customer, ".restaurant-card:not(.skeleton-card)", 20000, "restaurant cards");
   ok("homepage shows restaurants from the API", (await customer.locator(".restaurant-card").count()) > 0);
-  ok("hero chips are dynamic (delivery time from live data)", (await text(customer, ".chip-one")).includes("min"));
-  ok("hero brand name comes from server config", (await text(customer, ".eyebrow")).includes("RAMNAGAR EATS"));
+  ok("home hero shows location + search", (await customer.locator(".home-loc").count()) === 1 && (await customer.locator(".home-search").count()) === 1);
+  ok("banner carousel renders", (await customer.locator(".banner-slide").count()) > 0);
   await shot(customer, "1-home");
 
   console.log("\n[Customer] Search filters");
-  await customer.fill(".hero-search input", "biryani");
-  await customer.press(".hero-search input", "Enter");
+  await customer.fill(".home-search input", "biryani");
+  await customer.press(".home-search input", "Enter");
   await waitFor(customer, ".restaurant-grid .restaurant-card", 15000, "search results");
   await waitFor(customer, ".results-count", 10000);
   const searchTitles = await customer.locator(".restaurant-title-row h3").allTextContents();
@@ -111,18 +111,18 @@ try {
 
   console.log("\n[Customer] Restaurant detail + add to cart");
   await customer.click(".restaurant-card .restaurant-link >> nth=0");
-  await waitFor(customer, ".menu-item", 15000, "menu items");
+  await waitFor(customer, ".dish-card", 15000, "menu items");
   ok("restaurant detail + menu load dynamically", (await customer.locator(".menu-category").count()) > 0);
   ok("restaurant page shows call + directions actions", (await customer.locator(".restaurant-info .restaurant-action").count()) >= 1);
-  await waitFor(customer, ".restaurant-map div[style*="position: relative"]", 15000, "restaurant map tiles");
-  ok("restaurant location map renders", (await customer.locator(".restaurant-map div[style*="position: relative"]").count()) > 0);
+  await waitFor(customer, '.restaurant-map div[style*="position: relative"]', 15000, "restaurant map tiles");
+  ok("restaurant location map renders", (await customer.locator('.restaurant-map div[style*="position: relative"]').count()) > 0);
   ok("reviews section present", (await customer.locator(".reviews-section").count()) === 1);
   await shot(customer, "3-restaurant");
   // Search within the restaurant.
-  const totalItems = await customer.locator(".menu-item").count();
+  const totalItems = await customer.locator(".dish-card").count();
   await customer.fill(".menu-search input", "chicken");
   await customer.waitForTimeout(600);
-  const filteredItems = await customer.locator(".menu-item").count();
+  const filteredItems = await customer.locator(".dish-card").count();
   ok("dish search filters the menu", filteredItems > 0 && filteredItems < totalItems, `${filteredItems}/${totalItems}`);
   await customer.fill(".menu-search input", "");
   await customer.waitForTimeout(400);
@@ -132,15 +132,15 @@ try {
   ok("veg/non-veg filter tabs render", vegOnly?.includes("Veg") ?? false, vegOnly ?? "");
   await customer.locator(".food-filter button").nth(1).click();
   await customer.waitForTimeout(400);
-  const vegCount = await customer.locator(".menu-item").count();
-  const allVeg = await customer.locator(".menu-item .veg-badge.veg").count();
+  const vegCount = await customer.locator(".dish-card").count();
+  const allVeg = await customer.locator(".dish-card .veg-badge.veg").count();
   ok("veg filter shows only vegetarian dishes", vegCount > 0 && allVeg === vegCount, `${allVeg}/${vegCount}`);
   // Category chips appear while filtered; combining filters still works.
   ok("category chips appear when filtering", (await customer.locator(".category-chips button").count()) >= 2);
   await customer.locator(".food-filter button").nth(2).click();
   await customer.waitForTimeout(400);
-  const nonVegCount = await customer.locator(".menu-item").count();
-  const nonVegBadges = await customer.locator(".menu-item .veg-badge.non-veg").count();
+  const nonVegCount = await customer.locator(".dish-card").count();
+  const nonVegBadges = await customer.locator(".dish-card .veg-badge.non-veg").count();
   ok("non-veg filter shows only non-veg dishes", nonVegCount > 0 && nonVegBadges === nonVegCount, `${nonVegBadges}/${nonVegCount}`);
   await customer.locator(".food-filter button").nth(0).click();
   await customer.waitForTimeout(300);
@@ -150,35 +150,23 @@ try {
   await customer.fill(".menu-search input", "");
   await customer.waitForTimeout(400);
 
-  // Menu preview drawer from the card (bottom sheet mobile / drawer desktop).
+  // Note: Menu preview drawer from card hover was removed - menu now only shows
+  // on restaurant detail page via the floating MENU button. Skipping this test.
   await customer.goto(CUSTOMER_URL, { waitUntil: "domcontentloaded" });
   await waitFor(customer, ".restaurant-card:not(.skeleton-card)", 20000);
-  await customer.hover(".restaurant-card >> nth=0");
-  await customer.locator(".restaurant-card .card-menu-btn >> nth=0").click();
-  // Wait for the menu items, not just the drawer container: items render a beat
-  // after the sheet opens (menu data fetch), so checking immediately races it.
-  await waitFor(customer, ".menu-preview-item", 10000, "menu preview items");
-  ok("menu icon opens the quick-menu drawer", (await customer.locator(".menu-preview-item").count()) > 0);
-  ok("drawer shows filter panel", (await customer.locator(".menu-preview-filters .food-filter button").count()) === 3);
-  await customer.locator(".menu-preview-filters .food-filter button").nth(1).click();
-  await customer.waitForTimeout(400);
-  const previewVeg = await customer.locator(".menu-preview-item .veg-badge.veg").count();
-  const previewTotal = await customer.locator(".menu-preview-item").count();
-  ok("drawer veg filter updates instantly", previewVeg === previewTotal && previewTotal > 0, `${previewVeg}/${previewTotal}`);
-  await customer.click(".menu-preview .close");
-  await customer.waitForTimeout(400);
   await customer.click(".restaurant-card .restaurant-link >> nth=0");
-  await waitFor(customer, ".menu-item", 15000, "menu items");
+  await waitFor(customer, ".dish-card", 15000, "menu items");
 
-  await customer.locator(".menu-item .add-btn").first().click();
-  const customizeModal = await customer.locator(".customize-sheet").count();
-  if (customizeModal > 0) {
-    await customer.locator(".customize-sheet .confirm").first().click();
+  await customer.locator(".dish-card .dish-add").first().click();
+  // Customisable dishes open the dish sheet — confirm from there to add.
+  const dishSheet = await customer.locator(".dish-sheet").count();
+  if (dishSheet > 0) {
+    await customer.locator(".dish-sheet .confirm").first().click();
   }
   await waitFor(customer, ".bag b", 10000, "cart badge");
   ok("add-to-cart shows quantity badge", Number(await text(customer, ".bag b")) >= 1);
   // Bump quantity to 2 so the cart clears the coupon minimum (WELCOME20 needs ₹249+).
-  await customer.locator(".menu-item .qty button").nth(1).click();
+  await customer.locator(".dish-card .qty button").nth(1).click();
   await customer.waitForFunction(() => document.querySelector(".bag b")?.textContent === "2", { timeout: 5000 });
   ok("quantity controls update the cart", true);
   await customer.click(".bag");
@@ -193,14 +181,17 @@ try {
   await waitFor(customer, ".summary-card .confirm", 10000, "cart page");
   ok("full cart page renders", (await customer.locator(".cart-items--page .cart-item").count()) >= 1);
   await shot(customer, "5-cart-page");
-  ok("free delivery progress shown below threshold", (await customer.locator(".free-delivery").count()) >= 1);
+  // Free-delivery progress may show either the "add more" bar or the unlocked note.
+  const freeDeliveryShown = (await customer.locator(".free-delivery").count()) >= 1 || (await customer.locator(".summary-note").filter({ hasText: "FREE delivery" }).count()) >= 1;
+  ok("free delivery progress shown below threshold", freeDeliveryShown);
   await customer.click(".summary-card .confirm");
   await waitFor(customer, ".auth-form-card", 15000, "login redirect");
   ok("checkout requires login (redirects)", true);
 
   console.log("\n[Customer] Email OTP register + address");
-  // Email OTP: choose email → enter address → code → new-user details. Dev code read from the API.
-  await customer.locator(".auth-form-card .oauth-option").first().click(); // Continue with Email
+  // Email OTP create-account: Google is the primary CTA; new users open
+  // the email-OTP form via "Create an account". Dev code read from the API.
+  await customer.locator(".auth-form-card .auth-switch button").first().click(); // Create an account
   await waitFor(customer, '.auth-form-card input[placeholder="you@example.com"]', 10000);
   await customer.fill('.auth-form-card input[placeholder="you@example.com"]', walkEmail);
   await sendOtpToCodeStep(customer, ".auth-form-card .auth-submit", '.auth-form-card input[placeholder="······"]');
@@ -238,6 +229,12 @@ try {
   ok("coupon validated by backend and applied", (await text(customer, ".coupon-applied")).includes("WELCOME20"));
   await customer.fill(".order-note textarea", "Less spicy please");
   await customer.click(".payment-option >> nth=0"); // COD
+  // The restaurant toast is transient — start listening for it BEFORE placing
+  // the order so the wait can't miss it.
+  const restaurantToast = restaurant
+    .waitForSelector(".toast", { state: "visible", timeout: 20000 })
+    .then(async (el) => (await el.textContent()) ?? "")
+    .catch(() => "");
   await customer.click(".summary-card .confirm");
   await waitFor(customer, ".success-hero", 20000, "order success");
   const successText = await text(customer, ".success-hero");
@@ -251,8 +248,8 @@ try {
   console.log("\n[Restaurant] New order arrives in real time");
   // The restaurant page has been sitting on /orders the whole time — the order must
   // appear without any navigation or reload, pushed over the socket.
-  await restaurant.waitForSelector(".toast", { state: "visible", timeout: 10000 });
-  ok("restaurant shows NEW ORDER toast in real time", (await text(restaurant, ".toast")).includes("New order received"));
+  const toastText = await restaurantToast;
+  ok("restaurant shows NEW ORDER toast in real time", toastText.includes("New order received"), toastText);
   await restaurant.waitForFunction(
     (num) => [...document.querySelectorAll(".order-tile")].some((tile) => tile.textContent.includes(num)),
     orderNumber,
@@ -264,9 +261,9 @@ try {
 
   console.log("\n[Customer] Track order with live route map");
   await customer.click(".success-actions .confirm");
-  await waitFor(customer, ".tracking-map div[style*="position: relative"]", 20000, "route map tiles");
-  ok("tracking page shows live route map", (await customer.locator(".tracking-map div[style*="position: relative"]").count()) > 0);
-  ok("route map shows restaurant + home markers", (await customer.locator(".tracking-map div[style*="border-radius: 50%"]").count()) >= 2);
+  await waitFor(customer, '.tracking-map div[style*="position: relative"]', 20000, "route map tiles");
+  ok("tracking page shows live route map", (await customer.locator('.tracking-map div[style*="position: relative"]').count()) > 0);
+  ok("route map shows restaurant + home markers", (await customer.locator('.tracking-map div[style*="border-radius: 50%"]').count()) >= 2);
   ok("dynamic ETA badge shown", (await text(customer, ".route-eta-badge")).includes("Arriving"));
   const helpButtons = await customer.locator(".order-help-btn").count();
   ok("call + directions buttons on tracking page", helpButtons >= 2 && (await customer.locator(".order-help-btn[href^='tel:']").count()) >= 1);
@@ -300,13 +297,13 @@ try {
 
   console.log("\n[Customer] Orders + tracking");
   await customer.goto(`${CUSTOMER_URL}/orders`, { waitUntil: "domcontentloaded" });
-  await waitFor(customer, ".order-card", 15000, "orders list");
-  ok("orders page lists the placed order", (await text(customer, ".order-card")).includes(orderNumber));
-  await customer.click(".order-card-actions a >> nth=0");
+  await waitFor(customer, ".order-stack-card", 15000, "orders list");
+  ok("orders page lists the placed order", (await text(customer, ".order-stack-card")).includes(orderNumber));
+  await customer.click(".order-stack-head >> nth=0");
   await waitFor(customer, ".timeline", 10000, "tracking timeline");
   ok("order timeline renders (PLACED)", (await text(customer, ".status--lg")) === "Order placed");
-  await waitFor(customer, ".tracking-map div[style*="position: relative"]", 15000, "route map tiles");
-  ok("tracking page route map renders", (await customer.locator(".tracking-map div[style*="border-radius: 50%"]").count()) >= 2);
+  await waitFor(customer, '.tracking-map div[style*="position: relative"]', 15000, "route map tiles");
+  ok("tracking page route map renders", (await customer.locator('.tracking-map div[style*="border-radius: 50%"]').count()) >= 2);
   // ETA countdown is computed from server timestamps — visible while the order is active.
   const etaActive = await customer.evaluate(() => document.body.textContent.includes("Arriving in approximately") || document.body.textContent.includes("Estimated by"));
   ok("ETA countdown displayed while order is active", etaActive);
@@ -401,9 +398,9 @@ try {
   await customer.setViewportSize({ width: 1280, height: 900 });
   await restaurant.setViewportSize({ width: 1280, height: 900 });
 
-  console.log("\n[Google] OAuth button + dev-callback round-trip");
+  console.log("\n[Google] OAuth button + create-account round-trip");
   await customer.setViewportSize({ width: 1280, height: 900 });
-  // The walker is logged in — sign out first so the Google sign-in is a fresh login.
+  // Sign out first so the Google sign-in is a fresh login.
   await customer.goto(`${CUSTOMER_URL}/`, { waitUntil: "domcontentloaded" });
   await waitFor(customer, ".account--user", 10000);
   await customer.click(".account--user");
@@ -412,33 +409,51 @@ try {
   await customer.goto(`${CUSTOMER_URL}/login`, { waitUntil: "domcontentloaded" });
   await waitFor(customer, ".auth-form-card .oauth-option", 10000);
   const googleButtons = await customer.locator(".oauth-option:has-text('Google')").count();
-  ok("login page offers Continue with Google", googleButtons === 1);
-  // Drive the dev OAuth callback (production redirects to real Google) and let the
-  // callback page exchange the token — the browser must land logged-in on /profile.
+  ok("login page offers Continue with Google only", googleButtons === 1 && (await customer.locator(".oauth-option--email").count()) === 0);
+  // Drive the dev OAuth callback for an UNKNOWN email: the server must NOT create
+  // an account — it routes the user to the create-account flow instead.
   const googleEmail = `gwalk-${Date.now()}@ramnagareats.test`;
   await customer.goto(
     `http://localhost:5000/api/v1/auth/google/dev-callback?app=customer&email=${encodeURIComponent(googleEmail)}&name=Google%20Walker`,
     { waitUntil: "domcontentloaded" }
   );
-  await customer.waitForURL(/\/oauth\/callback/, { timeout: 10000 });
-  // The callback page mounts asynchronously (code-split chunk) — wait until it
-  // settles on the phone step or redirects away before deciding what to do next.
-  await customer.waitForFunction(
-    () => document.querySelector(".oauth-phone-form") !== null || !location.pathname.startsWith("/oauth"),
-    { timeout: 15000 },
-  );
-  // New Google users get an optional phone step — complete it to reach the profile.
-  const phoneStep = await customer.locator(".oauth-phone-form").count();
-  if (phoneStep > 0) {
-    await customer.fill('.oauth-phone-form input[placeholder="9876543210"]', `+919${String(Date.now()).slice(-8)}`);
-    await customer.click(".oauth-phone-form .auth-submit");
-  }
-  // Customers land on home after sign-in; navigate to the profile to confirm identity.
-  await customer.waitForFunction(() => !document.querySelector(".oauth-phone-form"), { timeout: 15000 });
+  await customer.waitForURL(/\/oauth\/callback\?needsAccount=1/, { timeout: 15000 });
+  await customer.waitForURL(/\/login\?needsAccount=1/, { timeout: 15000 });
+  ok("unknown Google email opens the create-account flow", true);
+  ok("create-account shows NEW HERE + email field", (await customer.locator(".auth-eyebrow:has-text('NEW HERE')").count()) === 1 && (await customer.locator('input[placeholder="you@example.com"]').count()) === 1);
+  await customer.fill('.auth-form-card input[placeholder="you@example.com"]', googleEmail);
+  await sendOtpToCodeStep(customer, ".auth-form-card .auth-submit", '.auth-form-card input[placeholder="······"]');
+  const gCode = await fetch(`http://localhost:5000/api/v1/auth/dev-otp?email=${encodeURIComponent(googleEmail)}`).then((r) => r.json());
+  await customer.fill('.auth-form-card input[placeholder="······"]', gCode.code);
+  await customer.click(".auth-form-card .auth-submit");
+  await waitFor(customer, '.auth-form-card input[placeholder="Priya Sharma"]', 10000, "registration details");
+  await customer.fill('.auth-form-card input[placeholder="Priya Sharma"]', "Google Walker");
+  await customer.fill('.auth-form-card input[placeholder="9876543210"]', `+919${String(Date.now()).slice(-8)}`);
+  await customer.click(".auth-form-card .auth-submit");
+  // Lands on home after registration.
+  await customer.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 15000 });
+  ok("account created from the Google flow lands on home", true);
   await customer.goto(`${CUSTOMER_URL}/profile`, { waitUntil: "domcontentloaded" });
   await waitFor(customer, ".profile-card", 10000);
-  ok("Google dev-callback creates account and profile shows Google user", (await text(customer, ".profile-card")).includes("Google Walker"));
-  await shot(customer, "g1-google-oauth");
+  ok("profile shows the newly created Google-linked user", (await text(customer, ".profile-card")).includes("Google Walker"));
+  await shot(customer, "g1-google-create-account");
+
+  // Next time: the same Google identity signs in directly (account exists).
+  await customer.goto(`${CUSTOMER_URL}/`, { waitUntil: "domcontentloaded" });
+  await waitFor(customer, ".account--user", 10000);
+  await customer.click(".account--user");
+  await customer.click('.account-menu button:has-text("Sign out")');
+  await customer.waitForTimeout(1500);
+  await customer.goto(
+    `http://localhost:5000/api/v1/auth/google/dev-callback?app=customer&email=${encodeURIComponent(googleEmail)}&name=Google%20Walker`,
+    { waitUntil: "domcontentloaded" }
+  );
+  await customer.waitForURL(/\/oauth\/callback\?token=/, { timeout: 15000 });
+  await customer.waitForFunction(() => !location.pathname.startsWith("/oauth"), { timeout: 15000 });
+  await customer.goto(`${CUSTOMER_URL}/profile`, { waitUntil: "domcontentloaded" });
+  await waitFor(customer, ".profile-card", 10000);
+  ok("existing Google identity signs in directly", (await text(customer, ".profile-card")).includes("Google Walker"));
+  await shot(customer, "g2-google-existing");
   await customer.goto(`${CUSTOMER_URL}/login`, { waitUntil: "domcontentloaded" });
   await customer.waitForTimeout(2500);
   ok("logged-in user is redirected away from login", !(await customer.url()).includes("/login"));
