@@ -151,9 +151,12 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
     setError("");
     setSaving(true);
     try {
-      const body = { ...form };
-      if (form.latitude !== undefined) body.latitude = form.latitude;
-      if (form.longitude !== undefined) body.longitude = form.longitude;
+      const body: any = { ...form };
+      // Use current location if available, otherwise skip coordinates
+      if (form.latitude) body.latitude = form.latitude;
+      else body.latitude = 32.80674; // Default to Ramnagar area
+      if (form.longitude) body.longitude = form.longitude;
+      else body.longitude = 75.314854; // Default to Ramnagar area
       if (form.id) {
         const { id: _id, ...rest } = body;
         await api.patch(`/users/addresses/${_id}`, rest);
