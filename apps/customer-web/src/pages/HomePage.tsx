@@ -80,7 +80,7 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
           <p className="home-hero-subtitle">
             Explore {place ? `restaurants near ${place.label}` : 'nearby restaurants'} — fresh, delicious food delivered to your door.
           </p>
-          <form className="home-search-enhanced" onSubmit={submitSearch} role="search">
+          <form className="home-search" onSubmit={submitSearch} role="search">
             <div className="search-wrap">
               <Search size={18} className="search-icon" />
               <input
