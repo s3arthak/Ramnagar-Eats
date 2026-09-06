@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock3, MapPin, UtensilsCrossed } from "lucide-react";
+import { Clock3, MapPin } from "lucide-react";
 import type { Restaurant } from "../../lib/types";
 import { deliveryTime, distanceKm, inr } from "../../lib/format";
 import { RatingPill, VegBadge } from "./Badges";
-import { MenuPreviewDrawer } from "../MenuPreviewDrawer";
 
 const CUISINE_EMOJI: Record<string, string> = {
   Biryani: "🍛", Pizza: "🍕", Burgers: "🍔", "North Indian": "🍛", Chinese: "🥡", Healthy: "🥗", Desserts: "🍰",
@@ -35,10 +34,8 @@ function statusLabel(restaurant: Restaurant): { text: string; tone: string } {
   }
 }
 
-export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
-  const emoji = foodEmoji(restaurant);
+export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {    const emoji = foodEmoji(restaurant);
   const [imageFailed, setImageFailed] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const status = statusLabel(restaurant);
   const fastDelivery = restaurant.deliveryTimeMax <= 25;
 
@@ -73,15 +70,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           </small>
         </div>
       </Link>
-      <button
-        className="card-menu-btn"
-        onClick={() => setPreviewOpen(true)}
-        aria-label={`Preview menu of ${restaurant.name}`}
-        title="Preview menu"
-      >
-        <UtensilsCrossed size={15} /> <span>Menu</span>
-      </button>
-      {previewOpen && <MenuPreviewDrawer restaurantId={restaurant.id} onClose={() => setPreviewOpen(false)} />}
+
     </article>
   );
 }

@@ -528,7 +528,7 @@
 .badge--recommended{background:#eef3ff;color:var(--info)}
 .badge--neutral{background:#eef0f3;color:var(--ink)}
 
-/* ===== Menu Preview Drawer ===== */
+/* ===== Menu Preview Drawer - Category view (no images, just names) ===== */
 .menu-drawer-overlay{
   position: fixed;
   inset: 0;
@@ -856,22 +856,38 @@
   color: #fff;
 }
 
-.menu-category-group{
-  margin-bottom: 24px;
+.categories-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
-.menu-category-header{
+.category-card{
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.category-card-content{
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--line);
+  padding: 14px 16px;
 }
 
-.menu-category-icon-wrap{
-  width: 40px;
-  height: 40px;
+.category-card-icon{
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: linear-gradient(135deg, #ffeb3b, #ff9800);
   display: flex;
@@ -881,25 +897,62 @@
   flex-shrink: 0;
 }
 
-.menu-category-name{
-  margin: 0;
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
+.category-card-info{
+  flex: 1;
+  min-width: 0;
 }
 
-.menu-category-count{
+.category-card-name{
   margin: 0;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.category-card-count{
+  margin: 2px 0 0;
   font-size: 11px;
   color: var(--muted);
   font-weight: 600;
 }
 
-.menu-items-grid{
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+.category-card-footer{
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: #fafafa;
+}
+
+.category-card-tags{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.category-tag{
+  font-size: 10px;
+  padding: 3px 8px;
+  background: #fff7f0;
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+}
+
+.category-more{
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+@media(max-width:540px){
+  .categories-grid{
+    grid-template-columns: 1fr;
+  }
 }
 
 .menu-preview-item{
@@ -1306,6 +1359,112 @@
 .menu-empty .empty-copy{margin-top:6px;color:var(--muted);font-weight:600;font-size:12.5px}
 .menu-empty .filter{margin-top:16px;display:inline-flex}
 .empty-inline{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:14px;font-size:12.5px;font-weight:600}
+
+/* ===== Category Menu Bar - shows food categories on restaurant page ===== */
+.category-menu-bar{
+  display: none;
+}
+.restaurant-page .category-menu-bar{
+  display: flex;
+}
+
+/* ===== Overlay for category menu on mobile ===== */
+.category-menu-bar.backward-compatible{
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  margin: 20px auto 0;
+  max-width: 600px;
+  box-shadow: var(--shadow-sm);
+}
+@media(max-width:740px){
+  .category-menu-bar{
+    bottom: 70px;
+    left: 8px;
+    right: 8px;
+    padding: 10px 12px;
+  }
+  .category-menu-chips{
+    gap: 6px;
+  }
+  .category-chip{
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}
+
+.category-menu-bar{
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  right: 16px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--line);
+  animation: slide-up-in .3s ease;
+}
+@keyframes slide-up-in {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.category-menu-label{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.category-menu-label svg{
+  color: var(--accent);
+}
+.category-menu-chips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.category-chip{
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.category-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.category-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.more-chip{
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+.more-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fff7f0;
+}
 
 /* ===== Floating MENU button (enhanced) ===== */
 .floating-menu-btn{position:fixed;right:18px;bottom:100px;z-index:18;width:62px;height:62px;border-radius:50%;border:0;background:linear-gradient(135deg,#ff6b00,#ff8c00);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'Nunito',system-ui,sans-serif;font-size:9px;font-weight:900;letter-spacing:1px;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,0,0.4),0 2px 8px rgba(0,0,0,0.1);transition:all .2s;animation:floating-pulse 3s ease-in-out infinite}

@@ -371,6 +371,33 @@ export function RestaurantPage() {
           </button>
         </div>
       )}
+
+      {/* Category Menu Bar - shows food categories (like Shwarmas, Rice, Daals) */}
+      <div className="category-menu-bar">
+        <div className="category-menu-label">
+          <BookOpen size={16} />
+          <span>Categories</span>
+        </div>
+        <div className="category-menu-chips">
+          {filteredCategories.slice(0, 6).map((category) => (
+            <button
+              key={category.id}
+              className={`category-chip ${activeCategory === category.id ? "active" : ""}`}
+              onClick={() => scrollToCategory(category.id)}
+            >
+              {category.name}
+            </button>
+          ))}
+          {filteredCategories.length > 6 && (
+            <button
+              className="category-chip more-chip"
+              onClick={() => setActiveCategory(null)}
+            >
+              +{filteredCategories.length - 6} more
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
