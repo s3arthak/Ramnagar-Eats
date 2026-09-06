@@ -170,7 +170,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
             <span className="loc-found-pin"><MapPin size={15} /></span>
             <span>
               <b>You&apos;re at</b>
-              <em>{detected?.address || `Latitude ${position[0].toFixed(4)}, Longitude ${position[1].toFixed(4)}`}</em>
+              <em>{detected?.address || `${position[0].toFixed(4)}, ${position[1].toFixed(4)}`}</em>
               {detected?.city && <small>{detected.city}{detected.state ? `, ${detected.state}` : ""}</small>}
             </span>
           </div>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { LocateFixed, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
 import { api } from "../lib/api";
 import type { Address } from "../lib/types";
-import { useLocation } from "../context/LocationContext";
 import { useToast } from "../context/ToastContext";
 import { EmptyState, ErrorState } from "../components/ui/StateViews";
 import { Spinner } from "../components/ui/Skeleton";
@@ -15,20 +14,16 @@ type AddressFormValues = {
   city: string;
   state: string;
   locality: string;
-  latitude: number;
-  longitude: number;
-  deliveryInstructions: string;
   isDefault: boolean;
 };
 
-const EMPTY_FORM: AddressFormValues = { label: "Home", formattedAddress: "", pincode: "", city: "", state: "", locality: "", latitude: 32.80674, longitude: 75.314854, deliveryInstructions: "", isDefault: false };
+const EMPTY_FORM: AddressFormValues = { label: "Home", formattedAddress: "", pincode: "", city: "", state: "", locality: "", isDefault: false };
 
 function toFormValues(address: Address): AddressFormValues {
-  return { ...address, city: address.city ?? "", state: address.state ?? "", locality: address.locality ?? "", deliveryInstructions: address.deliveryInstructions ?? "" };
+  return { ...address, city: address.city ?? "", state: address.state ?? "", locality: address.locality ?? "" };
 }
 
 export function AddressesPage() {
-  const { place } = useLocation();
   const { push } = useToast();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +102,7 @@ export function AddressesPage() {
                 {address.isDefault && <span className="badge badge--open">Default</span>}
                 <p>{address.formattedAddress}</p>
                 <small>
-                  {address.pincode} · {address.deliveryInstructions ? `“${address.deliveryInstructions}”` : "No delivery instructions"}
+                  {address.pincode}
                 </small>
               </div>
               <div className="address-actions">
@@ -128,7 +123,7 @@ export function AddressesPage() {
 
       {editing && (
         <AddressForm
-          initial={editing === "new" ? { ...EMPTY_FORM, latitude: place?.lat ?? 32.80674, longitude: place?.lng ?? 75.314854 } : toFormValues(editing)}
+          initial={editing === "new" ? { ...EMPTY_FORM } : toFormValues(editing)}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -147,8 +142,8 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
   const [saving, setSaving] = useState(false);
 
   function useCurrent() {
-    navigator.geolocation?.getCurrentPosition((value) =>
-      setForm((current) => ({ ...current, latitude: value.coords.latitude, longitude: value.coords.longitude })),
+    navigator.geolocation?.getCurrentPosition(() =>
+      setForm((current) => ({ ...current })),
     );
   }
 
@@ -209,18 +204,7 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
             Locality / area
             <input value={form.locality} onChange={(event) => setForm({ ...form, locality: event.target.value })} placeholder="Ramnagar" />
           </label>
-          <label>
-            Latitude
-            <input value={form.latitude} onChange={(event) => setForm({ ...form, latitude: Number(event.target.value) })} inputMode="decimal" />
-          </label>
-          <label>
-            Longitude
-            <input value={form.longitude} onChange={(event) => setForm({ ...form, longitude: Number(event.target.value) })} inputMode="decimal" />
-          </label>
-          <label className="wide">
-            Delivery instructions (optional)
-            <input value={form.deliveryInstructions ?? ""} onChange={(event) => setForm({ ...form, deliveryInstructions: event.target.value })} placeholder="e.g. Ring the bell twice, leave at the door" />
-          </label>
+
         </div>
         <button className="gps" onClick={useCurrent}>
           <LocateFixed size={18} /> Use my current location
