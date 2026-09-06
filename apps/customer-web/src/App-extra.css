@@ -21,8 +21,8 @@
 .home-hero-title-line{display:block}
 .home-hero-title-highlight{background:linear-gradient(90deg,#ffb84d,#fc8019);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .home-hero-subtitle{margin:6px 0 0;font-size:13px;color:#e8d5c4;line-height:1.45;max-width:460px;font-weight:400}
-.home-search-enhanced{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:8px 8px 8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.1);transition:box-shadow .2s,transform .2s}
-.home-search-enhanced:focus-within{box-shadow:0 10px 32px rgba(252,128,25,.25),0 4px 10px rgba(0,0,0,.12);transform:translateY(-1px)}
+.home-search,.home-search-enhanced{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:8px 8px 8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.1);transition:box-shadow .2s,transform .2s}
+.home-search:focus-within,.home-search-enhanced:focus-within{box-shadow:0 10px 32px rgba(252,128,25,.25),0 4px 10px rgba(0,0,0,.12);transform:translateY(-1px)}
 .search-wrap{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
 .search-input{flex:1;border:0;outline:0;font-family:'Nunito',system-ui,sans-serif;font-size:14px;font-weight:600;min-width:0;background:transparent;color:var(--ink);padding:5px 0}
 .search-input::placeholder{color:#b0a090;font-weight:500}
