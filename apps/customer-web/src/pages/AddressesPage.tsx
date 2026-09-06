@@ -137,13 +137,13 @@ export function AddressesPage() {
 
 function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues; onClose: () => void; onSaved: () => Promise<void> }) {
   const { push } = useToast();
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState<AddressFormValues & { latitude?: number; longitude?: number }>(initial as AddressFormValues & { latitude?: number; longitude?: number });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   function useCurrent() {
-    navigator.geolocation?.getCurrentPosition(() =>
-      setForm((current) => ({ ...current })),
+    navigator.geolocation?.getCurrentPosition((value) =>
+      setForm((current) => ({ ...current, latitude: value.coords.latitude, longitude: value.coords.longitude })),
     );
   }
 
@@ -151,12 +151,15 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
     setError("");
     setSaving(true);
     try {
+      const body = { ...form };
+      if (form.latitude !== undefined) body.latitude = form.latitude;
+      if (form.longitude !== undefined) body.longitude = form.longitude;
       if (form.id) {
-        const { id: _id, ...body } = form;
-        await api.patch(`/users/addresses/${_id}`, body);
+        const { id: _id, ...rest } = body;
+        await api.patch(`/users/addresses/${_id}`, rest);
         push("Address updated", { tone: "success" });
       } else {
-        await api.post("/users/addresses", form);
+        await api.post("/users/addresses", body);
         push("Address saved", { tone: "success" });
       }
       await onSaved();
@@ -221,6 +224,7 @@ function AddressForm({ initial, onClose, onSaved }: { initial: AddressFormValues
         <button className="confirm" disabled={!form.formattedAddress.trim() || !form.pincode.trim() || saving} onClick={() => void save()}>
           {saving ? "Saving…" : "Save address"}
         </button>
+        <p className="address-note">Address will be saved without coordinates. For better accuracy, use "Use my current location".</p>
       </section>
     </div>
   );
