@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60">
   <defs>
     <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FF6B00"/>
@@ -10,25 +10,27 @@
     </linearGradient>
   </defs>
   
-  <!-- Brand text - RAMNAGAR -->
-  <text x="60" y="28" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="26" fill="#2A0E08" letter-spacing="-0.5">
+  <!-- Background badge -->
+  <rect x="0" y="0" width="220" height="60" rx="14" fill="url(#logo-bg)" opacity="0.15"/>
+  
+  <!-- Stylized R logo - big and bold like Swiggy -->
+  <g transform="translate(10, 8)">
+    <!-- R letter with orange gradient - stylized like Swiggy's S -->
+    <path d="M2 4 C2 1, 6 0, 12 0 C18 0, 21 3, 21 3 L21 12 C21 15, 18 18, 14 18 C12 18, 11 17, 11 16 L11 8 L6 8 L6 16 C6 17, 5 18, 3 18 C0 18, -1 15, -1 12 Z" 
+          fill="url(#r-grad)" stroke="#CC5500" stroke-width="0.8"/>
+    <!-- R leg -->
+    <path d="M15 18 L15 28 L11 28 L11 20" fill="url(#r-grad)" stroke="#CC5500" stroke-width="0.8"/>
+    <!-- Decorative dot -->
+    <circle cx="21" cy="4" r="1.5" fill="#FFCC80" opacity="0.6"/>
+  </g>
+  
+  <!-- Brand text - RAMNAGAR in dark -->
+  <text x="58" y="26" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#2A0E08" letter-spacing="-0.5">
     RAMNAGAR
   </text>
   
-  <!-- Stylized R logo (like Swiggy's S) -->
-  <g transform="translate(8, 18)">
-    <!-- R letter with orange gradient -->
-    <path d="M4 8 C4 4, 8 2, 14 2 C22 2, 24 8, 24 8 L24 18 C24 20, 22 22, 18 22 C16 22, 15 21, 15 20 L15 12 L10 12 L10 20 C10 21, 9 22, 7 22 C3 22, 2 20, 2 18 Z" 
-          fill="url(#r-grad)" stroke="#E05500" stroke-width="0.5"/>
-    <!-- R leg -->
-    <path d="M18 22 L18 32 L14 32 L14 24" fill="url(#r-grad)" stroke="#E05500" stroke-width="0.5"/>
-  </g>
-  
   <!-- EATS text in orange -->
-  <text x="60" y="50" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="18" fill="#FF6B00" letter-spacing="-0.3">
+  <text x="58" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="16" fill="#FF6B00" letter-spacing="-0.2">
     EATS
   </text>
-  
-  <!-- Subtle background -->
-  <rect x="0" y="0" width="200" height="64" rx="12" fill="url(#logo-bg)" opacity="0.1"/>
 </svg>
