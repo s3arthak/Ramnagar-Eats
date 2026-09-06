@@ -16,8 +16,8 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
     <div className="app">
       <header className="topbar sticky-top">
         <Link className="brand" to="/" aria-label="Ramnagar Eats home">
-          <img className="brand-logo" src="/logo.svg" alt="Ramnagar Eats" width="36" height="36" />
-          <span className="brand-name">RAMNAGAR <b>EATS</b></span>
+          <img className="brand-logo" src="/logo.svg" alt="R" width="36" height="36" />
+          <span className="brand-name">Ramnagar <b>Eats</b></span>
         </Link>
         <button className="location-button" onClick={onOpenLocation} aria-label="Change delivery location">
           <MapPin size={17} />

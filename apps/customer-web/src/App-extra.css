@@ -1189,11 +1189,9 @@
 .offer-strip span::before{content:"🏷";font-size:11px;margin-right:3px}
 .notice--closed{margin:12px 0 0;background:#fff7f0;color:var(--accent);border-radius:10px;padding:9px 11px;font-size:11px;font-weight:700;border:1px dashed #ffd9b3;display:flex;align-items:center;gap:5px;font-family:'Nunito',system-ui,sans-serif}
 .notice--closed::before{content:"⚠️"}
-.menu-sections{margin-top:22px}
-.menu-category h2{font-size:clamp(18px,3vw,22px);letter-spacing:-.6px;border-bottom:2px solid var(--line);padding-bottom:12px;font-weight:800;margin:0 0 16px;display:flex;align-items:center;gap:10px;color:var(--ink);animation:card-enter .3s ease both}
-.menu-category h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
-.menu-category h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
-.empty-inline{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:14px}
+.menu-sections{margin-top:16px}
+.menu-category h2{font-size:clamp(14px,2.2vw,16px);letter-spacing:-.3px;border-bottom:1px solid var(--line);padding-bottom:8px;font-weight:600;margin:0 0 10px;color:var(--ink);animation:card-enter .3s ease both}
+.empty-inline{color:var(--muted);padding:20px;text-align:center;border:1px dashed var(--line);border-radius:12px}
 
 /* Floating MENU button (Swiggy circular) */
 .floating-menu-btn{position:fixed;right:18px;bottom:96px;z-index:18;width:64px;height:64px;border-radius:50%;border:0;background:#1c1207f2;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;font-size:9.5px;font-weight:900;letter-spacing:1px;cursor:pointer;box-shadow:0 10px 26px #1c120755;transition:transform .18s,background .18s}
