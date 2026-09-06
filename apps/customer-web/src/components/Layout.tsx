@@ -1,6 +1,6 @@
-import { Suspense, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { LogOut, MapPin, Search, ShoppingBag, UserRound } from "lucide-react";
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ClipboardList, House, LogOut, MapPin, ReceiptText, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useLocation } from "../context/LocationContext";
@@ -10,33 +10,22 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
   const { itemCount, setDrawerOpen } = useCart();
   const { place } = useLocation();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-
-  function submitSearch(event: FormEvent) {
-    event.preventDefault();
-    navigate(query.trim() ? `/restaurants?q=${encodeURIComponent(query.trim())}` : "/restaurants");
-    setQuery("");
-  }
 
   return (
     <div className="app">
       <header className="topbar sticky-top">
         <Link className="brand" to="/" aria-label="Ramnagar Eats home">
-          <span className="brand-mark" aria-hidden="true">🍛</span>
+          <img className="brand-logo" src="/logo.svg" alt="Ramnagar Eats" width="36" height="36" />
           <span className="brand-name">RAMNAGAR <b>EATS</b></span>
         </Link>
         <button className="location-button" onClick={onOpenLocation} aria-label="Change delivery location">
           <MapPin size={17} />
           <span>
             <small>DELIVERING TO</small>
-            {place?.label ?? "Set your location"}
+            {place?.label ?? "Set location"}
           </span>
         </button>
-        <form className="nav-search" onSubmit={submitSearch} role="search">
-          <Search size={16} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search for restaurants, dishes…" aria-label="Search restaurants" />
-        </form>
         <div className="header-actions">
           <button className="search-icon mobile-search" onClick={() => navigate("/restaurants")} aria-label="Search restaurants">
             <Search size={19} />
@@ -79,12 +68,12 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
         </div>
       </header>
       <main>
-        <Suspense fallback={<div className="loading" style={{ margin: "48px auto", maxWidth: 520 }}>Loading…</div>}>{children}</Suspense>
+        {children}
       </main>
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-brand">
-            <span className="brand-mark" aria-hidden="true">🍛</span>
+            <img className="brand-logo" src="/logo.svg" alt="Ramnagar Eats" width="44" height="44" />
             <strong>RAMNAGAR <b>EATS</b></strong>
             <p>Local food from independent kitchens, delivered fast to your door.</p>
           </div>
@@ -102,6 +91,32 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
         </div>
         <p className="footer-bottom">© {new Date().getFullYear()} Ramnagar Eats · Delivering happiness, one meal at a time.</p>
       </footer>
+      <BottomNav cartCount={itemCount} onOpenCart={() => setDrawerOpen(true)} />
     </div>
+  );
+}
+
+/** Mobile bottom navigation — Swiggy-style tab bar. */
+function BottomNav({ cartCount, onOpenCart }: { cartCount: number; onOpenCart: () => void }) {
+  return (
+    <nav className="bottom-nav" aria-label="Primary">
+      <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
+        <House size={21} /> Food
+      </NavLink>
+      <NavLink to="/restaurants" className={({ isActive }) => (isActive ? "active" : "")}>
+        <Search size={21} /> Search
+      </NavLink>
+      <NavLink to="/orders" className={({ isActive }) => (isActive ? "active" : "")}>
+        <ClipboardList size={21} /> Orders
+      </NavLink>
+      <button onClick={onOpenCart} aria-label={`Open cart, ${cartCount} items`}>
+        <ShoppingBag size={21} />
+        Cart
+        {cartCount > 0 && <span className="bn-count">{cartCount}</span>}
+      </button>
+      <NavLink to="/profile" className={({ isActive }) => (isActive ? "active" : "")}>
+        <ReceiptText size={21} /> Account
+      </NavLink>
+    </nav>
   );
 }

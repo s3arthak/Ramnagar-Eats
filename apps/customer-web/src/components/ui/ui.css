@@ -1,4 +1,18 @@
-@import "../../../../../shared/design-tokens.css";.ui-button{border:0;border-radius:var(--radius-sm);font:inherit;font-weight:800;min-height:42px;padding:0 var(--space-4);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px}.ui-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:var(--shadow-sm)}.ui-button:active:not(:disabled){transform:scale(.97)}.ui-button:disabled{opacity:.55;cursor:not-allowed}.btn-spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex:none}.ui-button--primary{background:var(--accent);color:var(--brand-950)}.ui-button--secondary{background:var(--surface);border:1px solid var(--line);color:var(--text)}.ui-button--ghost{background:transparent;color:var(--text)}.ui-button--danger{background:var(--danger);color:white}.ui-field{display:grid;gap:6px;color:var(--text);font-size:13px;font-weight:800}.ui-field input{border:1px solid var(--line);border-radius:var(--radius-sm);min-height:44px;padding:0 12px;font:inherit;color:var(--text);outline:none}.ui-field input:focus{border-color:var(--saffron);box-shadow:0 0 0 3px rgb(232 102 60 / .14)}.ui-field small{color:var(--danger);font-weight:600}
+@import "../../../../../shared/design-tokens.css";
+.ui-button{border:0;border-radius:12px;font:inherit;font-weight:800;min-height:44px;padding:0 var(--space-4);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px}
+.ui-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.ui-button:active:not(:disabled){transform:scale(.97)}
+.ui-button:disabled{opacity:.55;cursor:not-allowed}
+.btn-spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex:none}
+.ui-button--primary{background:var(--accent);color:#fff}
+.ui-button--primary:hover:not(:disabled){box-shadow:0 6px 16px #fc801944}
+.ui-button--secondary{background:#fff;border:1px solid var(--line);color:var(--text)}
+.ui-button--ghost{background:transparent;color:var(--text)}
+.ui-button--danger{background:var(--danger);color:white}
+.ui-field{display:grid;gap:6px;color:var(--text);font-size:13px;font-weight:800}
+.ui-field input{border:1px solid var(--line);border-radius:12px;min-height:44px;padding:0 12px;font:inherit;color:var(--text);outline:none;background:#fff}
+.ui-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #fc801922}
+.ui-field small{color:var(--danger);font-weight:600}
 .image-uploader{display:grid;gap:10px;min-width:0}
 .image-uploader-preview{position:relative;border:1.5px dashed var(--line);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);cursor:pointer;display:grid;place-items:center}
 .image-uploader--wide .image-uploader-preview{aspect-ratio:16/9;max-height:220px}
@@ -6,7 +20,7 @@
 .image-uploader--avatar .image-uploader-preview{aspect-ratio:1/1;max-height:120px;max-width:120px;border-radius:50%}
 .image-uploader-preview img{width:100%;height:100%;object-fit:cover;display:block}
 .image-uploader-empty{display:grid;place-items:center;gap:6px;color:var(--text-muted);font-size:12px;font-weight:700;text-align:center;padding:12px}
-.image-uploader-busy{position:absolute;inset:0;background:rgb(255 255 255/.7);display:grid;place-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--brand-700);z-index:2}
+.image-uploader-busy{position:absolute;inset:0;background:rgb(255 255 255/.7);display:grid;place-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--accent);z-index:2}
 .image-uploader-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .image-uploader-actions .ui-button{min-height:36px;padding:0 var(--space-3);font-size:13px;display:inline-flex;align-items:center;gap:6px}
 .image-uploader-error{display:inline-flex;align-items:center;gap:5px;color:var(--danger);font-size:12px;font-weight:700}

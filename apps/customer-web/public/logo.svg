@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64">
+  <defs>
+    <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6B00"/>
+      <stop offset="100%" stop-color="#FF8C00"/>
+    </linearGradient>
+    <linearGradient id="logo-txt" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFE0B2"/>
+    </linearGradient>
+  </defs>
+  <!-- Logo icon: stylized plate with steam and spoon -->
+  <g transform="translate(8, 8)">
+    <!-- Plate outer ring -->
+    <circle cx="28" cy="28" r="26" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.3"/>
+    <!-- Plate -->
+    <ellipse cx="28" cy="28" rx="22" ry="18" fill="#FFFFFF" opacity="0.95"/>
+    <!-- Inner plate shadow -->
+    <ellipse cx="28" cy="26" rx="18" ry="14" fill="#FFF3E0"/>
+    <!-- Food mound (biryani rice) -->
+    <ellipse cx="28" cy="24" rx="14" ry="10" fill="#FFB74D"/>
+    <ellipse cx="28" cy="22" rx="10" ry="7" fill="#FFCC80"/>
+    <!-- Steam lines -->
+    <path d="M22 16 Q22 10 25 8" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M28 14 Q28 8 31 6" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M34 16 Q34 10 37 8" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <!-- Spoon on the right -->
+    <g transform="translate(42, 8) rotate(25)">
+      <ellipse cx="6" cy="8" rx="5" ry="3" fill="#FFE082"/>
+      <rect x="4" y="8" width="2" height="20" fill="#BDBDBD"/>
+    </g>
+  </g>
+  <!-- Brand text -->
+  <text x="74" y="30" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="28" fill="url(#logo-txt)" letter-spacing="-0.5">
+    RAMNAGAR
+  </text>
+  <text x="74" y="52" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="20" fill="#FFFFFF" letter-spacing="-0.3">
+    EATS
+  </text>
+</svg>

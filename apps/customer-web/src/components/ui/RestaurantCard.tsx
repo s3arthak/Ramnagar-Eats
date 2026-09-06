@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock3, MapPin, Menu } from "lucide-react";
+import { Clock3, MapPin, UtensilsCrossed } from "lucide-react";
 import type { Restaurant } from "../../lib/types";
 import { deliveryTime, distanceKm, inr } from "../../lib/format";
-import { Rating, VegBadge } from "./Badges";
+import { RatingPill, VegBadge } from "./Badges";
 import { MenuPreviewDrawer } from "../MenuPreviewDrawer";
 
 const CUISINE_EMOJI: Record<string, string> = {
@@ -56,7 +56,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             {restaurant.isPureVeg && <VegBadge isVeg size={14} />}
           </div>
           <div className="restaurant-meta">
-            <Rating value={restaurant.rating} count={restaurant.ratingCount} />
+            <RatingPill value={restaurant.rating} size="sm" />
             <p>{restaurant.cuisines.join(" · ") || "Local favourites"}</p>
           </div>
           <small>
@@ -79,7 +79,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         aria-label={`Preview menu of ${restaurant.name}`}
         title="Preview menu"
       >
-        <Menu size={15} /> <span>Menu</span>
+        <UtensilsCrossed size={15} /> <span>Menu</span>
       </button>
       {previewOpen && <MenuPreviewDrawer restaurantId={restaurant.id} onClose={() => setPreviewOpen(false)} />}
     </article>

@@ -1,46 +1,50 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Search, Clock, ChefHat, UtensilsCrossed } from "lucide-react";
 import { api } from "../lib/api";
-import type { MenuCategory, Restaurant } from "../lib/types";
+import type { MenuCategory, MenuItem } from "../lib/types";
 import { inr } from "../lib/format";
 import { VegBadge } from "./ui/Badges";
-import { Spinner } from "./ui/Skeleton";
-import { ErrorState } from "./ui/StateViews";
 
-interface MenuResponse {
-  restaurant: Restaurant;
-  categories: MenuCategory[];
+interface Props {
+  restaurantId: string;
+  onClose: () => void;
 }
 
-type FoodFilter = "ALL" | "VEG" | "NON_VEG";
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Rice & Biryani": <UtensilsCrossed size={20} />,
+  "Roti & Bread": <UtensilsCrossed size={20} />,
+  "Starters": <ChefHat size={20} />,
+  "Desserts": <ChefHat size={20} />,
+  "Beverages": <ChefHat size={20} />,
+  "Curries": <UtensilsCrossed size={20} />,
+  "Tandoori": <ChefHat size={20} />,
+  "Salads": <ChefHat size={20} />,
+};
 
-/**
- * Quick menu preview opened from a restaurant card. Bottom sheet on mobile,
- * side drawer on desktop. Includes a compact filter panel (category + food type).
- */
-export function MenuPreviewDrawer({ restaurantId, onClose }: { restaurantId: string; onClose: () => void }) {
-  const [data, setData] = useState<MenuResponse | null>(null);
+const DEFAULT_ICONS = <UtensilsCrossed size={20} />;
+
+export function MenuPreviewDrawer({ restaurantId, onClose }: Props) {
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
-  const [foodFilter, setFoodFilter] = useState<FoodFilter>("ALL");
-
-  const load = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const menu = await api.get<MenuResponse>(`/restaurants/${restaurantId}/menu`);
-      setData(menu);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load this menu");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+
+    async function loadMenu() {
+      try {
+        const data = await api.get<{ categories: MenuCategory[] }>(`/restaurants/${restaurantId}/menu`);
+        if (!cancelled) setCategories(data.categories);
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : "Could not load menu");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadMenu();
+    return () => { cancelled = true; };
   }, [restaurantId]);
 
   useEffect(() => {
@@ -51,128 +55,135 @@ export function MenuPreviewDrawer({ restaurantId, onClose }: { restaurantId: str
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const visibleItems = useMemo(() => {
-    if (!data) return 0;
-    return data.categories.reduce(
-      (sum, category) =>
-        sum +
-        category.items.filter((item) => {
-          if (selectedCategories.size > 0 && !selectedCategories.has(category.id)) return false;
-          if (foodFilter === "VEG" && !item.isVeg) return false;
-          if (foodFilter === "NON_VEG" && item.isVeg) return false;
-          return true;
-        }).length,
-      0,
-    );
-  }, [data, selectedCategories, foodFilter]);
-
-  const hasFilters = selectedCategories.size > 0 || foodFilter !== "ALL";
-  const clearFilters = () => {
-    setSelectedCategories(new Set());
-    setFoodFilter("ALL");
-  };
-
-  const toggleCategory = (id: string) => {
-    setSelectedCategories((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const totalItems = categories.reduce((sum, cat) => sum + cat.items.length, 0);
+  const visibleCategories = activeCategory ? categories.filter(c => c.id === activeCategory) : categories;
 
   return (
-    <div className="overlay menu-preview-overlay" role="dialog" aria-modal="true" aria-label="Menu preview">
-      <section className="menu-preview">
-        <button className="close" onClick={onClose} aria-label="Close menu preview">
-          <X size={20} />
-        </button>
-
-        <div className="menu-preview-head">
-          <p className="eyebrow">QUICK MENU</p>
-          <h2>{data?.restaurant.name ?? "Menu"}</h2>
-          <p className="menu-preview-link">
-            <Link to={`/restaurant/${restaurantId}`} onClick={onClose}>
-              Open full restaurant page →
-            </Link>
-          </p>
+    <div className="menu-drawer-overlay" onClick={onClose}>
+      <div className="menu-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Menu preview">
+        <div className="menu-drawer-header">
+          <div className="menu-drawer-title-row">
+            <ChefHat size={22} className="menu-drawer-icon" />
+            <div>
+              <h2 className="menu-drawer-title">Menu</h2>
+              <p className="menu-drawer-subtitle">{totalItems} items across {categories.length} categories</p>
+            </div>
+          </div>
+          <button className="menu-drawer-close" onClick={onClose} aria-label="Close menu">
+            <X size={22} />
+          </button>
         </div>
 
-        {loading ? (
-          <Spinner label="Loading menu…" />
-        ) : error || !data ? (
-          <ErrorState message={error || "Menu unavailable"} onRetry={() => void load()} />
-        ) : (
-          <>
-            <div className="menu-preview-filters">
-              <div className="food-filter" role="group" aria-label="Filter by food type">
-                <button className={foodFilter === "ALL" ? "active" : ""} onClick={() => setFoodFilter("ALL")}>
+        <div className="menu-drawer-search">
+          <Search size={16} />
+          <input
+            type="text"
+            placeholder="Search dishes..."
+            className="menu-drawer-search-input"
+            onFocus={(e) => (e.currentTarget.select(), e.currentTarget)}
+          />
+        </div>
+
+        <div className="menu-drawer-content">
+          {loading ? (
+            <div className="menu-drawer-loading">
+              <div className="menu-loading-spinner"></div>
+              <p>Loading menu...</p>
+            </div>
+          ) : error ? (
+            <div className="menu-drawer-error">
+              <p>{error}</p>
+              <button className="menu-drawer-retry" onClick={() => window.location.reload()}>
+                Retry
+              </button>
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="menu-drawer-empty">
+              <ChefHat size={40} />
+              <p>No menu items available</p>
+            </div>
+          ) : (
+            <div className="menu-categories-list">
+              {/* Category filter tabs */}
+              <div className="menu-category-tabs">
+                <button
+                  className={`menu-cat-tab ${activeCategory === null ? "active" : ""}`}
+                  onClick={() => setActiveCategory(null)}
+                >
                   All
                 </button>
-                <button className={foodFilter === "VEG" ? "active veg" : "veg"} onClick={() => setFoodFilter("VEG")}>
-                  🥬 Veg
-                </button>
-                <button className={foodFilter === "NON_VEG" ? "active nonveg" : "nonveg"} onClick={() => setFoodFilter("NON_VEG")}>
-                  🍗 Non-Veg
-                </button>
-              </div>
-              <div className="menu-preview-cats">
-                {data.categories.map((category) => (
-                  <label key={category.id} className={`chip-check ${selectedCategories.has(category.id) ? "checked" : ""}`}>
-                    <input type="checkbox" checked={selectedCategories.has(category.id)} onChange={() => toggleCategory(category.id)} />
-                    <span>{category.name}</span>
-                  </label>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    className={`menu-cat-tab ${activeCategory === cat.id ? "active" : ""}`}
+                    onClick={() => setActiveCategory(cat.id)}
+                  >
+                    {cat.name}
+                  </button>
                 ))}
               </div>
-              {hasFilters && (
-                <button className="filter menu-preview-clear" onClick={clearFilters}>
-                  Clear filters
-                </button>
-              )}
-            </div>
 
-            {visibleItems === 0 ? (
-              <div className="empty-state menu-empty">
-                <p>No dishes match your filters.</p>
-                <button className="filter" onClick={clearFilters}>
-                  Clear filters
-                </button>
-              </div>
-            ) : (
-              <ul className="menu-preview-list">
-                {data.categories
-                  .filter((category) => selectedCategories.size === 0 || selectedCategories.has(category.id))
-                  .map((category) => {
-                    const items = category.items.filter((item) => {
-                      if (foodFilter === "VEG" && !item.isVeg) return false;
-                      if (foodFilter === "NON_VEG" && item.isVeg) return false;
-                      return true;
-                    });
-                    if (items.length === 0) return null;
-                    return (
-                      <li key={category.id}>
-                        <h3>{category.name}</h3>
-                        <ul>
-                          {items.map((item) => (
-                            <li key={item.id} className="menu-preview-item">
-                              <VegBadge isVeg={item.isVeg} size={14} />
-                              <span className="menu-preview-item-copy">
-                                <b>{item.name}</b>
-                                {item.isPopular && <em>★ Bestseller</em>}
-                                {!item.isAvailable && <em className="sold">unavailable</em>}
-                              </span>
-                              <strong>{inr(item.price)}</strong>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    );
-                  })}
-              </ul>
-            )}
-          </>
+              {/* Category items */}
+              {visibleCategories.map((category) => (
+                <div key={category.id} className="menu-category-group">
+                  <div className="menu-category-header">
+                    <div className="menu-category-icon-wrap">
+                      {CATEGORY_ICONS[category.name] || DEFAULT_ICONS}
+                    </div>
+                    <div>
+                      <h3 className="menu-category-name">{category.name}</h3>
+                      <p className="menu-category-count">{category.items.length} items</p>
+                    </div>
+                  </div>
+                  <div className="menu-items-grid">
+                    {category.items.map((item) => (
+                      <MenuPreviewItem key={item.id} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MenuPreviewItem({ item }: { item: MenuItem }) {
+  const emoji = item.isVeg ? "🥗" : "🍛";
+
+  return (
+    <div className="menu-preview-item">
+      <div className="menu-preview-photo">
+        {item.image ? (
+          <img src={item.image} alt={item.name} onError={(e) => (e.currentTarget.style.display = "none")} />
+        ) : (
+          <span className="menu-preview-emoji">{emoji}</span>
         )}
-      </section>
+        {item.isPopular && <span className="menu-popular-badge">★ Popular</span>}
+        <span className={`menu-veg-corner ${item.isVeg ? "veg" : "nonveg"}`}>
+          <VegBadge isVeg={item.isVeg} size={12} />
+        </span>
+      </div>
+      <div className="menu-preview-body">
+        <div className="menu-preview-title-row">
+          <VegBadge isVeg={item.isVeg} size={12} />
+          <h4 className="menu-preview-name">{item.name}</h4>
+        </div>
+        <p className="menu-preview-desc">{item.description || "Delicious homemade recipe"}</p>
+        <div className="menu-preview-footer">
+          <span className="menu-preview-price">
+            <strong>{inr(item.price)}</strong>
+          </span>
+          {item.prepTime && (
+            <span className="menu-preview-time">
+              <Clock size={11} />
+              {item.prepTime} min
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

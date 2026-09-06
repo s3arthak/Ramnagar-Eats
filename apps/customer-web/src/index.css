@@ -1,3 +1,4 @@
+/* Ramnagar Eats — customer app typography (Poppins + Nunito blend) */
 @import '@fontsource/poppins/400.css';
 @import '@fontsource/poppins/500.css';
 @import '@fontsource/poppins/600.css';
@@ -5,13 +6,26 @@
 @import '@fontsource/poppins/800.css';
 @import '@fontsource/poppins/900.css';
 @import '@fontsource/nunito/400.css';
-@import '@fontsource/nunito/500.css';
 @import '@fontsource/nunito/600.css';
 @import '@fontsource/nunito/700.css';
 @import '@fontsource/nunito/800.css';
+
 body {
-  font-family: 'Nunito', system-ui, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.1px;
+  background: var(--canvas);
 }
-h1, h2, h3, h4, h5, h6 {
+
+h1, h2, h3, h4 {
   font-family: 'Poppins', system-ui, sans-serif;
+  letter-spacing: -0.5px;
+}
+
+h5, h6 {
+  font-family: 'Nunito', system-ui, sans-serif;
+  letter-spacing: -0.2px;
+}
+
+button, input, select, textarea {
+  font-family: 'Nunito', system-ui, sans-serif;
 }

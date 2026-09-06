@@ -24,6 +24,19 @@ export function Rating({ value, count }: { value: number; count?: number }) {
   );
 }
 
+/** Swiggy-style solid green rating pill: white star + bold value on green. */
+export function RatingPill({ value, size = "md" }: { value: number; size?: "sm" | "md" }) {
+  return (
+    <span className={`rating-pill ${size === "sm" ? "rating-pill--sm" : ""}`}>
+      <span className="rating-pill-star" aria-hidden="true">
+        <Star size={size === "sm" ? 9 : 11} fill="#fff" color="#fff" />
+      </span>
+      {value.toFixed(1)}
+      <span className="sr-only"> rating</span>
+    </span>
+  );
+}
+
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "offer" | "closed" | "open" | "popular" | "recommended" }) {
   return <span className={`badge badge--${tone}`}>{children}</span>;
 }

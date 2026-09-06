@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { LocateFixed, X } from "lucide-react";
+import { CheckCircle2, LocateFixed, MapPin, X } from "lucide-react";
 import { api } from "../lib/api";
 import { useConfig } from "../lib/config";
 import { useLocation, type Serviceability } from "../context/LocationContext";
@@ -103,6 +103,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
     setPosition(value);
     setTouched(true);
     setAccuracy(null); // manual position — GPS accuracy no longer applies
+    setDetected(null); // marker moved — the geocoded address may no longer match
   }
 
   async function confirm() {
@@ -130,19 +131,51 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
   }
 
   const poorAccuracy = accuracy !== null && accuracy > 150;
+  const located = Boolean(detected || accuracy !== null);
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="Set delivery location">
-      <section className="location-sheet">
+      <section className="location-sheet loc-sheet">
         <button className="close" onClick={onClose} aria-label="Close">
           <X size={20} />
         </button>
-        <p className="eyebrow">YOUR DELIVERY AREA</p>
-        <h2>Where should we bring your food?</h2>
-        <p className="sheet-copy">Use your precise location so we show restaurants that can actually deliver to you.</p>
-        <button className="gps" onClick={useCurrentLocation} disabled={locating}>
-          <LocateFixed size={18} /> {locating ? "Finding your location…" : "Use my current location"}
-        </button>
+
+        <div className="loc-hero" aria-hidden="true">
+          <div className={`loc-radar ${locating ? "loc-radar--searching" : ""} ${located ? "loc-radar--found" : ""}`}>
+            <span className="loc-radar-ring r1" />
+            <span className="loc-radar-ring r2" />
+            <span className="loc-radar-ring r3" />
+            <span className="loc-radar-core">
+              {located ? <CheckCircle2 size={26} /> : <MapPin size={26} />}
+            </span>
+          </div>
+        </div>
+
+        <p className="eyebrow">DELIVERY LOCATION</p>
+        <h2>{located ? "Perfect! Your spot is ready ✨" : "Where should we bring your food?"}</h2>
+        <p className="sheet-copy">
+          {located
+            ? "Confirm the details below and we'll show kitchens that deliver to your location."
+            : "Let us know where you are — we'll show restaurants that can deliver to your doorstep."}
+        </p>
+
+        {!located && (
+          <button className="gps gps--cta" onClick={useCurrentLocation} disabled={locating}>
+            <LocateFixed size={19} /> {locating ? "Finding your location…" : "Use my current location"}
+          </button>
+        )}
+
+        {located && (
+          <div className="loc-found" role="status">
+            <span className="loc-found-pin"><MapPin size={15} /></span>
+            <span>
+              <b>You&apos;re at</b>
+              <em>{detected?.address || `Latitude ${position[0].toFixed(4)}, Longitude ${position[1].toFixed(4)}`}</em>
+              {detected?.city && <small>{detected.city}{detected.state ? `, ${detected.state}` : ""}</small>}
+            </span>
+          </div>
+        )}
+
         {accuracy !== null && (
           <p className={`notice ${poorAccuracy ? "notice--error" : "notice--success"}`} role="status">
             📍 Location detected · Accuracy: approximately {accuracy} m
@@ -154,13 +187,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
             Finding your address…
           </p>
         )}
-        {detected && (
-          <p className="detected-address">
-            📮 {detected.address}
-            {detected.city && `, ${detected.city}`}
-            {detected.state && `, ${detected.state}`}
-          </p>
-        )}
+
         <div className="map">
           <Suspense fallback={<div style={{ padding: 24, color: "var(--muted)", fontSize: 14 }}>Loading map…</div>}>
             <LocationMap position={position} onMove={moveMarker} />
@@ -192,7 +219,7 @@ export function LocationSheet({ onClose }: { onClose: () => void }) {
           </p>
         )}
         <button className="confirm" disabled={!pincode.trim() || !pincodeValid || !label.trim() || checking} onClick={() => void confirm()}>
-          {checking ? "Checking…" : "Confirm delivery location"}
+          {checking ? "Checking…" : located ? "Confirm & start ordering" : "Confirm delivery location"}
         </button>
       </section>
     </div>

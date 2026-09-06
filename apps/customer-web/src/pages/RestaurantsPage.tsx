@@ -222,7 +222,7 @@ export function RestaurantsPage({ onOpenLocation }: { onOpenLocation: () => void
       ) : (
         <>
           <p className="results-count">
-            {total} restaurant{total === 1 ? "" : "s"} found
+            <span className="results-count-num">{total}</span> restaurant{total === 1 ? "" : "s"} found
           </p>
           <div className="restaurant-grid">
             {restaurants.map((restaurant) => (

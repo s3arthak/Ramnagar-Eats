@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Clock3, MapPin, Navigation, Phone, Search, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock3, MapPin, Navigation, Phone, Search, ShoppingBag, Wallet } from "lucide-react";
 import { GoogleMap, Marker } from "../services/maps";
 import { api } from "../lib/api";
 import type { MenuCategory, Restaurant, RestaurantReviews } from "../lib/types";
@@ -8,7 +8,7 @@ import { useCart } from "../context/CartContext";
 import { useLocation } from "../context/LocationContext";
 import { deliveryTime, distanceKm, inr, timeAgo } from "../lib/format";
 import { MenuItemCard } from "../components/ui/MenuItemCard";
-import { Rating, VegBadge } from "../components/ui/Badges";
+import { Rating, RatingPill, VegBadge } from "../components/ui/Badges";
 import { Spinner } from "../components/ui/Skeleton";
 import { ErrorState } from "../components/ui/StateViews";
 
@@ -122,11 +122,12 @@ export function RestaurantPage() {
   return (
     <div className="restaurant-page">
       <Link to="/restaurants" className="back-link">
-        <ArrowLeft size={16} /> Back to restaurants
+        <ArrowLeft size={16} />
+        <span>Back to restaurants</span>
       </Link>
       <section className="restaurant-hero">
         <div className="restaurant-cover">
-          <span className="cover-emoji">{emoji}</span>
+          {restaurant.coverImage ? <img src={restaurant.coverImage} alt="" onError={(event) => (event.currentTarget.style.display = "none")} /> : <span className="cover-emoji">{emoji}</span>}
           {restaurant.isPureVeg && <span className="pure-veg-tag">PURE VEG</span>}
           {closed && <span className="closed-cover">TEMPORARILY CLOSED</span>}
         </div>
@@ -134,7 +135,8 @@ export function RestaurantPage() {
           <div className="restaurant-header-copy">
             <h1>{restaurant.name}</h1>
             <div className="restaurant-header-meta">
-              <Rating value={restaurant.rating} count={restaurant.ratingCount} />
+              <RatingPill value={restaurant.rating} />
+              {restaurant.ratingCount > 0 && <span className="rating-count">{restaurant.ratingCount}+ ratings</span>}
               <span className="dot">·</span>
               <span>{restaurant.cuisines.join(", ")}</span>
               {restaurant.isPureVeg && <VegBadge isVeg />}
@@ -200,14 +202,18 @@ export function RestaurantPage() {
             >
               <Marker
                 position={{ lat: restaurant.location.lat, lng: restaurant.location.lng }}
-                emoji="🍴"
-                size={40}
+                emoji="📍"
+                size={44}
               />
             </GoogleMap>
           </div>
-          <p className="restaurant-map-caption">
-            <MapPin size={13} /> {restaurant.address || restaurant.name}
-          </p>
+          <div className="restaurant-map-info">
+            <div className="map-info-row">
+              <MapPin size={14} className="map-pin-icon" />
+              <span className="map-info-text">{restaurant.address || restaurant.name}</span>
+            </div>
+            <p className="map-info-sub">{restaurant.deliveryTimeMin <= 25 ? '⚡ Fast delivery available' : `Delivery in ${restaurant.deliveryTimeMin}-${restaurant.deliveryTimeMax} min`}</p>
+          </div>
         </section>
       )}
 
@@ -302,6 +308,16 @@ export function RestaurantPage() {
         )}
       </div>
       {anyFilteredOut && <p className="empty-inline">Some dishes are hidden by your filters.</p>}
+
+      {/* Floating circular MENU button — scrolls back to the menu top */}
+      <button
+        className="floating-menu-btn"
+        onClick={() => document.querySelector(".menu-toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        aria-label="Back to menu"
+      >
+        <BookOpen size={18} />
+        MENU
+      </button>
 
       <section className="reviews-section">
         <div className="reviews-head">
