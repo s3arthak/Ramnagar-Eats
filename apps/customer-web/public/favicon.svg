@@ -1,22 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="fav-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FF6B00"/>
-      <stop offset="100%" stop-color="#FF8C00"/>
+    <linearGradient id="r-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF8C00"/>
+      <stop offset="100%" stop-color="#FF6B00"/>
     </linearGradient>
   </defs>
-  <!-- Background -->
-  <circle cx="32" cy="32" r="31" fill="url(#fav-bg)"/>
-  <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-  <!-- Plate icon -->
-  <g transform="translate(11, 11)">
-    <ellipse cx="20" cy="20" rx="15" ry="12" fill="#FFFFFF" opacity="0.95"/>
-    <ellipse cx="20" cy="18" rx="11" ry="9" fill="#FFF3E0"/>
-    <ellipse cx="20" cy="17" rx="8" ry="6" fill="#FFB74D"/>
-    <ellipse cx="20" cy="15" rx="5" ry="4" fill="#FFCC80"/>
-    <!-- Steam -->
-    <path d="M15 11 Q15 6 17 3" stroke="#FFFFFF" stroke-width="1.2" fill="none" opacity="0.7"/>
-    <path d="M21 10 Q21 5 23 2" stroke="#FFFFFF" stroke-width="1.2" fill="none" opacity="0.7"/>
-    <path d="M26 11 Q26 6 28 3" stroke="#FFFFFF" stroke-width="1.2" fill="none" opacity="0.7"/>
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#r-grad)"/>
+  <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  
+  <!-- Stylized R logo -->
+  <g transform="translate(16, 14)">
+    <path d="M4 8 C4 3, 8 1, 14 1 C19 1, 22 4, 22 4 L22 15 C22 18, 19 20, 16 20 C14 20, 13 19, 13 18 L13 10 L9 10 L9 18 C9 19, 8 20, 6 20 C3 20, 1 18, 1 15 Z" 
+          fill="#FFFFFF"/>
+    <path d="M16 20 L16 28 L12 28 L12 21" fill="#FFFFFF"/>
   </g>
 </svg>

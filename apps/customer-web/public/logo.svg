@@ -1,36 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FF6B00"/>
-      <stop offset="100%" stop-color="#FF8C00"/>
-    </linearGradient>
     <linearGradient id="r-grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FF8C00"/>
       <stop offset="100%" stop-color="#FF6B00"/>
     </linearGradient>
   </defs>
   
-  <!-- Background badge -->
-  <rect x="0" y="0" width="220" height="60" rx="14" fill="url(#logo-bg)" opacity="0.15"/>
-  
-  <!-- Stylized R logo - big and bold like Swiggy -->
-  <g transform="translate(10, 8)">
-    <!-- R letter with orange gradient - stylized like Swiggy's S -->
-    <path d="M2 4 C2 1, 6 0, 12 0 C18 0, 21 3, 21 3 L21 12 C21 15, 18 18, 14 18 C12 18, 11 17, 11 16 L11 8 L6 8 L6 16 C6 17, 5 18, 3 18 C0 18, -1 15, -1 12 Z" 
-          fill="url(#r-grad)" stroke="#CC5500" stroke-width="0.8"/>
-    <!-- R leg -->
-    <path d="M15 18 L15 28 L11 28 L11 20" fill="url(#r-grad)" stroke="#CC5500" stroke-width="0.8"/>
-    <!-- Decorative dot -->
-    <circle cx="21" cy="4" r="1.5" fill="#FFCC80" opacity="0.6"/>
+  <!-- Stylized R logo - bold, modern, like Swiggy's S -->
+  <g transform="translate(12, 8)">
+    <!-- Main R body - curved and dynamic -->
+    <path d="M4 6 C4 2, 8 0, 14 0 C20 0, 23 4, 23 4 L23 14 C23 18, 20 21, 16 21 C14 21, 13 20, 13 19 L13 9 L8 9 L8 19 C8 20, 7 21, 5 21 C2 21, 0 18, 0 14 Z" 
+          fill="url(#r-grad)"/>
+    <!-- R leg - extending down -->
+    <path d="M17 21 L17 30 L13 30 L13 22" fill="url(#r-grad)"/>
+    <!-- Diagonal cut for modern look -->
+    <path d="M13 9 L8 9 L8 19" fill="#1C1207" opacity="0.15"/>
   </g>
-  
-  <!-- Brand text - RAMNAGAR in dark -->
-  <text x="58" y="26" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#2A0E08" letter-spacing="-0.5">
-    RAMNAGAR
-  </text>
-  
-  <!-- EATS text in orange -->
-  <text x="58" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="16" fill="#FF6B00" letter-spacing="-0.2">
-    EATS
-  </text>
 </svg>
