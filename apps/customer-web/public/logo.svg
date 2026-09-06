@@ -1,42 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64">
   <defs>
     <linearGradient id="logo-bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FF6B00"/>
       <stop offset="100%" stop-color="#FF8C00"/>
     </linearGradient>
-    <linearGradient id="logo-orange" x1="0" y1="0" x2="1" y2="0">
+    <linearGradient id="r-grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FF8C00"/>
       <stop offset="100%" stop-color="#FF6B00"/>
     </linearGradient>
   </defs>
-  <!-- Logo icon: stylized plate with food -->
-  <g transform="translate(6, 6)">
-    <!-- Plate outer ring -->
-    <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="3"/>
-    <!-- Plate -->
-    <ellipse cx="30" cy="30" rx="22" ry="18" fill="#FFFFFF" opacity="0.95"/>
-    <!-- Inner plate shadow -->
-    <ellipse cx="30" cy="28" rx="18" ry="14" fill="#FFF3E0"/>
-    <!-- Food mound -->
-    <ellipse cx="30" cy="26" rx="14" ry="10" fill="url(#logo-orange)"/>
-    <ellipse cx="30" cy="24" rx="10" ry="7" fill="#FFCC80"/>
-    <!-- Steam lines -->
-    <path d="M24 17 Q24 10 27 8" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.7"/>
-    <path d="M30 15 Q30 8 33 6" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.7"/>
-    <path d="M36 17 Q36 10 39 8" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.7"/>
-    <!-- Spoon -->
-    <g transform="translate(44, 8) rotate(25)">
-      <ellipse cx="6" cy="8" rx="5" ry="3" fill="#FFE082" stroke="#E0A030" stroke-width="0.5"/>
-      <rect x="4" y="8" width="2" height="22" fill="#9E9E9E"/>
-    </g>
-  </g>
-  <!-- Brand text -->
-  <text x="76" y="30" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="28" fill="#2A0E08" letter-spacing="-0.5">
+  
+  <!-- Brand text - RAMNAGAR -->
+  <text x="60" y="28" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="26" fill="#2A0E08" letter-spacing="-0.5">
     RAMNAGAR
   </text>
-  <text x="76" y="52" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="20" fill="#FF6B00" letter-spacing="-0.3">
+  
+  <!-- Stylized R logo (like Swiggy's S) -->
+  <g transform="translate(8, 18)">
+    <!-- R letter with orange gradient -->
+    <path d="M4 8 C4 4, 8 2, 14 2 C22 2, 24 8, 24 8 L24 18 C24 20, 22 22, 18 22 C16 22, 15 21, 15 20 L15 12 L10 12 L10 20 C10 21, 9 22, 7 22 C3 22, 2 20, 2 18 Z" 
+          fill="url(#r-grad)" stroke="#E05500" stroke-width="0.5"/>
+    <!-- R leg -->
+    <path d="M18 22 L18 32 L14 32 L14 24" fill="url(#r-grad)" stroke="#E05500" stroke-width="0.5"/>
+  </g>
+  
+  <!-- EATS text in orange -->
+  <text x="60" y="50" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="18" fill="#FF6B00" letter-spacing="-0.3">
     EATS
   </text>
-  <!-- Background badge -->
-  <rect x="2" y="2" width="216" height="60" rx="14" fill="url(#logo-bg)" opacity="0.15"/>
+  
+  <!-- Subtle background -->
+  <rect x="0" y="0" width="200" height="64" rx="12" fill="url(#logo-bg)" opacity="0.1"/>
 </svg>
