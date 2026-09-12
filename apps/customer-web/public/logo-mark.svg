@@ -9,20 +9,22 @@
 
   <rect width="512" height="512" rx="116" fill="url(#tile)"/>
 
-  <!-- Mark only: the wordmark would be illegible below ~60px, so small slots pair
-       this tile with the real, scalable wordmark text next to it. -->
-  <g transform="translate(0 36)">
-    <g fill="#fff">
-      <path d="M218 196a72 72 0 0 1 144 0z"/>
-      <circle cx="290" cy="106" r="16"/>
-      <rect x="172" y="192" width="210" height="28" rx="14"/>
+  <!-- One identical mark at every size: a bold R whose counter stays open, with the
+       cloche (dome + knob) sitting inside that counter above a slim plate line, and
+       speed lines trailing off the stem. -->
+  <g transform="translate(256 256) scale(0.88) translate(-259.5 -240)">
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M208 384V198" stroke-width="54"/>
+      <path d="M208 198A104 104 0 1 1 312 302" stroke-width="54"/>
+      <path d="M372 262 446 380" stroke-width="54"/>
+      <path d="M208 262H432" stroke-width="30"/>
+      <path d="M56 324h105" stroke-width="24"/>
+      <path d="M56 366h69" stroke-width="24"/>
+      <path d="M56 408h33" stroke-width="24"/>
     </g>
-    <g fill="none" stroke="#fff" stroke-linecap="round">
-      <path d="M204 206V326" stroke-width="48"/>
-      <path d="M330 206 394 326" stroke-width="48"/>
-      <path d="M100 156h86" stroke-width="22"/>
-      <path d="M100 200h52" stroke-width="22"/>
-      <path d="M100 244h26" stroke-width="22"/>
+    <g fill="#fff">
+      <path d="M272 247a40 34 0 0 1 80 0z"/>
+      <circle cx="312" cy="211" r="12"/>
     </g>
   </g>
 </svg>
