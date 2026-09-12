@@ -148,7 +148,7 @@ export function LoginPage() {
     <div className="login-page">
       <section className="login-panel">
         <a className="brand" href="/" aria-label="Ramnagar Eats home">
-          <img className="brand-lockup" src="/logo.svg" alt="" width="108" height="108" />
+          <img className="brand-lockup" src="/logo.png" alt="Ramnagar Eats logo" width="108" height="108" />
         </a>
         <p className="eyebrow">RESTAURANT PARTNER</p>
         <h1>

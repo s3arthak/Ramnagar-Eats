@@ -23,7 +23,7 @@ a{color:inherit}
 .brand--light .brand-name{color:#fff}
 .brand--light .brand-name b{color:#ffb84d}
 /* Full logo lockup (wordmark baked in) — only used where it's large enough to read. */
-.brand .brand-lockup{width:132px;height:132px;display:block;flex:none;filter:drop-shadow(0 14px 30px rgba(0,0,0,.42));transition:transform .25s ease}
+.brand .brand-lockup{width:132px;height:132px;display:block;flex:none;filter:drop-shadow(0 14px 30px rgba(0,0,0,.42));transition:transform .25s ease;object-fit:contain}
 .brand:hover .brand-lockup{transform:scale(1.03)}
 
 .location-button{border:0;background:none;padding:0 0 0 20px;display:flex;gap:7px;color:var(--ink);align-items:center;text-align:left;cursor:pointer;border-left:1px solid var(--line)}

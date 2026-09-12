@@ -138,7 +138,7 @@ export function LoginPage() {
         </div>
         <div className="auth-panel-inner">
           <Link className="brand brand--light" to="/" aria-label="Ramnagar Eats home">
-            <img className="brand-lockup" src="/logo.svg" alt="" width="132" height="132" />
+            <img className="brand-lockup" src="/logo.png" alt="Ramnagar Eats logo" width="132" height="132" />
           </Link>
           <p className="eyebrow">WELCOME TO RAMNAGAR EATS</p>
           <h1>
