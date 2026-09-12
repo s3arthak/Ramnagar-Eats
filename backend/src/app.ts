@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import { config } from "./config.js";
 import adminRoutes from "./modules/admin/routes.js";
 import authRoutes from "./modules/auth/routes.js";
+import bannerRoutes from "./modules/banners/routes.js";
 import otpAuthRoutes from "./modules/auth/otp-routes.js";
 import categoryRoutes from "./modules/categories/routes.js";
 import configRoutes from "./modules/config/routes.js";
@@ -73,6 +74,7 @@ if (config.env !== "test") {
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/auth", otpAuthRoutes);
+app.use("/api/v1/banners", bannerRoutes);
 app.use("/api/v1/config", configRoutes);
 app.use("/api/v1/coupons", couponRoutes);
 app.use("/api/v1/orders", orderRoutes);

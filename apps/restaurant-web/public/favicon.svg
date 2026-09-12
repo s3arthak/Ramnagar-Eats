@@ -1,11 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ramnagar Eats">
   <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#17473f"/>
-      <stop offset="1" stop-color="#0c2c27"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#FF9A2E"/>
+      <stop offset="0.52" stop-color="#FB6B14"/>
+      <stop offset="1" stop-color="#E93C0A"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="15" fill="url(#tile)"/>
-  <rect x="1" y="1" width="62" height="62" rx="14.5" fill="none" stroke="#dafa5733" stroke-width="2"/>
-  <text x="32" y="45" font-size="37" text-anchor="middle">🍛</text>
+
+  <rect width="512" height="512" rx="116" fill="url(#tile)"/>
+
+  <!-- Same mark as logo-mark.svg, scaled up so it reads clearly at favicon sizes. -->
+  <g transform="translate(256 256) scale(1.15) translate(-256 -256) translate(0 36)">
+    <g fill="#fff">
+      <path d="M218 196a72 72 0 0 1 144 0z"/>
+      <circle cx="290" cy="106" r="16"/>
+      <rect x="172" y="192" width="210" height="28" rx="14"/>
+    </g>
+    <g fill="none" stroke="#fff" stroke-linecap="round">
+      <path d="M204 206V326" stroke-width="48"/>
+      <path d="M330 206 394 326" stroke-width="48"/>
+      <path d="M100 156h86" stroke-width="22"/>
+      <path d="M100 200h52" stroke-width="22"/>
+      <path d="M100 244h26" stroke-width="22"/>
+    </g>
+  </g>
 </svg>

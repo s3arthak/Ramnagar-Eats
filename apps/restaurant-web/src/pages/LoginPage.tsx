@@ -148,8 +148,7 @@ export function LoginPage() {
     <div className="login-page">
       <section className="login-panel">
         <a className="brand" href="/" aria-label="Ramnagar Eats home">
-          <span className="brand-mark" aria-hidden="true">🍛</span>
-          <span className="brand-name">RAMNAGAR <b>EATS</b></span>
+          <img className="brand-lockup" src="/logo.svg" alt="" width="108" height="108" />
         </a>
         <p className="eyebrow">RESTAURANT PARTNER</p>
         <h1>

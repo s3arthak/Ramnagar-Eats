@@ -87,6 +87,17 @@ export interface CuisineCategory {
   name: string;
   slug: string;
   emoji: string;
+  image?: string;
+}
+
+export interface PromoBanner {
+  id: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  ctaLink: string;
+  image: string;
+  theme: "purple" | "orange" | "green" | "dark";
 }
 
 export interface Address {
@@ -118,6 +129,7 @@ export interface Order {
   orderNumber: string;
   restaurantId: string;
   restaurantName: string;
+  restaurantCover?: string;
   items: OrderItem[];
   deliveryAddress: { label: string; formattedAddress: string; pincode: string };
   subtotal: number;

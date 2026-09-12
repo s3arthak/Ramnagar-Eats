@@ -6,6 +6,7 @@ const categorySchema = new Schema(
     name: { type: String, required: true, trim: true, unique: true },
     slug: { type: String, required: true, trim: true, unique: true },
     emoji: { type: String, default: "🍽️" },
+    image: { type: String, default: "" },
   },
   { timestamps: true },
 );

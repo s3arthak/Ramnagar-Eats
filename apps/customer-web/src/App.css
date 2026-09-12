@@ -13,15 +13,18 @@ a{color:inherit}
 .sticky-top{position:sticky;top:0;z-index:15;background:var(--surface);border-bottom:1px solid var(--line)}
 .brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;color:var(--ink);text-decoration:none;letter-spacing:-.6px;flex-shrink:0}
 .brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;color:var(--ink);text-decoration:none;letter-spacing:-.5px;flex-shrink:0}
-.brand .brand-logo{width:40px;height:40px;border-radius:10px;box-shadow:0 4px 12px rgba(255,107,0,.35);flex:none;transition:transform .2s ease;object-fit:contain;background:#fff;border:2px solid var(--line);display:block}
+.brand .brand-logo{width:40px;height:40px;border-radius:23%;box-shadow:0 4px 12px rgba(252,128,25,.32);flex:none;transition:transform .2s ease;display:block}
 .brand:hover .brand-logo{transform:rotate(-6deg) scale(1.05)}
 .brand .brand-mark{display:none}
 .brand .brand-name{font-size:17px;font-weight:800;white-space:nowrap;color:var(--ink)}
 .brand .brand-name b{color:var(--accent);font-weight:900}
 .brand--light{color:#fff}
-.brand--light .brand-logo{background:linear-gradient(135deg,#fc8019,#ffb84d)}
+.brand--light .brand-logo{box-shadow:0 6px 18px rgba(0,0,0,.32)}
 .brand--light .brand-name{color:#fff}
 .brand--light .brand-name b{color:#ffb84d}
+/* Full logo lockup (wordmark baked in) — only used where it's large enough to read. */
+.brand .brand-lockup{width:132px;height:132px;display:block;flex:none;filter:drop-shadow(0 14px 30px rgba(0,0,0,.42));transition:transform .25s ease}
+.brand:hover .brand-lockup{transform:scale(1.03)}
 
 .location-button{border:0;background:none;padding:0 0 0 20px;display:flex;gap:7px;color:var(--ink);align-items:center;text-align:left;cursor:pointer;border-left:1px solid var(--line)}
 .location-button svg{color:var(--accent)}
@@ -206,7 +209,7 @@ a{color:inherit}
 .footer::before{content:"";position:absolute;inset:0;background-image:var(--mandala-pattern);opacity:.3;pointer-events:none}
 .footer-grid{max-width:1184px;margin:auto;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:36px;position:relative;z-index:1}
 .footer-brand{display:grid;gap:12px;align-content:start;justify-items:start}
-.footer-brand .brand-logo{width:52px;height:52px;border-radius:12px;box-shadow:0 8px 20px rgba(255,107,0,.4);flex:none;object-fit:contain;background:#fff;border:2px solid var(--line)}
+.footer-brand .brand-logo{width:52px;height:52px;border-radius:23%;box-shadow:0 8px 20px rgba(0,0,0,.35);flex:none;display:block}
 .footer-brand strong{color:#fff;font-size:18px;letter-spacing:-.5px;font-weight:800}
 .footer-brand strong b{color:var(--accent)}
 .footer-brand p{margin:0;font-size:13px;line-height:1.6;max-width:280px;color:#e8d5c4}

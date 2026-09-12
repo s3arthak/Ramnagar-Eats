@@ -13,7 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Top bar */}
       <header className="rider-topbar">
         <a className="brand" href="/" aria-label="Ramnagar Eats — Rider">
-          <span className="brand-mark" aria-hidden="true">🍛</span>
+          <img className="brand-mark" src="/logo-mark.svg" alt="" width="34" height="34" />
           <span className="brand-name">RAMNAGAR <b>EATS</b></span>
           <span className="brand-badge">RIDER</span>
         </a>

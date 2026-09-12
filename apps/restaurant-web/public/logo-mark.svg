@@ -9,8 +9,9 @@
 
   <rect width="512" height="512" rx="116" fill="url(#tile)"/>
 
-  <!-- Same mark as logo-mark.svg, scaled up so it reads clearly at favicon sizes. -->
-  <g transform="translate(256 256) scale(1.15) translate(-256 -256) translate(0 36)">
+  <!-- Mark only: the wordmark would be illegible below ~60px, so small slots pair
+       this tile with the real, scalable wordmark text next to it. -->
+  <g transform="translate(0 36)">
     <g fill="#fff">
       <path d="M218 196a72 72 0 0 1 144 0z"/>
       <circle cx="290" cy="106" r="16"/>

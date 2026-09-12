@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, BookOpen, Clock3, MapPin, Navigation, Phone, Search, ShoppingBag, Wallet } from "lucide-react";
-import { GoogleMap, Marker } from "../services/maps";
+// Map (via the map chunk) is pulled in only when a restaurant card renders.
+const RestaurantMap = lazy(() => import("../components/RestaurantMap"));
 import { api } from "../lib/api";
 import type { MenuCategory, Restaurant, RestaurantReviews } from "../lib/types";
 import { useCart } from "../context/CartContext";
@@ -193,19 +194,9 @@ export function RestaurantPage() {
       {restaurant.location && (
         <section className="restaurant-map-card">
           <div className="restaurant-map">
-            <GoogleMap
-              center={{ lat: restaurant.location.lat, lng: restaurant.location.lng }}
-              zoom={15}
-              scrollWheelZoom={false}
-              zoomControl={true}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <Marker
-                position={{ lat: restaurant.location.lat, lng: restaurant.location.lng }}
-                emoji="📍"
-                size={44}
-              />
-            </GoogleMap>
+            <Suspense fallback={<div style={{ padding: 24, color: "var(--muted)", fontSize: 14 }}>Loading map…</div>}>
+              <RestaurantMap position={{ lat: restaurant.location.lat, lng: restaurant.location.lng }} />
+            </Suspense>
           </div>
           <div className="restaurant-map-info">
             <div className="map-info-row">

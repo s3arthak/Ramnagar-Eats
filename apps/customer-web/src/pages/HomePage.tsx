@@ -29,7 +29,15 @@ export function HomePage({ onOpenLocation }: { onOpenLocation: () => void }) {
     try {
       const [categoryData, bannerData, restaurantData] = await Promise.all([
         api.get<{ categories: CuisineCategory[] }>("/categories"),
-        api.get<{ banners: PromoBanner[] }>("/banners").catch(() => ({ banners: [] as PromoBanner[] })),
+        // Promo banners are optional: a failure must never break the home feed, but
+        // it is logged so a missing or undeployed /banners endpoint can't silently
+        // remove the carousel with no trace.
+        api
+          .get<{ banners: PromoBanner[] }>("/banners")
+          .catch((caught) => {
+            console.warn("Banners unavailable:", caught);
+            return { banners: [] as PromoBanner[] };
+          }),
         place
           ? api.get<HomeData>(`/restaurants?lat=${place.lat}&lng=${place.lng}&limit=24`)
           : Promise.resolve({ restaurants: [] as Restaurant[] }),

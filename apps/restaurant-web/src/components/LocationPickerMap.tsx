@@ -1,50 +1,55 @@
-import { useState, useCallback } from "react";
-import { GoogleMap, Marker } from "../services/maps";
-import type { Coordinates } from "../services/maps/types";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { MAP_MAX_ZOOM, MAP_MIN_ZOOM, MAP_TILE_ATTRIBUTION, MAP_TILE_URL, TILE_ERROR_URL } from "../lib/mapTiles";
 
 /**
- * The restaurant location-picker map — now uses Google Maps instead of Leaflet.
- * Renders a draggable emoji marker and supports click-to-move.
+ * The restaurant location-picker map (OSM base tiles + application-owned pin),
+ * split into its own chunk so Leaflet is only downloaded when the profile
+ * page's picker actually opens.
+ *
+ * Emoji divIcon marker (no image assets), pans to the position whenever it
+ * changes (e.g. after a GPS fix), and the marker is draggable + click-to-move
+ * as the manual fallback.
  */
-export default function LocationPickerMap({
-  position,
-  onMove,
-}: {
-  position: [number, number];
-  onMove: (value: [number, number]) => void;
-}) {
-  const [center] = useState<Coordinates>({ lat: position[0], lng: position[1] });
+function emojiIcon() {
+  return L.divIcon({
+    html: `<span style="font-size:26px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">📍</span>`,
+    className: "",
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+}
 
-  const handleMapClick = useCallback(
-    (coords: Coordinates) => {
-      onMove([coords.lat, coords.lng]);
-    },
-    [onMove],
-  );
+function MapFollower({ position }: { position: [number, number] }) {
+  const map = useMap();
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const key = position.join(",");
+  // Recentre only when the coordinate really changes, so panning is never undone.
+  useEffect(() => {
+    map.panTo(positionRef.current, { animate: true });
+  }, [map, key]);
+  return null;
+}
 
-  const handleDragEnd = useCallback(
-    (coords: Coordinates) => {
-      onMove([coords.lat, coords.lng]);
-    },
-    [onMove],
-  );
-
+export default function LocationPickerMap({ position, onMove }: { position: [number, number]; onMove: (value: [number, number]) => void }) {
   return (
-    <GoogleMap
-      center={center}
-      zoom={15}
-      scrollWheelZoom={false}
-      zoomControl={true}
-      onClick={handleMapClick}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <Marker
-        position={{ lat: position[0], lng: position[1] }}
-        emoji="📍"
-        size={30}
-        draggable={true}
-        onDragEnd={handleDragEnd}
-      />
-    </GoogleMap>
+    <MapContainer center={position} zoom={15} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} scrollWheelZoom={false} zoomControl={true}>
+      <TileLayer attribution={MAP_TILE_ATTRIBUTION} url={MAP_TILE_URL} maxZoom={MAP_MAX_ZOOM} errorTileUrl={TILE_ERROR_URL} />
+      <MapFollower position={position} />
+      <DraggableMarker position={position} onMove={onMove} />
+    </MapContainer>
   );
+}
+
+function DraggableMarker({ position, onMove }: { position: [number, number]; onMove: (value: [number, number]) => void }) {
+  const map = useMapEvents({
+    click(event) {
+      onMove([event.latlng.lat, event.latlng.lng]);
+      map.panTo(event.latlng);
+    },
+  });
+  return <Marker position={position} icon={emojiIcon()} draggable eventHandlers={{ dragend(event) { const point = event.target.getLatLng(); onMove([point.lat, point.lng]); } }} />;
 }

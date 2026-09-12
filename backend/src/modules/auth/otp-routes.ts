@@ -25,6 +25,8 @@ const registerSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(80),
   phone: z.string().min(7).max(20).optional().or(z.literal("")),
   role: z.enum(["CUSTOMER", "RESTAURANT", "RIDER"]).default("CUSTOMER"),
+  /** Google identity to link when the account is created from the Google-first flow. */
+  googleId: z.string().max(200).optional(),
 });
 
 const secret = () => process.env.JWT_SECRET ?? "local-development-secret-change-me";
@@ -155,6 +157,7 @@ router.post(
           email,
           phone,
           emailVerified: true,
+          googleId: parsed.data.googleId?.trim() || undefined,
           // No passwords in V2 — a random hash satisfies the schema and is never usable.
           passwordHash: hashPassword(randomBytes(24).toString("hex")),
           role,
@@ -241,6 +244,16 @@ async function fetchGoogleProfile(accessToken: string): Promise<GoogleProfile> {
       user = await User.findOne({ email, role }) ?? await User.findOne({ email, role: "ADMIN" });
     }
     const isNew = !user;
+    if (!user && app === "customer") {
+      // Customer app: never fabricate an account from Google metadata. Send the
+      // user to create one with their email + OTP instead (proves email
+      // ownership, captures name & mobile). The googleId is passed along so the
+      // finished account is linked to this Google identity for future one-tap
+      // sign-ins.
+      return response.redirect(
+        `${webUrlFor(app)}/oauth/callback?needsAccount=1&googleId=${encodeURIComponent(profile.sub)}&gemail=${encodeURIComponent(email)}&gname=${encodeURIComponent(profile.name || "")}`,
+      );
+    }
     if (!user) {
       try {
         user = await User.create({

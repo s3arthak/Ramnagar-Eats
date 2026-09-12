@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authenticate, authorize, type AuthRequest } from "../../middleware/auth.js";
+import { Banner } from "../../models/Banner.js";
 import { Coupon } from "../../models/Coupon.js";
 import { Order, ORDER_STATUSES } from "../../models/Order.js";
 import { Restaurant } from "../../models/Restaurant.js";
@@ -12,6 +13,71 @@ import { asyncHandler, badRequest, notFound, ok } from "../../utils/errors.js";
 const router = Router();
 
 router.use(authenticate, authorize("ADMIN"));
+
+/* ===== Banner management (home-page carousel) ===== */
+
+const bannerDto = (banner: any) => ({
+  id: banner._id.toString(),
+  title: banner.title,
+  subtitle: banner.subtitle,
+  ctaLabel: banner.ctaLabel,
+  ctaLink: banner.ctaLink,
+  image: banner.image,
+  theme: banner.theme,
+  sortOrder: banner.sortOrder,
+  isActive: banner.isActive,
+  createdAt: banner.createdAt,
+});
+
+const bannerSchema = z.object({
+  title: z.string().trim().min(2, "Title must be at least 2 characters").max(60),
+  subtitle: z.string().trim().max(120).optional().default(""),
+  ctaLabel: z.string().trim().max(24).optional().default("ORDER NOW"),
+  ctaLink: z.string().trim().max(300).optional().default("/restaurants"),
+  image: z.string().trim().max(2000).optional().default(""),
+  theme: z.enum(["purple", "orange", "green", "dark"]).optional().default("purple"),
+  sortOrder: z.coerce.number().min(0).max(100).optional().default(0),
+  isActive: z.boolean().optional().default(true),
+});
+
+router.get(
+  "/banners",
+  asyncHandler(async (_request, response) => {
+    const banners = await Banner.find().sort({ sortOrder: 1, createdAt: -1 });
+    return ok(response, { banners: banners.map(bannerDto) });
+  }),
+);
+
+router.post(
+  "/banners",
+  asyncHandler(async (request, response) => {
+    const parsed = bannerSchema.safeParse(request.body);
+    if (!parsed.success) throw badRequest(parsed.error.issues[0].message, "VALIDATION_ERROR");
+    const banner = await Banner.create(parsed.data);
+    return ok(response, { banner: bannerDto(banner), message: "Banner created" }, 201);
+  }),
+);
+
+router.patch(
+  "/banners/:bannerId",
+  asyncHandler(async (request, response) => {
+    const parsed = bannerSchema.partial().safeParse(request.body);
+    if (!parsed.success) throw badRequest(parsed.error.issues[0].message, "VALIDATION_ERROR");
+    const banner = await Banner.findByIdAndUpdate(request.params.bannerId, parsed.data, { returnDocument: "after", runValidators: true });
+    if (!banner) throw notFound("Banner not found", "BANNER_NOT_FOUND");
+    return ok(response, { banner: bannerDto(banner), message: "Banner updated" });
+  }),
+);
+
+router.delete(
+  "/banners/:bannerId",
+  asyncHandler(async (request, response) => {
+    const banner = await Banner.findByIdAndDelete(request.params.bannerId);
+    if (!banner) throw notFound("Banner not found", "BANNER_NOT_FOUND");
+    return response.status(204).send();
+  }),
+);
+
 
 router.get(
   "/service-area",

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { Banner } from "./models/Banner.js";
 import mongoose from "mongoose";
 import { Address } from "./models/Address.js";
 import { Category } from "./models/Category.js";
@@ -45,7 +46,7 @@ const FOOD_IMAGES: Record<string, string> = {
   spread: U("1504674900247-0877df9cc836"),
   rice: U("1512058564366-18510be2db19"),
   juice: U("1613478223719-2ab802602423"),
-  cake: U("1578985545662-b28f40a0ae38"),
+  cake: U("1571115177098-24ec42ed204d"),
   kulcha: U("1565557623262-b51c2513a641"),
   roll: U("1552374196-1ab2a1c593e8"),
   tandoori: U("1599487488170-d11ec9c172f0"),
@@ -360,19 +361,69 @@ const RESTAURANTS: SeedRestaurant[] = [
 ];
 
 const CUISINE_CATEGORIES = [
-  { name: "Biryani", slug: "biryani", emoji: "🍛" },
-  { name: "Pizza", slug: "pizza", emoji: "🍕" },
-  { name: "Kashmiri", slug: "kashmiri", emoji: "🍲" },
-  { name: "North Indian", slug: "north-indian", emoji: "🍛" },
-  { name: "Punjabi", slug: "punjabi", emoji: "🫓" },
-  { name: "Dhaba", slug: "dhaba", emoji: "🍲" },
-  { name: "Healthy", slug: "healthy", emoji: "🥗" },
-  { name: "Desserts", slug: "desserts", emoji: "🍰" },
-  { name: "Cafe", slug: "cafe", emoji: "☕" },
-  { name: "Chinese", slug: "chinese", emoji: "🥡" },
-  { name: "Tibetan", slug: "tibetan", emoji: "🥟" },
-  { name: "Dogri", slug: "dogri", emoji: "🍛" },
-  { name: "Fast Food", slug: "fast-food", emoji: "🍔" },
+  { name: "Biryani", slug: "biryani", emoji: "🍛", image: U("1589302168068-964664d93dc0") },
+  { name: "Pizza", slug: "pizza", emoji: "🍕", image: U("1565299624946-b28f40a0ae38") },
+  { name: "Kashmiri", slug: "kashmiri", emoji: "🍲", image: U("1631452180519-c014fe946bc7") },
+  { name: "North Indian", slug: "north-indian", emoji: "🍛", image: U("1585937421612-70a008356fbe") },
+  { name: "Punjabi", slug: "punjabi", emoji: "🫓", image: U("1565557623262-b51c2513a641") },
+  { name: "Dhaba", slug: "dhaba", emoji: "🍲", image: U("1596797038530-2c107229654b") },
+  { name: "Healthy", slug: "healthy", emoji: "🥗", image: U("1512621776951-a57141f2eefd") },
+  { name: "Desserts", slug: "desserts", emoji: "🍰", image: U("1488477181946-6428a0291777") },
+  { name: "Cafe", slug: "cafe", emoji: "☕", image: U("1495474472287-4d71bcdd2085") },
+  { name: "Chinese", slug: "chinese", emoji: "🥡", image: U("1563379091339-03b21ab4a4f8") },
+  { name: "Tibetan", slug: "tibetan", emoji: "🥟", image: U("1569718212165-3a8278d5f624") },
+  { name: "Dogri", slug: "dogri", emoji: "🍛", image: U("1517244683847-7456b63c5969") },
+  { name: "Fast Food", slug: "fast-food", emoji: "🍔", image: U("1568901346375-23c9450c58cd") },
+];
+
+/**
+ * Default home-page promo banners (admin-editable from the restaurant panel).
+ *
+ * Banner art is deliberately kept out of CUISINE_CATEGORIES: reusing a category
+ * photo made the promo carousel repeat the exact images in the
+ * "What's on your mind?" tiles right underneath it.
+ */
+const DEFAULT_BANNERS = [
+  {
+    title: "Iconic Weekend Deals!",
+    subtitle: "It's time for yummy food & amazing savings.",
+    ctaLabel: "ORDER NOW",
+    ctaLink: "/restaurants",
+    image: U("1540189549336-e6e99c3679fe"),
+    theme: "purple",
+    sortOrder: 0,
+    isActive: true,
+  },
+  {
+    title: "₹100 OFF above ₹499",
+    subtitle: "Use code WELCOME100 on your first order today.",
+    ctaLabel: "GRAB DEAL",
+    ctaLink: "/restaurants?sort=rating",
+    image: U("1555939594-58d7cb561ad1"),
+    theme: "orange",
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    title: "Free delivery all week",
+    subtitle: "On orders above ₹499 from every kitchen near you.",
+    ctaLabel: "ORDER NOW",
+    ctaLink: "/restaurants",
+    image: U("1546069901-ba9599a7e63c"),
+    theme: "green",
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    title: "Best sellers under ₹199",
+    subtitle: "Biryani, burgers, momos & more — pocket friendly.",
+    ctaLabel: "EXPLORE",
+    ctaLink: "/restaurants?price=250",
+    image: U("1585032226651-759b368d7246"),
+    theme: "dark",
+    sortOrder: 3,
+    isActive: true,
+  },
 ];
 
 const STREET_POOL = [
@@ -444,6 +495,10 @@ async function seedCatalog(demoOwnerId?: mongoose.Types.ObjectId) {
 
   const pizzaRoma = restaurants.find((restaurant) => restaurant.name === "Pizza Roma");
   if (pizzaRoma) await Coupon.updateOne({ code: "PIZZA10" }, { $set: { restaurantIds: [pizzaRoma.id] } });
+
+  // Home-page promo banners (replaced on every catalog seed; admin-editable afterwards).
+  await Banner.deleteMany({});
+  await Banner.insertMany(DEFAULT_BANNERS);
 
   return restaurants;
 }

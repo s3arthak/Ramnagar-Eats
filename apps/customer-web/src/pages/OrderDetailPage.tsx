@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Bike, Check, ChefHat, MapPin, Navigation, Package, Phone, ShoppingCart, Star, User, Wallet } from "lucide-react";
-import { GoogleMap, Marker, Polyline, FitBounds } from "../services/maps";
+// Map (via the map chunk) is pulled in only once an order has a route to draw.
+const RouteMap = lazy(() => import("../components/RouteMap"));
 import { api } from "../lib/api";
 import { formatDateTime, inr, timeAgo } from "../lib/format";
 import { isActive, isCancelable, STATUS_LABELS, statusTone, TIMELINE } from "../lib/order";
@@ -48,39 +49,6 @@ function useMinutesUntil(at?: string | null): number | null {
   }, [at]);
   if (!at) return null;
   return Math.max(0, Math.ceil((new Date(at).getTime() - now) / 60_000));
-}
-
-/** Clean live map: restaurant → home route polyline with both endpoints visible. */
-function RouteMap({ routeInfo, riderLocation }: { routeInfo: OrderRoute; riderLocation?: { lat: number; lng: number } | null }) {
-  if (!routeInfo.route || !routeInfo.restaurant?.location || !routeInfo.delivery.location) return null;
-  const from = routeInfo.restaurant.location;
-  const to = routeInfo.delivery.location;
-
-  // Convert polyline to Coordinates format
-  const polylineCoords = routeInfo.route.polyline.map(([lat, lng]) => ({ lat, lng }));
-
-  // Build bounds for FitBounds
-  const bounds = [
-    { lat: from.lat, lng: from.lng },
-    { lat: to.lat, lng: to.lng },
-  ];
-  if (riderLocation) bounds.push({ lat: riderLocation.lat, lng: riderLocation.lng });
-
-  return (
-    <GoogleMap
-      center={{ lat: from.lat, lng: from.lng }}
-      zoom={13}
-      scrollWheelZoom={false}
-      zoomControl={true}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <FitBounds bounds={bounds} />
-      <Polyline coordinates={polylineCoords} color="#ff6b45" weight={4} opacity={0.9} />
-      <Marker position={{ lat: from.lat, lng: from.lng }} emoji="🍴" size={36} />
-      <Marker position={{ lat: to.lat, lng: to.lng }} emoji="🏠" size={36} />
-      {riderLocation && <Marker position={{ lat: riderLocation.lat, lng: riderLocation.lng }} emoji="🛵" size={36} />}
-    </GoogleMap>
-  );
 }
 
 export function OrderDetailPage() {
@@ -295,7 +263,9 @@ export function OrderDetailPage() {
         ) : routeInfo?.route && routeInfo.restaurant && routeInfo.delivery.location ? (
           <>
             <div className="tracking-map">
-              <RouteMap routeInfo={routeInfo} riderLocation={riderLocation} />
+              <Suspense fallback={<div style={{ padding: 24, color: "var(--muted)", fontSize: 14 }}>Loading map…</div>}>
+                <RouteMap routeInfo={routeInfo} riderLocation={riderLocation} />
+              </Suspense>
             </div>
             <div className="route-facts">
               <span>🍴 {routeInfo.restaurant.name}</span>

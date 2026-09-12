@@ -202,10 +202,15 @@ router.get(
     const riders = riderIds.length > 0 ? await User.find({ _id: { $in: riderIds } }).select("name phone") : [];
     const riderByName = new Map(riders.map((r) => [r._id.toString(), r.name]));
     const riderPhoneBy = new Map(riders.map((r) => [r._id.toString(), r.phone]));
+    // Cover images for the order-history cards (batched, best-effort).
+    const restaurantIds = [...new Set(orders.map((o) => o.restaurantId.toString()))];
+    const coverDocs = restaurantIds.length > 0 ? await Restaurant.find({ _id: { $in: restaurantIds } }).select("coverImage logo").lean() : [];
+    const coverBy = new Map(coverDocs.map((r) => [r._id.toString(), (r as any).coverImage || (r as any).logo || ""]));
     return ok(response, {
-      orders: orders.map((o) =>
-        orderDto(o, o.riderId ? { name: riderByName.get(o.riderId.toString()) ?? "", phone: riderPhoneBy.get(o.riderId.toString()) ?? "" } : null),
-      ),
+      orders: orders.map((o) => ({
+        ...orderDto(o, o.riderId ? { name: riderByName.get(o.riderId.toString()) ?? "", phone: riderPhoneBy.get(o.riderId.toString()) ?? "" } : null),
+        restaurantCover: coverBy.get(o.restaurantId.toString()) || undefined,
+      })),
     });
   }),
 );

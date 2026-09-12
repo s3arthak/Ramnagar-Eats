@@ -85,14 +85,10 @@ img { max-width: 100%; display: block; }
 .brand-mark {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--saffron, #E8663C), var(--brand-950, #2A0E08));
-  display: grid;
-  place-items: center;
-  font-size: 17px;
+  border-radius: 23%;
+  display: block;
   box-shadow: 0 4px 12px #3B110626;
   flex: none;
-  color: initial;
   transition: transform .2s ease;
 }
 .brand:hover .brand-mark { transform: rotate(-6deg) scale(1.06); }
@@ -834,7 +830,6 @@ select.input {
   .brand-mark {
     width: 28px;
     height: 28px;
-    font-size: 14px;
   }
   .topbar-name {
     display: none;

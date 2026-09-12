@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { CheckCircle2, Mail, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { api, API_BASE } from "../lib/api";
@@ -16,18 +16,25 @@ export function LoginPage() {
   const { push } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
+
+  // Google sign-in found no account — open the create-account flow directly.
+  const needsAccount = searchParams.get("needsAccount") === "1";
+  const googleId = searchParams.get("googleId") ?? undefined;
+  const gemail = searchParams.get("gemail");
+  const gname = searchParams.get("gname");
 
   // Already signed in? Redirect.
   useEffect(() => {
     if (user) navigate(from, { replace: true });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [stage, setStage] = useState<Stage>("choose");
+  const [stage, setStage] = useState<Stage>(needsAccount ? "email" : "choose");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [regToken, setRegToken] = useState("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(gname ?? "");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +101,7 @@ export function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      await register({ email: email.trim(), regToken, name: name.trim(), phone: phone.trim() || undefined });
+      await register({ email: email.trim(), regToken, name: name.trim(), phone: phone.trim() || undefined, googleId });
       push("Account created — welcome!", { tone: "success" });
       navigate(from, { replace: true });
     } catch (caught) {
@@ -107,12 +114,16 @@ export function LoginPage() {
   }
 
   function backToChoose() {
+    // Clear the needsAccount params so a refresh doesn't reopen the flow.
+    setSearchParams({}, { replace: true });
     setStage("choose");
     setCode("");
     setRegToken("");
     setDevCode("");
     setError("");
   }
+
+  const creatingAccount = stage !== "choose";
 
   return (
     <div className="auth-page">
@@ -127,8 +138,7 @@ export function LoginPage() {
         </div>
         <div className="auth-panel-inner">
           <Link className="brand brand--light" to="/" aria-label="Ramnagar Eats home">
-            <span className="brand-mark" aria-hidden="true">🍛</span>
-            <span className="brand-name">RAMNAGAR <b>EATS</b></span>
+            <img className="brand-lockup" src="/logo.svg" alt="" width="132" height="132" />
           </Link>
           <p className="eyebrow">WELCOME TO RAMNAGAR EATS</p>
           <h1>
@@ -138,7 +148,7 @@ export function LoginPage() {
           </h1>
           <p>Browse the best kitchens near you, order in a few taps, and follow every step live — from stove to doorstep.</p>
           <ul className="auth-perks">
-            <li><span className="perk-icon">✦</span> One sign-in for email &amp; Google</li>
+            <li><span className="perk-icon">✦</span> One Google sign-in, every time</li>
             <li><span className="perk-icon">★</span> Live tracking from kitchen to door</li>
             <li><span className="perk-icon">✦</span> Saved addresses, one-tap checkout</li>
           </ul>
@@ -149,30 +159,34 @@ export function LoginPage() {
           <div className="auth-form-card">
             <p className="eyebrow auth-eyebrow">WELCOME</p>
             <h2 className="auth-title">Sign in to start ordering</h2>
-            <p className="auth-copy">Use your email or Google account — your order history and saved addresses will be waiting.</p>
+            <p className="auth-copy">Use your Google account — your order history and saved addresses will be waiting.</p>
             <div className="oauth-options">
-              <Button type="button" className="oauth-option oauth-option--email" onClick={() => setStage("email")}>
-                <Mail size={18} /> Continue with Email
-              </Button>
               <Button type="button" variant="secondary" className="oauth-option oauth-option--google" onClick={startGoogle}>
-                <GoogleIcon /> Continue with Google
+                <GoogleIcon size={20} /> Continue with Google
               </Button>
             </div>
+            <div className="auth-divider"><span>or</span></div>
             <p className="auth-switch">
               New here?{" "}
               <button type="button" onClick={() => setStage("email")}>
                 Create an account
-              </button>{" "}
-              — same flow, one code.
+              </button>
             </p>
           </div>
         )}
 
         {stage === "email" && (
-          <form onSubmit={sendOtp} className="auth-form-card" aria-label="Send email OTP">
-            <p className="eyebrow">ONE-TIME CODE BY EMAIL</p>
-            <h2>Continue with Email</h2>
-            <p className="auth-copy">Enter your email and we&apos;ll send you a 6-digit code.</p>
+          <form onSubmit={sendOtp} className="auth-form-card" aria-label="Create account — email step">
+            <p className="eyebrow auth-eyebrow">NEW HERE</p>
+            <h2 className="auth-title">{needsAccount ? "Create your account" : "Create an account"}</h2>
+            {needsAccount && gemail ? (
+              <p className="auth-copy">
+                We couldn&apos;t find an account for <strong>{gemail}</strong>. Enter your email, name and mobile below —
+                we&apos;ll verify your email with a code, then you&apos;re in.
+              </p>
+            ) : (
+              <p className="auth-copy">Tell us your email and we&apos;ll send a 6-digit code to verify it.</p>
+            )}
             <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" required />
             {error && <p className="notice notice--error" role="alert">{error}</p>}
             <Button type="submit" loading={submitting} className="auth-submit">
@@ -186,8 +200,8 @@ export function LoginPage() {
 
         {stage === "code" && (
           <form onSubmit={verify} className="auth-form-card" aria-label="Verify email OTP">
-            <p className="eyebrow">ENTER THE CODE</p>
-            <h2>Verify your email</h2>
+            <p className="eyebrow auth-eyebrow">ENTER THE CODE</p>
+            <h2 className="auth-title">Verify your email</h2>
             <p className="auth-copy">
               We emailed a 6-digit code to <strong>{email}</strong>.{" "}
               <button type="button" className="link-button" onClick={() => setStage("email")}>Change email</button>
@@ -228,22 +242,23 @@ export function LoginPage() {
 
         {stage === "details" && (
           <form onSubmit={completeRegistration} className="auth-form-card" aria-label="Complete registration">
-            <p className="eyebrow">ALMOST THERE</p>
-            <h2>Tell us who you are</h2>
+            <p className="eyebrow auth-eyebrow">ALMOST THERE</p>
+            <h2 className="auth-title">Tell us who you are</h2>
             <p className="auth-copy">
-              Your email <strong>{email}</strong> is verified. Add your details to finish.
+              Your email <strong>{email}</strong> is verified. Add your details to finish — then next time it&apos;s one tap with Google.
             </p>
             <Input label="Your name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Priya Sharma" autoComplete="name" required />
             <Input label="Phone number (optional)" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="9876543210" autoComplete="tel" inputMode="tel" />
             {error && <p className="notice notice--error" role="alert">{error}</p>}
             <Button type="submit" loading={submitting} className="auth-submit" disabled={name.trim().length < 2}>
-              Create account
+              <CheckCircle2 size={16} /> Create account
             </Button>
             <p className="auth-switch">
               <button type="button" className="link-button" onClick={backToChoose}>Use a different email</button>
             </p>
           </form>
         )}
+        {creatingAccount && <p className="auth-mini-note"><UserRound size={12} /> Secure email-verified sign-up · no password needed</p>}
       </section>
     </div>
   );

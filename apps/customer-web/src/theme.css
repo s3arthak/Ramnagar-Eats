@@ -1,0 +1,60 @@
+:root {
+  /* ===== Swiggy-style palette (customer app override) ===== */
+  /* Primary brand — Swiggy orange */
+  --brand-950: #1c1207;
+  --brand-800: #7a3b0f;
+  --brand-600: #b3550f;
+
+  /* Accent */
+  --accent: #fc8019;
+  --accent-strong: #e06f10;
+  --saffron: #fc8019;
+  --orange: #fc8019;
+  --turmeric: #ffb84d;
+  --lime: #fc8019;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --canvas: #f4f5f7;
+  --cream: #f4f5f7;
+  --line: #e9ecf1;
+
+  /* Text */
+  --text: #1f2733;
+  --ink: #1f2733;
+  --text-muted: #7e8b9a;
+  --muted: #7e8b9a;
+
+  /* Semantic */
+  --danger: #d9534f;
+  --chili: #d9534f;
+  --success: #1ba672;
+  --success-deep: #14875c;
+  --info: #2f7ff0;
+  --star-gold: #e6a700;
+
+  /* Rating pill (Swiggy green bar) */
+  --rating-green: #1ba672;
+  --rating-green-deep: #128057;
+
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 4px rgb(31 39 51 / 0.08);
+  --shadow-md: 0 4px 16px rgb(31 39 51 / 0.1);
+  --shadow-lg: 0 12px 40px rgb(31 39 51 / 0.16);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Cultural pattern — soft orange dots (kept from shared, recolored) */
+  --mandala-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='55' fill='none' stroke='%23ffffff10' stroke-width='1'/%3E%3Ccircle cx='60' cy='60' r='40' fill='none' stroke='%23ffffff0c' stroke-width='0.8'/%3E%3Ccircle cx='60' cy='60' r='25' fill='none' stroke='%23ffffff08' stroke-width='0.6'/%3E%3Cpath d='M60 5 L60 115 M5 60 L115 60 M18 18 L102 102 M102 18 L18 102' stroke='%23ffffff08' stroke-width='0.5' fill='none'/%3E%3C/svg%3E");
+}

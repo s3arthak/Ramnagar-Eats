@@ -7,7 +7,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   verifyOtp: (email: string, code: string) => Promise<{ token?: string; user?: User; regToken?: string; isNew: boolean }>;
-  register: (data: { email: string; regToken: string; name: string; phone?: string; role?: "CUSTOMER" | "RESTAURANT" }) => Promise<User>;
+  register: (data: { email: string; regToken: string; name: string; phone?: string; role?: "CUSTOMER" | "RESTAURANT"; googleId?: string }) => Promise<User>;
   setSession: (token: string, user: User) => void;
   updateMe: (data: { name?: string; phone?: string; avatar?: string }) => Promise<User>;
   logout: () => Promise<void>;
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data;
   };
 
-  const register = async (values: { email: string; regToken: string; name: string; phone?: string; role?: "CUSTOMER" | "RESTAURANT" }) => {
+  const register = async (values: { email: string; regToken: string; name: string; phone?: string; role?: "CUSTOMER" | "RESTAURANT"; googleId?: string }) => {
     const data = await api.post<{ token: string; user: User }>("/auth/register", { ...values, role: values.role ?? "CUSTOMER" });
     setToken(data.token);
     setUser(data.user);

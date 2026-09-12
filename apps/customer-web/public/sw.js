@@ -15,8 +15,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: payload.body || "",
-    icon: payload.icon || "/icon-192.png",
-    badge: payload.badge || "/icon-192.png",
+    icon: payload.icon || "/logo-mark.svg",
+    badge: payload.badge || "/logo-mark.svg",
     tag: payload.tag || "ramnagar-eats",
     renotify: true,
     data: { url: payload.url || "/" },

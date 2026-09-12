@@ -1,8 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation as useRouterLocation } from "react-router-dom";
+// CSS order matters: shared/ui styles first, then the customer-app Swiggy token
+// override LAST so its :root variables win the cascade.
 import "./App.css";
 import "./App-extra.css";
 import "./components/ui/ui.css";
+import "./theme.css";
 import { loadConfig } from "./lib/config";
 
 // Warm the server config (currency, brand, delivery rules) as early as possible.

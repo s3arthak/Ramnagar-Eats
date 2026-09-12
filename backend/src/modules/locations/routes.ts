@@ -26,10 +26,13 @@ router.get(
 // ---- Reverse geocoding ----
 //
 // Turns a coordinate into a human address + pincode so the location pickers can
-// auto-fill after a GPS fix. Uses Google Maps Geocoding API when
-// GOOGLE_MAPS_SERVER_KEY is set, falls back to Nominatim.
-// The geocoder is only consulted on a cache miss and failures degrade to a
-// clear 502 — the client always falls back to manual entry.
+// auto-fill after a GPS fix. Backed by OpenStreetMap's Nominatim — the only
+// geocoder this app depends on, so no map credentials are needed anywhere.
+//
+// It is consulted on a cache miss and only when a user moves a pin (never on
+// rider GPS updates). Calls are spaced to stay inside the Nominatim usage
+// policy, and failures degrade to a clear 502 so the client always falls back to
+// manual entry.
 
 export interface ReverseGeocodeResult {
   address: string;
@@ -41,7 +44,10 @@ export interface ReverseGeocodeResult {
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 500;
+/** Nominatim's usage policy allows at most one request per second. */
+const NOMINATIM_MIN_INTERVAL_MS = 1000;
 const geocodeCache = new Map<string, { result: ReverseGeocodeResult; at: number }>();
+let nextNominatimSlot = 0;
 
 /** Pointed at Nominatim by default; overridable so tests can simulate outages. */
 const nominatimBaseUrl = () => process.env.GEOCODER_BASE_URL ?? "https://nominatim.openstreetmap.org";
@@ -51,21 +57,6 @@ async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeR
   const hit = geocodeCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.result;
 
-  // Try Google Maps Geocoding API first (uses dedicated geocoding key)
-  const googleKey = (process.env.GOOGLE_MAPS_GEOCODING_KEY || process.env.GOOGLE_MAPS_SERVER_KEY)?.trim();
-  if (googleKey) {
-    try {
-      const result = await googleReverseGeocode(lat, lng, googleKey);
-      if (result) {
-        cacheResult(key, result);
-        return result;
-      }
-    } catch {
-      /* fall through to Nominatim */
-    }
-  }
-
-  // Fallback to Nominatim
   const result = await nominatimReverseGeocode(lat, lng);
   if (result) cacheResult(key, result);
   return result;
@@ -76,40 +67,18 @@ function cacheResult(key: string, result: ReverseGeocodeResult) {
   geocodeCache.set(key, { result, at: Date.now() });
 }
 
-/** Google Maps Geocoding API — reverse geocode. */
-async function googleReverseGeocode(lat: number, lng: number, key: string): Promise<ReverseGeocodeResult | null> {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(key)}&result_type=street_address|locality|sublocality`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-  if (!response.ok) return null;
-
-  const data = (await response.json()) as { status: string; results?: { formatted_address?: string; address_components?: { long_name: string; short_name: string; types: string[] }[] }[] };
-  if (data.status !== "OK" || !data.results?.length) return null;
-
-  const result = data.results[0];
-  const components = result.address_components ?? [];
-
-  function component(types: string[]): string {
-    const match = components.find((c) => c.types.some((t) => types.includes(t)));
-    return match?.long_name ?? "";
-  }
-
-  const pincode = component(["postal_code"]);
-  const city = component(["locality", "administrative_area_level_2", "sublocality"]);
-  const state = component(["administrative_area_level_1"]);
-  const locality = component(["route", "sublocality_level_1", "neighborhood"]);
-
-  return {
-    address: result.formatted_address ?? "",
-    pincode,
-    city,
-    state,
-    locality,
-  };
+/** Space out Nominatim calls so concurrent pin moves can't exceed the 1 req/s limit. */
+async function awaitNominatimSlot(): Promise<void> {
+  const now = Date.now();
+  const slot = Math.max(now, nextNominatimSlot);
+  nextNominatimSlot = slot + NOMINATIM_MIN_INTERVAL_MS;
+  if (slot > now) await new Promise((resolve) => setTimeout(resolve, slot - now));
 }
 
-/** Nominatim reverse geocode (original fallback). */
+/** Nominatim (OpenStreetMap) reverse geocode. */
 async function nominatimReverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult | null> {
   const url = `${nominatimBaseUrl()}/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=en`;
+  await awaitNominatimSlot();
   let data: any;
   try {
     const response = await fetch(url, {

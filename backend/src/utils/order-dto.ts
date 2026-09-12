@@ -4,6 +4,7 @@ export const orderDto = (order: any, rider?: { name?: string; phone?: string } |
   customerId: order.customerId.toString(),
   restaurantId: order.restaurantId.toString(),
   restaurantName: order.restaurantName,
+  restaurantCover: order.restaurantCover ?? order.restaurantImage ?? undefined,
   items: order.items,
   deliveryAddress: order.deliveryAddress,
   subtotal: order.subtotal,

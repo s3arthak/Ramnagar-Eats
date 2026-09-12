@@ -215,17 +215,32 @@ async function main() {
 
     // Google OAuth (via the development callback — production uses real Google).
     const googleUrl = (location: string) => new URL(location);
+    // New Google user: the customer app never auto-creates accounts — it sends
+    // the user to create one with email + OTP instead (proves email ownership).
     const newGoogle = await request(base, "/api/v1/auth/google/dev-callback?app=customer&email=google@customer.test&name=Google%20New", { redirect: "manual" });
-    check("Google sign-in creates a new account and redirects", newGoogle.status === 302 && Boolean(newGoogle.location?.includes("/oauth/callback?token=")), newGoogle.location ?? "");
-    const googleToken = googleUrl(newGoogle.location ?? "").searchParams.get("token") ?? "";
-    const googleUser = JSON.parse(decodeURIComponent(googleUrl(newGoogle.location ?? "").searchParams.get("user") ?? "{}"));
-    check("Google account created with verified email", googleToken.length > 20 && googleUser.email === "google@customer.test" && googleUser.role === "CUSTOMER");
+    check("Google sign-in for an unknown email asks for account creation", newGoogle.status === 302 && Boolean(newGoogle.location?.includes("/oauth/callback?needsAccount=1")), newGoogle.location ?? "");
+    const googleId = googleUrl(newGoogle.location ?? "").searchParams.get("googleId") ?? "";
+    check("create-account redirect carries the Google id and email", googleId.length > 5 && googleUrl(newGoogle.location ?? "").searchParams.get("gemail") === "google@customer.test");
+
+    // The user completes sign-up with email OTP + details; the account links to Google.
+    await sendOtp("google@customer.test");
+    const googleVerified = await verifyOtp("google@customer.test", await devCode("google@customer.test"));
+    const googleReg = await request(base, "/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email: "google@customer.test", regToken: googleVerified.body.regToken, name: "Google New", googleId }),
+    });
+    check("account created after OTP with the Google identity linked", googleReg.status === 201 && googleReg.body.user.email === "google@customer.test" && Boolean(googleReg.body.token), JSON.stringify(googleReg.body));
+    const googleToken = googleReg.body.token;
     const googleMe = await request(base, "/api/v1/auth/me", {}, googleToken);
-    check("Google session works", googleMe.status === 200 && googleMe.body.user.email === "google@customer.test");
+    check("Google-linked session works", googleMe.status === 200 && googleMe.body.user.email === "google@customer.test");
+
+    // Next time the same Google account signs in with one tap — no account creation.
+    const googleAgain = await request(base, "/api/v1/auth/google/dev-callback?app=customer&email=google@customer.test&name=Google%20New", { redirect: "manual" });
+    check("Google sign-in for an existing email signs in directly", googleAgain.status === 302 && Boolean(googleAgain.location?.includes("/oauth/callback?token=")) && googleUrl(googleAgain.location ?? "").searchParams.get("isNew") === "false", googleAgain.location ?? "");
 
     // Google + email OTP share one account: same email logs in via OTP too.
     const googleOtpLogin = await loginUser("google@customer.test");
-    check("Google-created account also logs in with email OTP", googleOtpLogin.status === 200 && googleOtpLogin.body.isNew === false);
+    check("Google-linked account also logs in with email OTP", googleOtpLogin.status === 200 && googleOtpLogin.body.isNew === false);
 
     // Existing account linked by email: Google login returns the same user.
     const existingGoogle = await request(base, "/api/v1/auth/google/dev-callback?app=customer&email=test@customer.test&name=Test%20Customer", { redirect: "manual" });
@@ -321,7 +336,7 @@ async function main() {
 
     // 11. No-role fallback: sign in WITHOUT sending role — frontends omit role.
     // Admin user should be found even though frontends don't send role: "ADMIN".
-    const adminNoRoleLogin = await loginUser("admin@ramnagareats.test");
+    const adminNoRoleLogin = await loginUser("ramnagareats@admin.com");
     check("no-role: admin signs in without role param", adminNoRoleLogin.status === 200 && adminNoRoleLogin.body.isNew === false && adminNoRoleLogin.body.user.role === "ADMIN", JSON.stringify(adminNoRoleLogin.body));
 
     // Restaurant user signs in without role.
@@ -521,7 +536,7 @@ async function main() {
   console.log("\nService area");
   {
     const customer = await registerUser("Area Customer", "area@customer.test");
-    const admin = await loginUser("admin@ramnagareats.test", "ADMIN");
+    const admin = await loginUser("ramnagareats@admin.com", "ADMIN");
 
     const forbiddenGet = await request(base, "/api/v1/admin/service-area", {}, customer.body.token);
     check("non-admin cannot read service area", forbiddenGet.status === 403);
@@ -561,7 +576,7 @@ async function main() {
   console.log("\nAdmin coupons");
   {
     const customer = await registerUser("Coupon Customer", "coupon@customer.test");
-    const admin = await loginUser("admin@ramnagareats.test", "ADMIN");
+    const admin = await loginUser("ramnagareats@admin.com", "ADMIN");
 
     const forbidden = await request(base, "/api/v1/admin/coupons", {}, customer.body.token);
     check("non-admin cannot list coupons", forbidden.status === 403);
@@ -1003,7 +1018,7 @@ async function main() {
     check("customer can cancel a placed order", cancelled.status === 200 && cancelled.body.order.status === "CANCELLED");
 
     // Admin flow.
-    const adminLogin = await loginUser("admin@ramnagareats.test", "ADMIN");
+    const adminLogin = await loginUser("ramnagareats@admin.com", "ADMIN");
     check("admin can log in with email OTP", adminLogin.status === 200 && adminLogin.body.user.role === "ADMIN");
     const adminToken = adminLogin.body.token;
 
@@ -1161,9 +1176,9 @@ async function main() {
     const isAssigned = assigned.body.order.status === "RIDER_ASSIGNED" && assigned.body.order.riderId;
     check("rider auto-assigned when order reached READY", isAssigned, JSON.stringify(assigned.body.order));
 
-    // 12. Rider checks active delivery — none yet (rider hasn't accepted).
+    // 12. Auto-assignment flags the rider's active delivery before they accept.
     const noActive = await request(base, "/api/v1/riders/delivery/active", {}, riderJwt);
-    check("rider has no active delivery before accept", noActive.status === 200 && noActive.body.order === null);
+    check("rider sees the assigned delivery before accept", noActive.status === 200 && noActive.body.order?.status === "RIDER_ASSIGNED", JSON.stringify(noActive.body.order));
 
     // 13. Rider accepts the delivery.
     const accept = await request(base, `/api/v1/riders/delivery/${orderId}/accept`, { method: "POST" }, riderJwt);
@@ -1237,7 +1252,7 @@ async function main() {
     check("customer blocked from rider routes", customerAsRider.status === 403);
 
     // 26. Nearby riders (admin only).
-    const admin = await loginUser("admin@ramnagareats.test", "ADMIN");
+    const admin = await loginUser("ramnagareats@admin.com", "ADMIN");
     const nearby = await request(base, "/api/v1/riders/nearby?lat=32.80674&lng=75.314854", {}, admin.body.token);
     check("admin can list nearby riders", nearby.status === 200 && Array.isArray(nearby.body.riders), JSON.stringify({ status: nearby.status, body: nearby.body, hasToken: Boolean(admin.body.token) }));
 

@@ -66,7 +66,7 @@ export function Shell({ children, restaurant, onRestaurantChange, isAdmin }: { c
           <X size={22} />
         </button>
         <a className="brand" href="/" aria-label="Ramnagar Eats home">
-          <span className="brand-mark" aria-hidden="true">🍛</span>
+          <img className="brand-mark" src="/logo-mark.svg" alt="" width="32" height="32" />
           <span className="brand-name">RAMNAGAR <b>EATS</b></span>
         </a>
         <p className="restaurant-name">{restaurant?.name ?? "Set up your restaurant"}</p>

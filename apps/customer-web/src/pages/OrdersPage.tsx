@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Package, RefreshCw } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { CheckCircle2, ChevronRight, Package } from "lucide-react";
 import { api } from "../lib/api";
-import { formatDateTime, inr } from "../lib/format";
-import { STATUS_LABELS, statusTone } from "../lib/order";
+import { inr } from "../lib/format";
+import { formatDateTime } from "../lib/format";
+import { STATUS_LABELS, statusTone, isActive, isCancelable } from "../lib/order";
 import type { MenuItem, Order } from "../lib/types";
 import { useCart } from "../context/CartContext";
 import { getSocket } from "../lib/socket";
@@ -17,6 +18,7 @@ export function OrdersPage() {
   const [notice, setNotice] = useState("");
   const [reordering, setReordering] = useState("");
   const { addItem, setDrawerOpen } = useCart();
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,8 +83,14 @@ export function OrdersPage() {
   }
 
   return (
-    <div className="content page">
-      <h1 className="page-title">My orders</h1>
+    <div className="content page orders-page">
+      <div className="account-head">
+        <button className="account-back" onClick={() => navigate(-1)} aria-label="Go back">
+          ←
+        </button>
+        <h1>MY ACCOUNT</h1>
+        <span className="account-help">ORDERS</span>
+      </div>
       {notice && (
         <p className="notice" role="status">
           {notice}
@@ -104,37 +112,59 @@ export function OrdersPage() {
           }
         />
       ) : (
-        <ul className="orders-list">
+        <ul className="order-stack">
           {orders.map((order) => (
-            <li key={order.id} className="order-card">
-              <div className="order-card-head">
-                <div>
+            <li key={order.id} className="order-stack-card">
+              <Link to={`/orders/${order.id}`} className="order-stack-head">
+                <span className="order-thumb">
+                  {order.restaurantCover ? (
+                    <img src={order.restaurantCover} alt="" loading="lazy" />
+                  ) : (
+                    <span aria-hidden="true">🍽️</span>
+                  )}
+                </span>
+                <span className="order-stack-title">
                   <strong>{order.restaurantName}</strong>
+                  <small>{order.orderNumber} · {order.deliveryAddress.label} · {order.deliveryAddress.pincode}</small>
+                </span>
+                {order.status === "DELIVERED" ? (
+                  <span className="order-done">Delivered <CheckCircle2 size={17} /></span>
+                ) : (
                   <span className={`status ${statusTone(order.status)}`}>{STATUS_LABELS[order.status]}</span>
-                </div>
-                <span className="order-card-total">{inr(order.total)}</span>
-              </div>
-              <p className="order-card-meta">
-                {order.orderNumber} · {formatDateTime(order.createdAt)}
-              </p>
-              <p className="order-card-items">
-                {order.items.map((item) => `${item.quantity} × ${item.name}`).join(", ")}
-              </p>
-              <div className="order-card-actions">
-                <Link className="filter" to={`/orders/${order.id}`}>
-                  View order
-                </Link>
-                <button className="filter" disabled={reordering === order.id} onClick={() => void reorder(order)}>
-                  <RefreshCw size={13} /> {reordering === order.id ? "Adding…" : "Reorder"}
+                )}
+              </Link>
+              <ul className="order-stack-items">
+                {order.items.slice(0, 3).map((item, index) => (
+                  <li key={index}>
+                    <span className="qty-chip">{item.quantity} X</span>
+                    {item.name}
+                  </li>
+                ))}
+                {order.items.length > 3 && (
+                  <li>
+                    <Link className="order-more-link" to={`/orders/${order.id}`}>
+                      &amp; {order.items.length - 3} more
+                    </Link>
+                  </li>
+                )}
+              </ul>
+              <div className="order-stack-actions">
+                <button className="reorder-pill" disabled={reordering === order.id} onClick={() => void reorder(order)}>
+                  {reordering === order.id ? "ADDING…" : (
+                    <>
+                      REORDER <ChevronRight size={15} />
+                    </>
+                  )}
                 </button>
+                {!isActive(order.status) && isCancelable(order.status) && null}
               </div>
+              <p className="order-stack-foot">
+                Ordered: {formatDateTime(order.createdAt)} · Bill total: <b>{inr(order.total)}</b>
+              </p>
             </li>
           ))}
         </ul>
       )}
-      <p className="summary-note" style={{ marginTop: 18 }}>
-        Tip: you can also reorder from the cart drawer after adding items.
-      </p>
     </div>
   );
 }

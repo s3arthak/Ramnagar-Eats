@@ -258,7 +258,12 @@ router.post(
     if (!user) throw notFound("Account not found", "ACCOUNT_NOT_FOUND");
     if (user.riderApproval !== "APPROVED") throw new ApiError(403, "Account not approved", "NOT_APPROVED");
     if (user.riderStatus === "SUSPENDED") throw new ApiError(403, "Account suspended", "SUSPENDED");
-    if (user.currentOrderId) throw new ApiError(409, "You already have an active delivery", "ACTIVE_DELIVERY");
+    // Auto-assignment flags currentOrderId so the dashboard shows the delivery;
+    // accepting the very same order is allowed (only a *different* active
+    // delivery blocks acceptance).
+    if (user.currentOrderId && user.currentOrderId.toString() !== orderId) {
+      throw new ApiError(409, "You already have an active delivery", "ACTIVE_DELIVERY");
+    }
 
     const order = await Order.findById(orderId);
     if (!order) throw notFound("Order not found", "ORDER_NOT_FOUND");

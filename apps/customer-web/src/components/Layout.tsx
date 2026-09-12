@@ -16,7 +16,7 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
     <div className="app">
       <header className="topbar sticky-top">
         <Link className="brand" to="/" aria-label="Ramnagar Eats home">
-          <img className="brand-logo" src="/logo.svg" alt="R" width="36" height="36" />
+          <img className="brand-logo" src="/logo-mark.svg" alt="" width="40" height="40" />
           <span className="brand-name">Ramnagar <b>Eats</b></span>
         </Link>
         <button className="location-button" onClick={onOpenLocation} aria-label="Change delivery location">
@@ -73,7 +73,7 @@ export function Layout({ children, onOpenLocation }: { children: React.ReactNode
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-brand">
-            <img className="brand-logo" src="/logo.svg" alt="Ramnagar Eats" width="44" height="44" />
+            <img className="brand-logo" src="/logo-mark.svg" alt="" width="52" height="52" />
             <strong>RAMNAGAR <b>EATS</b></strong>
             <p>Local food from independent kitchens, delivered fast to your door.</p>
           </div>

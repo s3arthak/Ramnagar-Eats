@@ -90,7 +90,10 @@ aside nav a:hover{color:#fff}
 .service-area-form input:focus{border-color:var(--saffron);box-shadow:0 0 0 3px #E8663C10}
 .link-button{border:0;background:none;padding:0;font:inherit;font-weight:800;color:#173b35;text-decoration:underline;cursor:pointer}
 .brand{display:inline-flex;align-items:center;gap:10px;padding:0}
-.brand .brand-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--turmeric),var(--saffron));display:grid;place-items:center;font-size:16px;box-shadow:0 4px 12px #3B110626;flex:none;color:initial}
+.brand .brand-mark{width:32px;height:32px;border-radius:23%;display:block;flex:none;box-shadow:0 4px 12px #3B110626}
+/* Full logo lockup (wordmark baked in) — only used where it's large enough to read. */
+.brand .brand-lockup{width:108px;height:108px;display:block;filter:drop-shadow(0 12px 28px #00000059);transition:transform .25s ease}
+.brand:hover .brand-lockup{transform:scale(1.03)}
 .brand .brand-name{color:#fff;font-size:18px;letter-spacing:-.8px;white-space:nowrap}
 .brand .brand-name b{color:var(--turmeric);font-weight:900}
 .brand:hover .brand-mark{transform:rotate(-6deg) scale(1.06)}

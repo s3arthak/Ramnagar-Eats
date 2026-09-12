@@ -31,9 +31,38 @@ const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const customer = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const restaurant = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const admin = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+// Network-level map guard: inspect every outbound request so a leftover Google
+// Maps dependency fails the walk even when no source file mentions it, and prove
+// tiles really came from the configured OSM-compatible source.
+const GOOGLE_MAP_HOSTS = /(^|\.)(googleapis\.com|maps\.google\.com|google\.com|gstatic\.com)$/;
+const TILE_URL = process.env.VITE_MAP_TILE_URL?.trim() || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+// Leaflet rotates tile subdomains (a./b./c.), so match the host or any subdomain of it.
+const TILE_HOST = TILE_URL.replace("{s}.", "").replace(/^https?:\/\//, "").split("/")[0];
+const isTileHost = (host) => host === TILE_HOST || host.endsWith(`.${TILE_HOST}`);
+const googleMapRequests = [];
+let tileRequests = 0;
+for (const page of [customer, restaurant, admin]) {
+  page.on("request", (request) => {
+    let host = "";
+    try {
+      host = new URL(request.url()).host;
+    } catch {
+      return;
+    }
+    if (GOOGLE_MAP_HOSTS.test(host)) googleMapRequests.push(`${request.method()} ${request.url()}`);
+    if (isTileHost(host)) tileRequests += 1;
+  });
+}
+
+// The restaurant session below stays logged in as this kitchen's owner, so the
+// customer must order from it. The home feed is ordered by distance, and the
+// nearest seeded kitchen is not necessarily the demo owner's.
+const OWNER_RESTAURANT = "Royal Biryani House";
 const phone = `+91${String(Math.floor(1000000000 + Math.random() * 8999999999)).slice(0, 10)}`;
 const walkEmail = `walker-${Date.now()}@ramnagareats.test`;
 let orderNumber = "";
+let orderId = "";
 
 async function shot(page, name) {
   await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: false });
@@ -50,6 +79,83 @@ async function text(page, selector) {
 async function clickByText(page, selector, searchText) {
   const handle = page.locator(selector).filter({ hasText: searchText }).first();
   await handle.click();
+}
+
+const API = "http://localhost:5000/api/v1";
+const DEV_OTP = `${API}/auth/dev-otp`;
+const ADMIN_EMAIL = "ramnagareats@admin.com";
+
+/** Call the API the same way the apps do (JSON, bearer token). */
+async function api(path, { method = "GET", body, token } = {}) {
+  const response = await fetch(`${API}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return { status: response.status, body: await response.json().catch(() => ({})) };
+}
+
+/** Dev-only OTP peek used by the login steps below. */
+async function devOtp(email) {
+  return (await fetch(`${DEV_OTP}?email=${encodeURIComponent(email)}`).then((r) => r.json())).code;
+}
+
+/**
+ * Register an approved, ONLINE rider over HTTP.
+ *
+ * Pickup and delivery belong to the rider app, which this walk does not open — so
+ * the rider leg is driven through the same endpoints that app calls. A rider must
+ * be online *before* the kitchen marks the order ready, because auto-assignment
+ * only looks at riders who are ONLINE + APPROVED + idle.
+ */
+async function setupOnlineRider() {
+  const email = `walker-rider-${Date.now()}@ramnagareats.test`;
+  const phone = "+919800000123";
+  await api("/auth/send-otp", { method: "POST", body: { email } });
+  const verified = await api("/auth/verify-otp", { method: "POST", body: { email, code: await devOtp(email), role: "RIDER" } });
+  const registered = await api("/auth/register", { method: "POST", body: { email, name: "Walker Rider", phone, role: "RIDER", regToken: verified.body.regToken } });
+  const setup = await api("/riders/setup", { method: "POST", body: { name: "Walker Rider", phone, vehicleType: "Motorcycle", vehicleNumber: "JK01WW1234", deliveryArea: "Ramnagar" }, token: registered.body.token });
+  const riderToken = setup.body.token;
+
+  // Approval is an admin action (the rider panel can't self-approve).
+  await api("/auth/send-otp", { method: "POST", body: { email: ADMIN_EMAIL } });
+  const adminVerified = await api("/auth/verify-otp", { method: "POST", body: { email: ADMIN_EMAIL, code: await devOtp(ADMIN_EMAIL) } });
+  const approval = await api(`/admin/riders/${setup.body.user.id}`, { method: "PATCH", body: { riderApproval: "APPROVED" }, token: adminVerified.body.token });
+  const online = await api("/riders/status", { method: "POST", body: { status: "ONLINE" }, token: riderToken });
+  // Location must be within 15km of the kitchen for auto-assignment to find them.
+  await api("/riders/location", { method: "POST", body: { latitude: 32.80674, longitude: 75.314854 }, token: riderToken });
+
+  return { riderToken, approved: approval.status === 200, online: online.status === 200 };
+}
+
+/** Drive accept → pickup → out for delivery → delivered for an assigned order. */
+async function completeDelivery(riderToken, orderId) {
+  const steps = {};
+  steps.accept = (await api(`/riders/delivery/${orderId}/accept`, { method: "POST", token: riderToken })).status;
+  const pickup = await api(`/riders/delivery/${orderId}/pickup`, { method: "POST", token: riderToken });
+  steps.pickup = pickup.status;
+  steps.start = (await api(`/riders/delivery/${orderId}/start-delivery`, { method: "POST", token: riderToken })).status;
+  const delivered = await api(`/riders/delivery/${orderId}/deliver`, { method: "POST", body: { otp: pickup.body.deliveryOtp }, token: riderToken });
+  steps.deliver = delivered.status;
+  return steps;
+}
+
+/**
+ * Open the demo owner's kitchen from the home page by searching for it by name.
+ *
+ * The home feed is ordered by distance, so clicking the first card lands on the
+ * nearest seeded kitchen — not the one the restaurant session below is parked on
+ * (its owner). Every ordering step must target that same restaurant.
+ */
+async function openOwnerRestaurant(page) {
+  await waitFor(page, ".restaurant-card:not(.skeleton-card)", 20000, "home feed");
+  await page.fill(".home-search input", OWNER_RESTAURANT);
+  await page.press(".home-search input", "Enter");
+  // `.results-count` only exists on the results page — waiting for a card alone
+  // would match the home feed and click the wrong restaurant.
+  await waitFor(page, ".results-count", 15000, "search results");
+  await waitFor(page, ".restaurant-grid .restaurant-card", 15000, "owner restaurant");
+  await page.click(".restaurant-card .restaurant-link >> nth=0");
 }
 
 // Send an OTP and reach the code step, retrying through the 60s resend cooldown
@@ -110,12 +216,13 @@ try {
   await waitFor(customer, ".restaurant-card:not(.skeleton-card)", 20000);
 
   console.log("\n[Customer] Restaurant detail + add to cart");
-  await customer.click(".restaurant-card .restaurant-link >> nth=0");
+  await openOwnerRestaurant(customer);
   await waitFor(customer, ".dish-card", 15000, "menu items");
+  ok("customer is on the demo owner's kitchen", (await text(customer, ".restaurant-header h1")).includes(OWNER_RESTAURANT), await text(customer, ".restaurant-header h1"));
   ok("restaurant detail + menu load dynamically", (await customer.locator(".menu-category").count()) > 0);
   ok("restaurant page shows call + directions actions", (await customer.locator(".restaurant-info .restaurant-action").count()) >= 1);
-  await waitFor(customer, '.restaurant-map div[style*="position: relative"]', 15000, "restaurant map tiles");
-  ok("restaurant location map renders", (await customer.locator('.restaurant-map div[style*="position: relative"]').count()) > 0);
+  await waitFor(customer, ".restaurant-map .leaflet-tile", 15000, "restaurant map tiles");
+  ok("restaurant location map renders", (await customer.locator(".restaurant-map .leaflet-tile").count()) > 0);
   ok("reviews section present", (await customer.locator(".reviews-section").count()) === 1);
   await shot(customer, "3-restaurant");
   // Search within the restaurant.
@@ -153,8 +260,8 @@ try {
   // Note: Menu preview drawer from card hover was removed - menu now only shows
   // on restaurant detail page via the floating MENU button. Skipping this test.
   await customer.goto(CUSTOMER_URL, { waitUntil: "domcontentloaded" });
-  await waitFor(customer, ".restaurant-card:not(.skeleton-card)", 20000);
-  await customer.click(".restaurant-card .restaurant-link >> nth=0");
+  // Re-open the owner's kitchen (not the nearest one) before adding to the cart.
+  await openOwnerRestaurant(customer);
   await waitFor(customer, ".dish-card", 15000, "menu items");
 
   await customer.locator(".dish-card .dish-add").first().click();
@@ -229,6 +336,11 @@ try {
   ok("coupon validated by backend and applied", (await text(customer, ".coupon-applied")).includes("WELCOME20"));
   await customer.fill(".order-note textarea", "Less spicy please");
   await customer.click(".payment-option >> nth=0"); // COD
+  // Bring a rider online before the order is placed, so the kitchen marking it
+  // ready auto-assigns them (the walk does not open the rider app).
+  const rider = await setupOnlineRider();
+  ok("a rider is registered, approved and online for auto-assignment", rider.approved && rider.online, JSON.stringify(rider));
+
   // The restaurant toast is transient — start listening for it BEFORE placing
   // the order so the wait can't miss it.
   const restaurantToast = restaurant
@@ -243,6 +355,7 @@ try {
   ok("order confirmation shows order id", Boolean(orderNumber), successText);
   const pageText = await text(customer, "body");
   ok("confirmation shows restaurant + payment", pageText.includes("Cash on Delivery"), pageText.slice(0, 200));
+  ok("order is for the demo owner's kitchen", pageText.includes(OWNER_RESTAURANT), pageText.slice(0, 200));
   await shot(customer, "7-order-success");
 
   console.log("\n[Restaurant] New order arrives in real time");
@@ -261,9 +374,12 @@ try {
 
   console.log("\n[Customer] Track order with live route map");
   await customer.click(".success-actions .confirm");
-  await waitFor(customer, '.tracking-map div[style*="position: relative"]', 20000, "route map tiles");
-  ok("tracking page shows live route map", (await customer.locator('.tracking-map div[style*="position: relative"]').count()) > 0);
-  ok("route map shows restaurant + home markers", (await customer.locator('.tracking-map div[style*="border-radius: 50%"]').count()) >= 2);
+  await waitFor(customer, ".tracking-map .leaflet-tile", 20000, "route map tiles");
+  // The tracking route carries the order id the rider endpoints need.
+  orderId = customer.url().split("/orders/")[1]?.split(/[/?#]/)[0] ?? "";
+  ok("tracking page carries the order id", Boolean(orderId), customer.url());
+  ok("tracking page shows live route map", (await customer.locator(".tracking-map .leaflet-tile").count()) > 0);
+  ok("route map shows restaurant + home markers", (await customer.locator(".tracking-map .leaflet-marker-icon").count()) >= 2);
   ok("dynamic ETA badge shown", (await text(customer, ".route-eta-badge")).includes("Arriving"));
   const helpButtons = await customer.locator(".order-help-btn").count();
   ok("call + directions buttons on tracking page", helpButtons >= 2 && (await customer.locator(".order-help-btn[href^='tel:']").count()) >= 1);
@@ -302,21 +418,20 @@ try {
   await customer.click(".order-stack-head >> nth=0");
   await waitFor(customer, ".timeline", 10000, "tracking timeline");
   ok("order timeline renders (PLACED)", (await text(customer, ".status--lg")) === "Order placed");
-  await waitFor(customer, '.tracking-map div[style*="position: relative"]', 15000, "route map tiles");
-  ok("tracking page route map renders", (await customer.locator('.tracking-map div[style*="border-radius: 50%"]').count()) >= 2);
+  await waitFor(customer, ".tracking-map .leaflet-tile", 15000, "route map tiles");
+  ok("tracking page route map renders", (await customer.locator(".tracking-map .leaflet-marker-icon").count()) >= 2);
   // ETA countdown is computed from server timestamps — visible while the order is active.
   const etaActive = await customer.evaluate(() => document.body.textContent.includes("Arriving in approximately") || document.body.textContent.includes("Estimated by"));
   ok("ETA countdown displayed while order is active", etaActive);
   await shot(customer, "8-tracking-placed");
 
   console.log("\n[Restaurant] Live status flow (no reloads)");
+  // The kitchen owns the order only up to READY — pickup and delivery are rider
+  // actions, so the restaurant must stop offering buttons there.
   const flow = [
     ["Accept order", "Accepted"],
     ["Start preparing", "Preparing"],
     ["Mark ready", "Ready"],
-    ["Mark picked up", "Picked up"],
-    ["Out for delivery", "Out for delivery"],
-    ["Mark delivered", "Delivered"],
   ];
   for (const [action, expected] of flow) {
     const tile = restaurant.locator(".order-tile").filter({ hasText: orderNumber });
@@ -334,6 +449,11 @@ try {
     ok(`restaurant tile updates live to ${expected}`, true);
     await shot(restaurant, `r3-${action.replaceAll(" ", "-")}`);
   }
+  ok("restaurant offers no action once the order is ready (rider takes over)", (await restaurant.locator(".order-tile .action.accept").count()) === 0);
+
+  console.log("\n[Rider] Complete the delivery over HTTP");
+  const riderSteps = await completeDelivery(rider.riderToken, orderId);
+  ok("rider accepts, picks up, starts and completes the delivery", Object.values(riderSteps).every((status) => status === 200), JSON.stringify(riderSteps));
 
   console.log("\n[Restaurant] Profile cover photo upload");
   await restaurant.goto(`${RESTAURANT_URL}/restaurant`, { waitUntil: "domcontentloaded" });
@@ -463,9 +583,9 @@ try {
   await waitFor(admin, ".login-form .oauth-option", 15000);
   await admin.locator(".login-form .oauth-option").first().click(); // Continue with Email
   await waitFor(admin, '.login-form input[type="email"]', 10000);
-  await admin.fill('.login-form input[type="email"]', "admin@ramnagareats.test");
+  await admin.fill('.login-form input[type="email"]', "ramnagareats@admin.com");
   await sendOtpToCodeStep(admin, ".login-form .submit", '.login-form input[placeholder="······"]');
-  const adminCode = await fetch("http://localhost:5000/api/v1/auth/dev-otp?email=admin%40ramnagareats.test").then((r) => r.json());
+  const adminCode = await fetch(`${DEV_OTP}?email=${encodeURIComponent(ADMIN_EMAIL)}`).then((r) => r.json());
   await admin.locator('.login-form input[placeholder="······"]').fill(adminCode.code);
   await admin.click(".login-form .submit");
   await waitFor(admin, ".stats article", 15000, "admin dashboard");
@@ -490,6 +610,8 @@ try {
   failures.push(`walk crashed: ${error.message}`);
   console.error("  ✗ walk crashed:", error.message);
 } finally {
+  ok("no Google Maps requests were made by the app", googleMapRequests.length === 0, googleMapRequests.slice(0, 3).join(", "));
+  ok("map tiles load from the configured OSM tile source", tileRequests > 0, `host=${TILE_HOST}`);
   await browser.close();
 }
 
